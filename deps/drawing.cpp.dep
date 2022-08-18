@@ -1,0 +1,2 @@
+obj/drawing.cpp.obj: drawing.cpp drawing.hpp D:/glad/include\glad/glad.h \
+  D:/glad/include\KHR/khrplatform.h renderer.hpp

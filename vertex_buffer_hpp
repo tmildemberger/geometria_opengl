@@ -1,0 +1,10 @@
+#ifndef VERTEX_BUFFER_HPP
+#define VERTEX_BUFFER_HPP
+
+class VertexBuffer {
+private:
+public:
+    VertexBuffer();
+};
+
+#endif // VERTEX_BUFFER_HPP

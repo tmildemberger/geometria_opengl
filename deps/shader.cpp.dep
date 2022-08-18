@@ -1,0 +1,2 @@
+obj/shader.cpp.obj: shader.cpp shader.hpp D:/glad/include\glad/glad.h \
+  D:/glad/include\KHR/khrplatform.h thing.hpp

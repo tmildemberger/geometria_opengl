@@ -1,0 +1,9 @@
+#include "vertex_buffer.hpp"
+#include "glad/glad.h"
+
+VertexBuffer::VertexBuffer() {
+    unsigned int VBO { 0 };
+    glCreateBuffers(1, &VBO);
+    // glNamedBufferStorage(VBO, sizeof vertices, vertices, GL_DYNAMIC_STORAGE_BIT)
+    // ;
+}

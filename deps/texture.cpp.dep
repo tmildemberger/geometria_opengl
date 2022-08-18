@@ -1,0 +1,2 @@
+obj/texture.cpp.obj: texture.cpp texture.hpp D:/glad/include\glad/glad.h \
+  D:/glad/include\KHR/khrplatform.h stb_img.hpp stb_image.h
