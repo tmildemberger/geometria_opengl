@@ -74,7 +74,8 @@
         "memory_resource": "cpp",
         "numeric": "cpp",
         "random": "cpp",
-        "ranges": "cpp"
+        "ranges": "cpp",
+        "numbers": "cpp"
     },
     "C_Cpp.default.compilerPath": "D:\\build2\\build2\\bin\\g++.exe"
 }

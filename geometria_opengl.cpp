@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cmath>
+#include <numbers>
+#include <limits>
 #include <glad/glad.h>
 // #include <GLFW/glfw3.h>
 #include "shader.hpp"
@@ -45,6 +47,8 @@ using Ponto = std::array<double, 2>;
 double area_orientada(Ponto p1, Ponto p2, Ponto p3);
 bool left(Ponto p1, Ponto p2, Ponto p3);
 std::vector<Ponto> fecho_convexo(std::vector<Ponto> pontos);
+double dist(Ponto p1, Ponto p2);
+double angulo_interno(Ponto p1, Ponto p2, Ponto p3);
 
 // área do paralelogramo, não do triângulo;
 // produto vetorial do vetor p1p2 com o p1p3;
@@ -62,9 +66,13 @@ double dist(Ponto p1, Ponto p2) {
 }
 
 // ângulo entre p1p2 e p1p3
-double angulo(Ponto p1, Ponto p2, Ponto p3) {
+double angulo_interno(Ponto p1, Ponto p2, Ponto p3) {
     double seno = area_orientada(p1, p2, p3)/(dist(p1, p2)*dist(p1, p3));
-    return std::asin(seno);
+    double angulo = std::asin(seno);
+    if (angulo < 0.) {
+        angulo += std::numbers::pi;
+    }
+    return angulo;
 }
 
 std::vector<Ponto> fecho_convexo(std::vector<Ponto> pontos) {
@@ -97,11 +105,11 @@ std::vector<Ponto> fecho_convexo(std::vector<Ponto> pontos) {
         fecho.push_back(pontos[i-1]);
     }
 
-    std::cout << "fim do calculo do fecho superior, veja:" << std::endl;
-    for (std::size_t i = 0; i < fecho.size(); ++i) {
-        std::cout << fecho[i][0] << ' ' << fecho[i][1] << std::endl;
-    }
-    std::cout << "-----começo do calculo do resto" << std::endl;
+    // std::cout << "fim do calculo do fecho superior, veja:" << std::endl;
+    // for (std::size_t i = 0; i < fecho.size(); ++i) {
+    //     std::cout << fecho[i][0] << ' ' << fecho[i][1] << std::endl;
+    // }
+    // std::cout << "-----começo do calculo do resto" << std::endl;
 
 
     std::vector<Ponto> fecho_inferior;
@@ -142,10 +150,24 @@ std::vector<Ponto> fecho_convexo(std::vector<Ponto> pontos) {
 using Reta = std::array<Ponto, 2>;
 
 struct RetornoAlg {
-    Ponto p,
-    Reta l,
-    double distancia,
+    Ponto p;
+    Reta r;
+    double distancia;
 };
+
+double dist(Ponto p, Reta r);
+RetornoAlg algoritmo(std::vector<Ponto> poligono);
+
+double dist(Ponto p, Reta r) {
+    double x3_x1 = p[0] - r[0][0];
+    double x2_x1 = r[1][0] - r[0][0];
+    double y3_y1 = p[1] - r[0][1];
+    double y2_y1 = r[1][1] - r[0][1];
+    double c = (x2_x1*x3_x1 + y2_y1*y3_y1) / (x2_x1*x2_x1 + y2_y1*y2_y1);
+    double dist_x = x3_x1 - x2_x1*c;
+    double dist_y = y3_y1 - y2_y1*c;
+    return std::sqrt( dist_x*dist_x + dist_y*dist_y );
+}
 
 RetornoAlg algoritmo(std::vector<Ponto> poligono) {
     std::vector<Ponto> fecho = fecho_convexo(poligono);
@@ -155,15 +177,78 @@ RetornoAlg algoritmo(std::vector<Ponto> poligono) {
     std::vector<double> angulos(n, 0.);
 
     // adiciona manualmente primeiro e último ângulo
-    angulos[0] = angulo(fecho[n-1], fecho[0], fecho[1]);
-    angulos[n-1] = angulo(fecho[n-2], fecho[n-1], fecho[0]);
+    // angulos[0] = angulo_interno(fecho[n-1], fecho[0], fecho[1]);
+    // angulos[n-1] = angulo_interno(fecho[n-2], fecho[n-1], fecho[0]);
+    angulos[0] = angulo_interno(fecho[0], fecho[n-1], fecho[1]);
+    angulos[n-1] = angulo_interno(fecho[n-1], fecho[n-2], fecho[0]);
 
     for (std::size_t i = 1; i < n-1; ++i) {
-        angulos[i] = angulo(fecho[i-1], fecho[i], fecho[i+1]);
+        angulos[i] = angulo_interno(fecho[i], fecho[i-1], fecho[i+1]);
     }
 
     // pensar como ir somando os ângulos para poder descobrir
     // o somatório entre quaisquer pontos com uma só subtração
+    std::vector<double> angulos_acumulados(n+1, 0.);
+
+    for (std::size_t i = 1; i <= n; ++i) {
+        angulos_acumulados[i] = angulos_acumulados[i-1] + angulos[i-1];
+    }
+
+    for (std::size_t i = 0; i < n; ++i) {
+        std::cout << angulos[i] << ' ';
+    }
+    std::cout << std::endl;
+
+    for (std::size_t i = 0; i <= n; ++i) {
+        std::cout << angulos_acumulados[i] << ' ';
+    }
+    std::cout << std::endl;
+
+    Ponto menor_ponto {};
+    Reta menor_reta {};
+    double menor_distancia { std::numeric_limits<double>::max() };
+    // agora para cada ponto, encontrar o ponto/linha oposto
+    double metade = (std::numbers::pi * (n - 2)) / 2;
+    for (std::size_t i = 0; i < n; ++i) {
+        // busca binária:
+        std::size_t l = 0;
+        std::size_t r = n;
+        Reta encontrada {};
+        while (l <= r) {
+            std::size_t m = (l + r) / 2;
+            std::size_t atual = i;
+            std::size_t meio = (i+m >= n) ? (i+m-n) : (i+m);
+            std::size_t prox = (i+m+1 >= n) ? (i+m+1-n) : (i+m+1);
+            double phi_meio_atual = 0.;
+            if (meio > atual) {
+                phi_meio_atual = angulos_acumulados[meio+1] - angulos_acumulados[atual] - angulos[meio]/2. - angulos[atual]/2.;
+            } else {
+                // meio <= atual
+                phi_meio_atual = angulos_acumulados[n] + angulos_acumulados[meio+1] - angulos_acumulados[atual] - angulos[meio]/2. - angulos[atual]/2.;
+            }
+            double phi_prox_atual = phi_meio_atual + angulos[meio]/2. + angulos[prox]/2.;
+            std::cout << phi_meio_atual << ' ' << phi_prox_atual << ' ' << metade << std::endl; exit(0);
+            if (phi_prox_atual >= metade) {
+                if (phi_meio_atual < metade) {
+                    // encontrado
+                    encontrada = std::array<Ponto, 2>{fecho[meio], fecho[prox]};
+                    break;
+                } else {
+                    r = m - 1;
+                }
+            } else {
+                l = m + 1;
+            }
+        }
+        double distancia = dist(fecho[i], encontrada);
+        if (distancia < menor_distancia) {
+            menor_distancia = distancia;
+            menor_ponto = fecho[i];
+            menor_reta = encontrada;
+        }
+    }
+
+    return RetornoAlg {menor_ponto, menor_reta, menor_distancia};
 }
 
 void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param);
@@ -181,6 +266,15 @@ int main() {
     for (std::size_t i = 0; i < fecho.size(); ++i) {
         std::cout << fecho[i][0] << ' ' << fecho[i][1] << std::endl;
     }
+    
+    std::cout << "calculo da menor distancia:" << std::endl;
+
+    RetornoAlg coiso = algoritmo(pontos);
+
+    std::cout << "ponto: " << coiso.p[0] << ' ' << coiso.p[1] << std::endl;
+    std::cout << "reta: " << coiso.r[0][0] << ' ' << coiso.r[0][1] << std::endl;
+    std::cout << "    : " << coiso.r[1][0] << ' ' << coiso.r[1][1] << std::endl;
+    std::cout << "distancia: " << coiso.distancia << std::endl;
 
     return 0;
 
