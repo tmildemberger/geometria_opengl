@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cmath>
-#include <numbers>
+//#include <numbers>
 #include <limits>
 #include <glad/glad.h>
 // #include <GLFW/glfw3.h>
@@ -82,7 +82,7 @@ double angulo_interno(Ponto p1, Ponto p2, Ponto p3) {
     double angulo_p3 = std::atan2(p3[1] - p1[1], p3[0] - p1[0]);
     double angulo = angulo_p2 - angulo_p3;
     if (angulo < 0.) {
-        angulo += 2 * std::numbers::pi;
+        angulo += 2 * 3.14159265358979323846;
     }
     return angulo;
 }
@@ -165,6 +165,7 @@ struct RetornoAlg {
     Ponto p;
     Reta r;
     double distancia;
+    Ponto intersecao_encontrada;
 };
 
 double dist(Ponto p, Reta r);
@@ -220,7 +221,7 @@ RetornoAlg algoritmo(std::vector<Ponto> poligono) {
     Reta menor_reta {};
     double menor_distancia { std::numeric_limits<double>::max() };
     // agora para cada ponto, encontrar o ponto/linha oposto
-    double metade = (std::numbers::pi * (n - 2)) / 2;
+    double metade = (3.14159265358979323846 * (n - 2)) / 2;
     for (std::size_t i = 0; i < n; ++i) {
         bool debug = false;
         if (i == 0) debug = true;
@@ -371,7 +372,7 @@ RetornoAlg algoritmo(std::vector<Ponto> poligono) {
         }
     }
 
-    return RetornoAlg {menor_ponto, menor_reta, menor_distancia};
+    return RetornoAlg {menor_ponto, menor_reta, menor_distancia, {}};
 }
 
 double area_poligono(std::vector<Ponto> poligono);
@@ -407,9 +408,16 @@ std::tuple<double,double> intersecao(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
     double y4_y3 = p4[1] - p3[1];
     double y3_y1 = p3[1] - p1[1];
     double y2_y1 = p2[1] - p1[1];
-    double det = x4_x3 * y3_y1 - x2_x1 * y4_y3;
+    double det = x4_x3 * y2_y1 - x2_x1 * y4_y3;
     double s = (x4_x3 * y3_y1 - x3_x1 * y4_y3) / det;
     double t = (x2_x1 * y3_y1 - x3_x1 * y2_y1) / det;
+    // if (std::abs(p1[0]) < 0.1 && std::abs(p1[1]) < 0.1) {
+    //     std::cout << p1[0] << ' ' << p1[1] << std::endl;
+    //     std::cout << p2[0] << ' ' << p2[1] << std::endl;
+    //     std::cout << p3[0] << ' ' << p3[1] << std::endl;
+    //     std::cout << p4[0] << ' ' << p4[1] << std::endl;
+    //     std::cout << s << ' ' << t << std::endl;
+    // }
     return std::make_tuple(s, t);
 }
 
@@ -421,16 +429,39 @@ enum class Intersecao {
 
 Intersecao intersecao_semireta_segmento(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
 
+// Intersecao intersecao_semireta_segmento(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
+//     if (std::abs(p1[0]) < 0.1 && std::abs(p1[1]) < 0.1) {
+//         std::cout << p1[0] << ' ' << p1[1] << std::endl;
+//         std::cout << p2[0] << ' ' << p2[1] << std::endl;
+//         std::cout << p3[0] << ' ' << p3[1] << std::endl;
+//         std::cout << p4[0] << ' ' << p4[1] << std::endl;
+//         std::cout << area_orientada(p1, p2, p3) << ' ' << area_orientada(p1, p2, p4) << std::endl;
+//     }
+//     if (area_orientada(p1, p2, p3) == 0. || area_orientada(p1, p2, p4) == 0.) {
+//         return Intersecao::IMPROPRIA;
+//     }
+//     if (left(p1, p2, p3) != left(p1, p2, p4)) {
+//         return Intersecao::PROPRIA;
+//     }
+//     return Intersecao::NAO;
+// }
 // checa se há interseção entre a semireta p1p2 e o segmento p3p4
 Intersecao intersecao_semireta_segmento(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
     auto [s, t] = intersecao(p1, p2, p3, p4);
-    if (t > 0 && t < 1) {
+    if (s > 0 && t > 0 && t < 1) {
         return Intersecao::PROPRIA;
-    } else if (t >= 0 && t <= 1) {
+    } else if (s >= 0 && t >= 0 && t <= 1) {
         return Intersecao::IMPROPRIA;
     } else {
         return Intersecao::NAO;
     }
+}
+
+Ponto ponto_intersecao(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
+
+Ponto ponto_intersecao(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
+    auto [s, t] = intersecao(p1, p2, p3, p4);
+    return {p3[0] * (1. - t) + p4[0] * t, p3[1] * (1. - t) + p4[1] * t};
 }
 
 Cor point_in_polygon(Ponto ponto, std::vector<Ponto> poligono);
@@ -438,8 +469,9 @@ Cor point_in_polygon(Ponto ponto, std::vector<Ponto> poligono);
 Cor point_in_polygon(Ponto ponto, std::vector<Ponto> poligono) {
     Ponto auxiliar {ponto[0] + 1.0, ponto[1]};
     std::size_t n = poligono.size();
+    poligono.push_back(poligono[0]);
     std::size_t count = 0;
-    for (std::size_t i = 0; i < n - 1; ++i) {
+    for (std::size_t i = 0; i < n; ++i) {
         if (poligono[i][0] < ponto[0] && poligono[i+1][0] < ponto[0]) {
             continue;
         }
@@ -454,7 +486,7 @@ Cor point_in_polygon(Ponto ponto, std::vector<Ponto> poligono) {
             if (poligono[i+1][1] > ponto[1]) ++count;
         }
     }
-    std::cout << count << std::endl;
+    // std::cout << count << std::endl;
     if (count % 2 == 1) {
         // ímpar => dentro
         return Cor::DENTRO;
@@ -470,10 +502,33 @@ struct State {
     bool should_recalculate_convex_hull;
     bool should_recalculate_area;
     bool should_recalculate_point_in_polygon;
+    bool passo_a_passo_em_andamento;
+    bool proximo_passo;
+    bool passo_a_passo_acabou_de_acabar;
+    bool mostrar_resultado_passo_a_passo;
+    bool mostrando_resultado_passo_a_passo;
+    bool comecar_passo_a_passo;
 };
 
 void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
     State& estado = *(static_cast<State*> (glfwGetWindowUserPointer(window)));
+    if (estado.passo_a_passo_em_andamento || estado.passo_a_passo_acabou_de_acabar || estado.mostrando_resultado_passo_a_passo) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
+            if (!estado.passo_a_passo_em_andamento) {
+                if (estado.passo_a_passo_acabou_de_acabar) {
+                    estado.mostrar_resultado_passo_a_passo = true;
+                    estado.passo_a_passo_acabou_de_acabar = false;
+                } else if (estado.mostrando_resultado_passo_a_passo) {
+                    estado.mostrar_resultado_passo_a_passo = false;
+                } else {
+                    std::cout << "isso aqui nunca roda" << std::endl;
+                }
+            } else {
+                estado.proximo_passo = true;
+            }
+        }
+        return;
+    }
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
         if (!mods) {
             double xpos {};
@@ -495,6 +550,8 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
             double x {xpos / static_cast<double> (width) * 2. - 1.};
             double y {1. - ypos / static_cast<double> (height) * 2.};
             estado.outros.push_back({{x, y}, Cor::DESCONHECIDO});
+        } else if (mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
+            estado.comecar_passo_a_passo = true;
         }
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
         if (!mods) {
@@ -521,43 +578,265 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     } else if (estado.pointSize < 2.0f) {
         estado.pointSize = 2.0f;
     }
+    glLineWidth(std::max(estado.pointSize / 2.0f, 1.0f));
+}
+
+enum class Etapa {
+    ETAPA_1,
+    ETAPA_2,
+};
+
+struct PassoAPasso {
+    Etapa etapa_do_passo_executado;
+    Reta desenhar_essa;
+    bool desenhar_a_outra;
+    Reta tambem_desenhar_essa;
+    Ponto colorir_esse;
+    Ponto esse_tambem;
+    bool acabou;
+    RetornoAlg resultado_ate_agora;
+};
+
+PassoAPasso algoritmo_v1_passo_a_passo(std::vector<Ponto> fecho);
+
+// recebe o fecho de início já
+PassoAPasso algoritmo_v1_passo_a_passo(std::vector<Ponto> fecho) {
+    
+    // essa parte toda precisa -- ou só é no momento -- recalculada todo passo
+
+    // n é o número de pontos no fecho convexo
+    std::size_t n = fecho.size();
+    std::vector<double> angulos(n, 0.);
+
+    // adiciona manualmente primeiro e último ângulo
+    angulos[0] = angulo_interno(fecho[0], fecho[n-1], fecho[1]);
+    angulos[n-1] = angulo_interno(fecho[n-1], fecho[n-2], fecho[0]);
+
+    for (std::size_t i = 1; i < n-1; ++i) {
+        angulos[i] = angulo_interno(fecho[i], fecho[i-1], fecho[i+1]);
+    }
+    std::vector<double> angulos_acumulados(n+1, 0.);
+    for (std::size_t i = 1; i <= n; ++i) {
+        angulos_acumulados[i] = angulos_acumulados[i-1] + angulos[i-1];
+    }
+
+    // guarda o passo atual; é resetado quando uma execução se completa
+    static std::size_t passo = 0;
+    // outras informações necessárias
+    static std::size_t ponto_atual = 0;
+    static std::size_t l_atual = 0;
+    static std::size_t r_atual = n;
+    static bool encontrado = false;
+    static std::size_t indice_encontrado = 0;
+
+    double metade = (3.14159265358979323846 * (n - 2)) / 2;
+
+    std::size_t i = ponto_atual;
+    std::size_t m = (l_atual + r_atual) / 2;
+    // corajosamente vou supor que r_atual nunca será menor que l_atual
+    if (!encontrado && l_atual <= r_atual) {
+        std::size_t atual = i;
+        std::size_t meio = (i+m >= n) ? (i+m-n) : (i+m);
+        std::size_t prox = (i+m+1 >= n) ? (i+m+1-n) : (i+m+1);
+        double phi_meio_atual = 0.;
+        if (meio > atual) {
+            phi_meio_atual = angulos_acumulados[meio] - angulos_acumulados[atual+1];
+        } else {
+            // meio <= atual
+            phi_meio_atual = angulos_acumulados[n] + angulos_acumulados[meio] - angulos_acumulados[atual+1];
+        }
+        double phi_prox_atual = phi_meio_atual + angulos[meio] + angulos[atual] / 2.;
+        if (phi_prox_atual >= metade) {
+            if (phi_meio_atual < metade) {
+                // encontrado
+                indice_encontrado = meio;
+                encontrado = true;
+            } else {
+                r_atual = m - 1;
+            }
+        } else {
+            l_atual = m + 1;
+        }
+    }
+    if (!encontrado) {
+        // retorna, pois esse passo acabou sem encontrar o meio
+        
+        //atualiza coisas
+        ++passo;
+
+        return {Etapa::ETAPA_1, {fecho[i], fecho[m]}, false, {}, fecho[i], fecho[m], false, {}};
+    }
+
+    // começo da etapa 2
+
+    // segmentos
+    std::size_t indice_encontrado_prox = (indice_encontrado + 1 >= n) ? (indice_encontrado + 1 - n) : (indice_encontrado + 1);
+    std::size_t indice_encontrado_prev = (indice_encontrado == 0) ? (n - 1) : (indice_encontrado - 1);
+    std::size_t indice_prox = (i + 1 >= n) ? (i + 1 - n) : (i + 1);
+    std::size_t indice_prev = (i == 0) ? (n - 1) : (i - 1);
+    Reta op1 {fecho[indice_encontrado], fecho[indice_encontrado_prox]};
+    Reta op2 {fecho[indice_encontrado], fecho[indice_encontrado_prev]};
+    Reta sg1 {fecho[i], fecho[indice_prox]};
+    Reta sg2 {fecho[i], fecho[indice_prev]};
+    
+    // primeira bissetriz
+    double dx = fecho[indice_prox][0] - fecho[i][0];
+    double dy = fecho[indice_prox][1] - fecho[i][1];
+    double rotacao = angulos[i] / 2.;
+    double new_dx = dx * std::cos(rotacao) - dy * std::sin(rotacao);
+    double new_dy = dx * std::sin(rotacao) + dy * std::cos(rotacao);
+    Ponto p_bissetriz {fecho[i][0] + new_dx, fecho[i][1] + new_dy};
+
+    // segunda bissetriz
+    double dx_a = fecho[indice_encontrado_prox][0] - fecho[indice_encontrado][0];
+    double dy_a = fecho[indice_encontrado_prox][1] - fecho[indice_encontrado][1];
+    double rotacao_a = angulos[indice_encontrado] / 2.;
+    double new_dx_a = dx_a * std::cos(rotacao_a) - dy_a * std::sin(rotacao_a);
+    double new_dy_a = dx_a * std::sin(rotacao_a) + dy_a * std::cos(rotacao_a);
+    Ponto p_a_bissetriz {fecho[indice_encontrado][0] + new_dx_a, fecho[indice_encontrado][1] + new_dy_a};
+
+    Ponto p = fecho[i];
+    Ponto p_oposto = fecho[indice_encontrado];
+    // Ponto prox_oposto = fecho[indice_encontrado_prox];
+    // Ponto prev_oposto = fecho[indice_encontrado_prev];
+    double distancia {};
+    Reta encontrada {};
+    Ponto intersecao_encontrada {};
+    if (intersecao_semireta_segmento(p, p_bissetriz, op1[0], op1[1]) != Intersecao::NAO) {
+        distancia = dist(p, op1);
+        encontrada = op1;
+        intersecao_encontrada = ponto_intersecao(p, p_bissetriz, op1[0], op1[1]);
+    } else if (intersecao_semireta_segmento(p, p_bissetriz, op2[0], op2[1]) != Intersecao::NAO) {
+        distancia = dist(p, op2);
+        encontrada = op2;
+        intersecao_encontrada = ponto_intersecao(p, p_bissetriz, op2[0], op2[1]);
+    } else {
+        std::cout << "estranho" << std::endl;
+        distancia = std::numeric_limits<double>::max();
+        intersecao_encontrada = p_bissetriz;
+    }
+
+    double outra_distancia {};
+    Ponto outra_intersecao_encontrada {};
+    if (intersecao_semireta_segmento(p_oposto, p_a_bissetriz, sg1[0], sg1[1]) != Intersecao::NAO) {
+        outra_distancia = dist(p_oposto, sg1);
+        outra_intersecao_encontrada = ponto_intersecao(p_oposto, p_a_bissetriz, sg1[0], sg1[1]);
+    } else if (intersecao_semireta_segmento(p_oposto, p_a_bissetriz, sg2[0], sg2[1]) != Intersecao::NAO) {
+        outra_distancia = dist(p_oposto, sg2);
+        outra_intersecao_encontrada = ponto_intersecao(p_oposto, p_a_bissetriz, sg2[0], sg2[1]);
+    } else {
+        std::cout << "estranho2" << std::endl;
+        outra_distancia = distancia + 1.;
+        outra_intersecao_encontrada = p_a_bissetriz;
+        // std::cout << p_oposto << std::endl;
+        // dx_a
+        // dy_a
+        // rotacao_a
+        // new_dx_a
+        // new_dy_a
+        // p_a_bissetriz
+    }
+
+    static double menor_distancia { std::numeric_limits<double>::max() };
+    static Ponto menor_ponto {};
+    static Reta menor_segmento {};
+    static Ponto menor_intersecao {};
+    if (outra_distancia > distancia) {
+        // a coisa aconteceu (essa distância não é a procurada)
+    } else if (distancia < menor_distancia) {
+        menor_distancia = distancia;
+        menor_ponto = p;
+        menor_segmento = encontrada;
+        menor_intersecao = intersecao_encontrada;
+    }
+    // de qualquer forma, aqui acaba outro passo, então temos que retornar
+    // e fazer as atualizações necessárias
+    ++ponto_atual;
+    if (ponto_atual >= n) {
+        // esse foi o último ponto
+        // precisamos resetar tudo e retornar que acabou
+
+        // antes criar o objeto de retorno
+        PassoAPasso retorno {
+            Etapa::ETAPA_2,
+            {p, intersecao_encontrada},
+            true,
+            {p_oposto, outra_intersecao_encontrada},
+            p,
+            p_oposto,
+            true,
+            {menor_ponto, menor_segmento, menor_distancia, menor_intersecao}
+        };
+        passo = 0;
+        ponto_atual = 0;
+        l_atual = 0;
+        r_atual = n;
+        encontrado = false;
+        indice_encontrado = 0;
+        
+        menor_distancia = std::numeric_limits<double>::max();
+        menor_ponto = Ponto{};
+        menor_segmento = Reta{};
+        menor_intersecao = Ponto{};
+
+        return retorno;
+    } else {
+        // o algoritmo continuará
+        ++passo;
+        // algumas partes são resetadas
+        l_atual = 0;
+        r_atual = n;
+        encontrado = false;
+        indice_encontrado = 0;
+        return {
+            Etapa::ETAPA_2,
+            {p, intersecao_encontrada},
+            true,
+            {p_oposto, outra_intersecao_encontrada},
+            p,
+            p_oposto,
+            false,
+            {menor_ponto, menor_segmento, menor_distancia, menor_intersecao}
+        };
+    }
 }
 
 int main() {
 
-    // std::vector<Ponto> pontos = {{15, 15}, {8, -9}, {-2, 3}, {-13, -5}, {-17, 20}};
-    std::vector<Ponto> pontos = {{15, 15}, {8, -9}, {-2, 3}, {-13, -5}, {-17, 20}, {-20, -10}, {-10, 10}, {25, -10}, {-10, -15}, {10, -20}};
-    // std::vector<Ponto> pontos = {{2, 3}, {2, -3}, {-2, 3}, {-2, -3}};
-    for (std::size_t i = 0; i < pontos.size(); ++i) {
-        std::cout << pontos[i][0] << ' ' << pontos[i][1] << std::endl;
+    {
+        // std::vector<Ponto> pontos = {{15, 15}, {8, -9}, {-2, 3}, {-13, -5}, {-17, 20}};
+        std::vector<Ponto> pontos = {{15, 15}, {8, -9}, {-2, 3}, {-13, -5}, {-17, 20}, {-20, -10}, {-10, 10}, {25, -10}, {-10, -15}, {10, -20}};
+        // std::vector<Ponto> pontos = {{2, 3}, {2, -3}, {-2, 3}, {-2, -3}};
+        for (std::size_t i = 0; i < pontos.size(); ++i) {
+            std::cout << pontos[i][0] << ' ' << pontos[i][1] << std::endl;
+        }
+        std::cout << "Começando calculo do fecho convexo:" << std::endl;
+        std::vector<Ponto> fecho = fecho_convexo(pontos);
+
+        for (std::size_t i = 0; i < fecho.size(); ++i) {
+            std::cout << fecho[i][0] << ' ' << fecho[i][1] << std::endl;
+        }
+        
+        std::cout << "calculo da menor distancia:" << std::endl;
+
+        RetornoAlg coiso = algoritmo(pontos);
+
+        std::cout << "ponto: " << coiso.p[0] << ' ' << coiso.p[1] << std::endl;
+        std::cout << "reta: " << coiso.r[0][0] << ' ' << coiso.r[0][1] << std::endl;
+        std::cout << "    : " << coiso.r[1][0] << ' ' << coiso.r[1][1] << std::endl;
+        std::cout << "distancia: " << coiso.distancia << std::endl;
     }
-    std::cout << "Começando calculo do fecho convexo:" << std::endl;
-    std::vector<Ponto> fecho = fecho_convexo(pontos);
-
-    for (std::size_t i = 0; i < fecho.size(); ++i) {
-        std::cout << fecho[i][0] << ' ' << fecho[i][1] << std::endl;
-    }
-    
-    std::cout << "calculo da menor distancia:" << std::endl;
-
-    RetornoAlg coiso = algoritmo(pontos);
-
-    std::cout << "ponto: " << coiso.p[0] << ' ' << coiso.p[1] << std::endl;
-    std::cout << "reta: " << coiso.r[0][0] << ' ' << coiso.r[0][1] << std::endl;
-    std::cout << "    : " << coiso.r[1][0] << ' ' << coiso.r[1][1] << std::endl;
-    std::cout << "distancia: " << coiso.distancia << std::endl;
 
     //return 0;
 
     GLFW::Session session {};
 
     // tamanho padrão de tela: 800x600
-    GLFW::Window::options opts {
-        .version_major {3},
-        .version_minor {3},
-        .decorated {1},
-        .samples {128},
-    };
+    GLFW::Window::options opts;
+    opts.version_major = 3;
+    opts.version_minor = 3;
+    opts.decorated = 1;
+    opts.samples = 128;
     GLFW::Window win {session, "Geometria", opts};
 
     GLFWwindow* window = win.justGimmeTheWindow();
@@ -584,12 +863,14 @@ int main() {
     //glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
     
+    glEnable(GL_LINE_SMOOTH);
     glEnable(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     Shader program {"shaders/vertex.glsl", "shaders/fragment.glsl"};
     Shader point_program {"shaders/point_vertex.glsl", "shaders/point_fragment.glsl"};
+    Shader color_line_program {"shaders/color_line_vertex.glsl", "shaders/color_line_fragment.glsl"};
     /*
     BufferLayout layout;
     layout.push<float>(3);
@@ -666,10 +947,31 @@ int main() {
     glEnableVertexAttribArray(0);
     glBindVertexArray(0);
     
+    /////////////////////////////
+    unsigned passo_vbo {};
+    glGenBuffers(1, &passo_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+    glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    
+    unsigned passo_vao {};
+    glGenVertexArrays(1, &passo_vao);
+    glBindVertexArray(passo_vao);
+    
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+    glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
+    
     std::vector<Ponto> fecho_calculado {};
     std::size_t last_size = 0;
     std::size_t outros_control = 0;
     estado.pointSize = 20.0f;
+    glLineWidth(estado.pointSize / 2.0f);
+
+    RetornoAlg resultado_ate_agora {};
+    bool resultado_arrumado_para_renderizacao = false;
+    std::size_t passo_quantos {};
     while (!glfwWindowShouldClose(window)) {
         // win.processInput();
         // processar entradas??
@@ -711,7 +1013,7 @@ int main() {
             outros_control = estado.outros.size();
         }
         
-        if (estado.should_recalculate_convex_hull) {
+        if (estado.should_recalculate_convex_hull || estado.comecar_passo_a_passo) {
             fecho_calculado = fecho_convexo(estado.cliques);
             std::vector<float> ps {};
             ps.reserve(fecho_calculado.size() * 2 * sizeof (float));
@@ -790,30 +1092,124 @@ int main() {
         glBindVertexArray(outros_vao);
         glDrawArrays(GL_POINTS, 0, outros_control);
 
-        // program.use();
-        // mixing = std::sin(static_cast<float>(glfwGetTime()) * 1.8 + 0.3);
-        // program.setUniform("mixing", mixing);
-        // // program.setFloat("mixing", mixing);
-        // red = std::sin(static_cast<float>(glfwGetTime()) * 0.4f) * 0.7f + 0.3f;
-        // program.setUniform("otherColorRed", red);
 
-        // glm::mat4 view { glm::mat4(1.0f) };
-        // // view = glm::lookAt(
-        // //     win.cam.cameraPos,
-        // //     win.cam.cameraPos + win.cam.cameraFront,
-        // //     win.cam.cameraUp);
-        // // tempor´rrio:::
-        // view = glm::lookAt(glm::vec3{}, glm::vec3{}, glm::vec3{});
+        if (estado.comecar_passo_a_passo) {
+            estado.passo_a_passo_em_andamento = true;
+            estado.proximo_passo = true;
+            estado.comecar_passo_a_passo = false;
+            resultado_ate_agora = {};
+        }
+        if (estado.proximo_passo) {
+            estado.proximo_passo = false;
+            auto res = algoritmo_v1_passo_a_passo(fecho_calculado);
+            if (res.etapa_do_passo_executado == Etapa::ETAPA_2) {
+                resultado_ate_agora = res.resultado_ate_agora;
+            }
+            if (res.acabou) {
+                estado.passo_a_passo_em_andamento = false;
+                estado.passo_a_passo_acabou_de_acabar = true;
+                resultado_arrumado_para_renderizacao = false;
+            }
+            std::array<Ponto, 6> pontos {};
+            std::size_t num = 4;
+            pontos[0] = res.colorir_esse;
+            pontos[1] = res.esse_tambem;
+            pontos[2] = res.desenhar_essa[0];
+            pontos[3] = res.desenhar_essa[1];
+            if (res.desenhar_a_outra) {
+                num += 2;
+                pontos[4] = res.tambem_desenhar_essa[0];
+                pontos[5] = res.tambem_desenhar_essa[1];
+            }
 
-        // program.setViewTransform(glm::value_ptr(view));
+            std::array<std::array<float, 3>, 6> cores {};
+            if (res.etapa_do_passo_executado == Etapa::ETAPA_1) {
+                cores[0] = {};
+                cores[1] = {};
+                cores[2] = {};
+                cores[3] = {};
+                if (res.desenhar_a_outra) {
+                    cores[4] = {};
+                    cores[5] = {};
+                }
+            } else {
+                cores[0] = {};
+                cores[1] = {};
+                cores[2] = {};
+                cores[3] = {};
+                if (res.desenhar_a_outra) {
+                    cores[4] = {};
+                    cores[5] = {};
+                }
+            }
+            std::vector<float> ps {};
+            ps.reserve(num * 5 * sizeof (float));
+            for (std::size_t i = 0; i < num; ++i) {
+                ps.push_back(pontos[i][0]);
+                ps.push_back(pontos[i][1]);
+                if (res.etapa_do_passo_executado == Etapa::ETAPA_1) {
+                    ps.push_back(0.149f); // 38
+                    ps.push_back(0.149f); // 38
+                    ps.push_back(0.788f); // 201
+                } else {
+                    ps.push_back(0.149f); // 38
+                    ps.push_back(0.682f); // 174
+                    ps.push_back(0.788f); // 201
+                }
+            }
+            glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
 
-        // glm::mat4 projection { glm::mat4(1.0f) };
-        // projection = glm::perspective(
-        //     glm::radians(45.f),
-        //     static_cast<float>(800) / static_cast<float>(600),
-        //     0.1f,
-        //     100.0f);
-        // program.setProjectionTransform(glm::value_ptr(projection));
+            glBindVertexArray(passo_vao);
+            point_program.use();
+            glDrawArrays(GL_POINTS, 0, 2);
+            color_line_program.use();
+            passo_quantos = num - 2;
+            glDrawArrays(GL_LINES, 2, passo_quantos);
+        }
+        if (estado.passo_a_passo_em_andamento || estado.passo_a_passo_acabou_de_acabar) {
+            glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+            glBindVertexArray(passo_vao);
+            point_program.use();
+            glDrawArrays(GL_POINTS, 0, 2);
+            color_line_program.use();
+            glDrawArrays(GL_LINES, 2, passo_quantos);
+        }
+        if (estado.mostrar_resultado_passo_a_passo) {
+            estado.mostrando_resultado_passo_a_passo = true;
+            if (!resultado_arrumado_para_renderizacao) {
+                std::array<Ponto, 4> pontos {};
+                std::size_t num = 4;
+                pontos[0] = resultado_ate_agora.p;
+                pontos[1] = resultado_ate_agora.intersecao_encontrada;
+                pontos[2] = resultado_ate_agora.r[0];
+                pontos[3] = resultado_ate_agora.r[1];
+                std::vector<float> ps {};
+                ps.reserve(num * 5 * sizeof (float));
+                for (std::size_t i = 0; i < num; ++i) {
+                    ps.push_back(pontos[i][0]);
+                    ps.push_back(pontos[i][1]);
+                    ps.push_back(0.149f); // 38
+                    ps.push_back(0.788f); // 201
+                    ps.push_back(0.682f); // 174
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
+
+                resultado_arrumado_para_renderizacao = true;
+            }
+
+            glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+            glBindVertexArray(passo_vao);
+            point_program.use();
+            glDrawArrays(GL_POINTS, 0, 4);
+            color_line_program.use();
+            glDrawArrays(GL_LINES, 0, 4);
+        } else {
+            estado.mostrando_resultado_passo_a_passo = false;
+        }
+        
+        //////////////////////////////////////////
 
         glfwSwapBuffers(window);
         session.pollEvents();
