@@ -16,7 +16,7 @@ else ifeq ($(tool),LLVM)
 endif
 proj = geometria_opengl
 NULLSTR =
-CXXFLAGS += -std=c++2a -pedantic -pedantic-errors -Wall -Wextra -g -ggdb
+CXXFLAGS += -std=c++17 -pedantic -pedantic-errors -Wall -Wextra -g -ggdb
 CXXFLAGS += -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization
 CXXFLAGS += -Wformat=2 -Wmissing-declarations
 CXXFLAGS += -Wmissing-include-dirs -Wold-style-cast
@@ -37,7 +37,7 @@ obj := $(obj:%=$(OBJ_DIR)/%)
 DEP_DIR = deps
 dep := $(dep:%=$(DEP_DIR)/%)
 
-END = ** everything seems up-to-date
+END = '** everything seems up-to-date'
 
 build: greetings $(EXEC) end
 
@@ -50,7 +50,7 @@ $(EXEC): $(obj)
 	@echo  -- Linking into $@
 	@$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 	@echo  ++ No errors
-	$(eval END = ** All operations done)
+	$(eval END = '** All operations done')
 
 $(OBJ_DIR)/%.cpp$(obj_ext): %.cpp
 	@echo  -- Compiling $< with $(firstword $(CXX))
@@ -62,7 +62,7 @@ $(OBJ_DIR)/%.c$(obj_ext): %.c
 
 .PHONY: greetings
 greetings: 
-	@echo  ** In project $(proj)...
+	@echo  '** In project $(proj)...'
 	@mkdir $(OBJ_DIR) 2>nul ||:
 	@mkdir $(DEP_DIR) 2>nul ||:
 

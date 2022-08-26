@@ -11,6 +11,6 @@ void main() {
     //} else if (squared < 0.5) {
       //  fragColor = vec4(0.5, 0.2, 0.3, 0.0);
     } else {
-        fragColor = mix(vec4(theColor.rgb, 0.0), vec4(theColor.rgb, 1.0), smoothstep(1.0, 0.85, squared));
+        fragColor = mix(vec4(theColor.rgb, 0.0), vec4(theColor.rgb, 1.0), smoothstep(1.0, 0.65, squared));
     }
 }
