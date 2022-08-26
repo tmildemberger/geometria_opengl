@@ -1,6 +1,6 @@
 src_exts = .c .cpp
-obj_ext = .obj
-exe_ext = .exe
+obj_ext = .o
+exe_ext =
 tool ?= MinGW
 $(foreach ext,$(src_exts),$(eval src += $(wildcard *$(ext))))
 obj := $(src:%=%$(obj_ext))
@@ -21,12 +21,14 @@ CXXFLAGS += -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization
 CXXFLAGS += -Wformat=2 -Wmissing-declarations
 CXXFLAGS += -Wmissing-include-dirs -Wold-style-cast
 CXXFLAGS += -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion
-CXXFLAGS += -Wsign-promo -Wstrict-overflow=5 -Wswitch-default
+CXXFLAGS += -Wsign-promo -Wstrict-overflow=2 -Wswitch-default
 CXXFLAGS += -Wundef -Werror -Wno-unused-parameter -Wno-unused-variable
 
-INCFLAGS += -I"D:/GLFW/include" -I"D:/glad/include" -I"D:/glm-0.9.9.3/glm"
-LDFLAGS += -L"D:/GLFW/lib"
-LDLIBS += -lglfw3 -lgdi32 -lopengl32
+#INCFLAGS += -I"D:/GLFW/include" -I"D:/glad/include" -I"D:/glm-0.9.9.3/glm"
+#LDFLAGS += -L"D:/GLFW/lib"
+#LDLIBS += -lglfw3 -lgdi32 -lopengl32
+INCFLAGS += -I"/home/thiago/Downloads/glad/include"
+LDLIBS += -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
 
 EXEC = $(proj)$(exe_ext)
 OBJ_DIR = obj

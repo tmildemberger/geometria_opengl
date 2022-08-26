@@ -75,7 +75,29 @@
         "numeric": "cpp",
         "random": "cpp",
         "ranges": "cpp",
-        "numbers": "cpp"
+        "numbers": "cpp",
+        "iomanip": "cpp",
+        "csignal": "cpp",
+        "any": "cpp",
+        "hash_map": "cpp",
+        "strstream": "cpp",
+        "bitset": "cpp",
+        "cfenv": "cpp",
+        "charconv": "cpp",
+        "codecvt": "cpp",
+        "complex": "cpp",
+        "forward_list": "cpp",
+        "map": "cpp",
+        "set": "cpp",
+        "unordered_set": "cpp",
+        "source_location": "cpp",
+        "semaphore": "cpp",
+        "shared_mutex": "cpp",
+        "span": "cpp",
+        "stop_token": "cpp",
+        "typeindex": "cpp",
+        "valarray": "cpp",
+        "variant": "cpp"
     },
-    "C_Cpp.default.compilerPath": "D:\\build2\\build2\\bin\\g++.exe"
+    //"C_Cpp.default.compilerPath": "D:\\build2\\build2\\bin\\g++.exe"
 }

@@ -1,2 +1,2 @@
-obj/glad.c.obj: glad.c D:/glad/include\glad/glad.h \
-  D:/glad/include\KHR/khrplatform.h
+obj/glad.c.o: glad.c /home/thiago/Downloads/glad/include/glad/glad.h \
+ /home/thiago/Downloads/glad/include/KHR/khrplatform.h

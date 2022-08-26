@@ -83,11 +83,11 @@ void Shader::use() const {
 //         value);
 // }
 
-// void Shader::setFloat(const std::string& name, const float value) const {
-//     glProgramUniform1f(this->ID, glGetUniformLocation(this->ID, name.c_str()),
-//         value);
-// }
-
+void Shader::setFloat(const std::string& name, const float value) const {
+    glUseProgram(this->ID);
+    glUniform1f(glGetUniformLocation(this->ID, name.c_str()), value);
+}
+/*
 void Shader::setTransform(float* transformMatrix) const {
     glProgramUniformMatrix4fv(this->ID, glGetUniformLocation(this->ID,
         "transform"), 1, GL_FALSE, transformMatrix);
@@ -107,3 +107,4 @@ void Shader::setProjectionTransform(float* transformMatrix) const {
     glProgramUniformMatrix4fv(this->ID, glGetUniformLocation(this->ID,
         "projection"), 1, GL_FALSE, transformMatrix);
 }
+*/

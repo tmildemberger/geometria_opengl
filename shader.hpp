@@ -22,35 +22,31 @@ public:
 
     // void setBool(const std::string& name, const bool value) const;
     // void setInt(const std::string& name, const int value) const;
-    // void setFloat(const std::string& name, const float value) const;
+    void setFloat(const std::string& name, const float value) const;
 
-    void setTransform(float* transformMatrix) const;
+    /*void setTransform(float* transformMatrix) const;
     void setModelTransform(float* transformMatrix) const;
     void setViewTransform(float* transformMatrix) const;
-    void setProjectionTransform(float* transformMatrix) const;
-
+    void setProjectionTransform(float* transformMatrix) const;*/
+    /*
     template <typename ... Ts>
     void setUniform(const std::string& name, const Ts ... objs) const {
-        overload(glProgramUniform1d,
-                 glProgramUniform1f,
-                 glProgramUniform1i,
-                 glProgramUniform1ui,
-                 glProgramUniform2d,
-                 glProgramUniform2f,
-                 glProgramUniform2i,
-                 glProgramUniform2ui,
-                 glProgramUniform3d,
-                 glProgramUniform3f,
-                 glProgramUniform3i,
-                 glProgramUniform3ui,
-                 glProgramUniform4d,
-                 glProgramUniform4f,
-                 glProgramUniform4i,
-                 glProgramUniform4ui) 
-                    (this->ID,
-                     glGetUniformLocation(this->ID, name.c_str()),
+        glUseProgram(this->ID);
+        overload(glUniform1f,
+                 glUniform1i,
+                 glUniform1ui,
+                 glUniform2f,
+                 glUniform2i,
+                 glUniform2ui,
+                 glUniform3f,
+                 glUniform3i,
+                 glUniform3ui,
+                 glUniform4f,
+                 glUniform4i,
+                 glUniform4ui) 
+                    (glGetUniformLocation(this->ID, name.c_str()),
                      objs...);
-    }
+    }*/
 };
 
 // not gonna do a new exception class because there will be no

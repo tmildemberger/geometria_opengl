@@ -1,1 +1,1 @@
-obj/opengl_playground.cpp.obj: opengl_playground.cpp
+obj/opengl_playground.cpp.o: opengl_playground.cpp

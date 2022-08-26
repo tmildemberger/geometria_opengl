@@ -1,0 +1,3 @@
+obj/renderer.cpp.o: renderer.cpp renderer.hpp \
+ /home/thiago/Downloads/glad/include/glad/glad.h \
+ /home/thiago/Downloads/glad/include/KHR/khrplatform.h

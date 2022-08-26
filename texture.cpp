@@ -2,7 +2,7 @@
 #include "stb_img.hpp"
 
 Texture::Texture(std::string filename, GLenum format) {
-    STB_IMG::Image img {filename};
+    STB_IMG::Image img {filename};/*
     glCreateTextures(GL_TEXTURE_2D, 1, &this->textureID);
 
     glTextureParameteri(this->textureID, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -14,9 +14,9 @@ Texture::Texture(std::string filename, GLenum format) {
     glTextureSubImage2D(this->textureID, 0, 0, 0, img.width, img.height,
         format, GL_UNSIGNED_BYTE, img.data);
 
-    glGenerateTextureMipmap(this->textureID);
+    glGenerateTextureMipmap(this->textureID);*/
 }
 
 void Texture::useAsUnit(unsigned int unit) const {
-    glBindTextureUnit(unit, this->textureID);
+    /*glBindTextureUnit(unit, this->textureID);*/
 }

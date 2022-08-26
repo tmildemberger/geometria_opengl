@@ -50,18 +50,18 @@ public:
     template <typename T, std::size_t N>
     Drawing(std::array<T, N> attributes, BufferLayout layout) : 
         vertices { N / layout.number } {
-        glCreateBuffers(1, &this->VBO);
+        /*glCreateBuffers(1, &this->VBO);
         glNamedBufferStorage(this->VBO, N * sizeof (T),
                              attributes.data(), GL_DYNAMIC_STORAGE_BIT);
         
         glCreateVertexArrays(1, &this->VAO);
-        glVertexArrayVertexBuffer(VAO, 0, VBO, 0, layout.stride);
+        glVertexArrayVertexBuffer(VAO, 0, VBO, 0, layout.stride);*/
 
-        for (const auto& attr : layout.attributes) {
+        for (const auto& attr : layout.attributes) {/*
             glEnableVertexArrayAttrib(VAO, attr.index);
             glVertexArrayAttribFormat(VAO,
                 attr.index, attr.size, attr.type, attr.normalized, static_cast<GLuint>(attr.offset));
-            glVertexArrayAttribBinding(VAO, attr.index, 0);
+            glVertexArrayAttribBinding(VAO, attr.index, 0);*/
         }
         sharing = std::make_shared<Sharing>();
         // std::cout << "Drawing created with new sharing\n";
@@ -81,9 +81,9 @@ public:
     const Drawing& operator=(const Drawing& that) const = delete;
 
     ~Drawing() {
-        if (sharing->count == 1) {
+        if (sharing->count == 1) {/*
             glDeleteBuffers(1, &this->VBO);
-            glDeleteVertexArrays(1, &this->VAO);
+            glDeleteVertexArrays(1, &this->VAO);*/
             // std::cout << "they got deleted only one time\n";
         } else {
             --sharing->count;
