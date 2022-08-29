@@ -168,17 +168,25 @@ struct RetornoAlg {
     Ponto intersecao_encontrada;
 };
 
+std::array<double, 2> vetor_reta_ponto(Ponto p, Reta r);
 double dist(Ponto p, Reta r);
 RetornoAlg algoritmo(std::vector<Ponto> poligono);
 
-double dist(Ponto p, Reta r) {
+std::array<double, 2> vetor_reta_ponto(Ponto p, Reta r) {
     double x3_x1 = p[0] - r[0][0];
     double x2_x1 = r[1][0] - r[0][0];
     double y3_y1 = p[1] - r[0][1];
     double y2_y1 = r[1][1] - r[0][1];
     double c = (x2_x1*x3_x1 + y2_y1*y3_y1) / (x2_x1*x2_x1 + y2_y1*y2_y1);
-    double dist_x = x3_x1 - x2_x1*c;
-    double dist_y = y3_y1 - y2_y1*c;
+    // double dist_x = x3_x1 - x2_x1*c;
+    // double dist_y = y3_y1 - y2_y1*c;
+    double dist_x = p[0] - x2_x1*c;
+    double dist_y = p[1] - y2_y1*c;
+    return {dist_x, dist_y};
+}
+
+double dist(Ponto p, Reta r) {
+    auto [dist_x, dist_y] = vetor_reta_ponto(p, r);
     return std::sqrt( dist_x*dist_x + dist_y*dist_y );
 }
 
@@ -633,11 +641,12 @@ PassoAPasso algoritmo_v1_passo_a_passo(std::vector<Ponto> fecho) {
 
     std::size_t i = ponto_atual;
     std::size_t m = (l_atual + r_atual) / 2;
+    std::cout << l_atual << ' ' << r_atual << ' ' << i << ' ' << m << std::endl;
     // corajosamente vou supor que r_atual nunca será menor que l_atual
+    std::size_t atual = i;
+    std::size_t meio = (i+m >= n) ? (i+m-n) : (i+m);
+    std::size_t prox = (i+m+1 >= n) ? (i+m+1-n) : (i+m+1);
     if (!encontrado && l_atual <= r_atual) {
-        std::size_t atual = i;
-        std::size_t meio = (i+m >= n) ? (i+m-n) : (i+m);
-        std::size_t prox = (i+m+1 >= n) ? (i+m+1-n) : (i+m+1);
         double phi_meio_atual = 0.;
         if (meio > atual) {
             phi_meio_atual = angulos_acumulados[meio] - angulos_acumulados[atual+1];
@@ -664,7 +673,7 @@ PassoAPasso algoritmo_v1_passo_a_passo(std::vector<Ponto> fecho) {
         //atualiza coisas
         ++passo;
 
-        return {Etapa::ETAPA_1, {fecho[i], fecho[m]}, false, {}, fecho[i], fecho[m], false, {}};
+        return {Etapa::ETAPA_1, {fecho[i], fecho[meio]}, false, {}, fecho[i], fecho[meio], false, {}};
     }
 
     // começo da etapa 2
@@ -800,6 +809,294 @@ PassoAPasso algoritmo_v1_passo_a_passo(std::vector<Ponto> fecho) {
         };
     }
 }
+
+double produto_vetorial(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
+
+double produto_vetorial(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
+    double v1_x = p2[0] - p1[0];
+    double v1_y = p2[1] - p1[1];
+    double v2_x = p4[0] - p3[0];
+    double v2_y = p4[1] - p3[1];
+    return v1_x * v2_y - v1_y * v2_x;
+}
+
+PassoAPasso algoritmo_guedes_v1_passo_a_passo(std::vector<Ponto> fecho);
+
+// recebe o fecho de início já
+PassoAPasso algoritmo_guedes_v1_passo_a_passo(std::vector<Ponto> fecho) {
+
+    // n é o número de pontos no fecho convexo
+    std::size_t n = fecho.size();
+
+    // guarda o passo atual; é resetado quando uma execução se completa
+    static std::size_t passo = 0;
+    // outras informações necessárias
+    static std::size_t segmento_atual = 0;
+    static std::size_t l_atual = 2;
+    static std::size_t r_atual = n - 1;
+    static bool encontrado = false;
+    static std::size_t indice_encontrado = 0;
+
+    double metade = (3.14159265358979323846 * (n - 2)) / 2;
+
+    std::size_t i = segmento_atual;
+    std::size_t outro = (i + 1 >= n) ? (0) : (i + 1);
+    std::size_t m = (l_atual + r_atual) / 2;
+    // std::cout << l_atual << ' ' << r_atual << ' ' << i << ' ' << m << std::endl;
+    // corajosamente vou supor que r_atual nunca será menor que l_atual
+    std::size_t meio = (i+m >= n) ? (i+m-n) : (i+m);
+    std::size_t prev = (meio == 0) ? (n-1) : (meio-1);
+    std::size_t prox = (meio+1 >= n) ? (meio+1-n) : (meio+1);
+    if (l_atual > r_atual) {
+        encontrado = true;
+        std::cout << "aviso" << std::endl;
+    }
+    // checagem redundante
+    if (!encontrado && l_atual <= r_atual) {
+        double primeiro = produto_vetorial(fecho[i], fecho[outro], fecho[prev], fecho[meio]);
+        double segundo = produto_vetorial(fecho[i], fecho[outro], fecho[meio], fecho[prox]);
+        if (primeiro >= 0. && segundo <= 0.) {
+            indice_encontrado = meio;
+            encontrado = true;
+        } else if (primeiro < 0.) {
+            r_atual = m - 1;
+        } else {
+            l_atual = m + 1;
+        }
+    }
+    if (!encontrado) {
+        // retorna, pois esse passo acabou sem encontrar o meio
+        
+        //atualiza coisas
+        ++passo;
+
+        return {Etapa::ETAPA_1, {fecho[i], fecho[outro]}, false, {}, fecho[i], fecho[meio], false, {}};
+    }
+
+    // começo da etapa 2
+
+    Ponto p = fecho[i];
+    Ponto p_o = fecho[outro];
+    Ponto p_oposto = fecho[indice_encontrado];
+    // Ponto prox_oposto = fecho[indice_encontrado_prox];
+    // Ponto prev_oposto = fecho[indice_encontrado_prev];
+    double x3_x1 = p_oposto[0] - p[0];
+    double x2_x1 = p_o[0] - p[0];
+    double y3_y1 = p_oposto[1] - p[1];
+    double y2_y1 = p_o[1] - p[1];
+    double c = (x2_x1*x3_x1 + y2_y1*y3_y1) / (x2_x1*x2_x1 + y2_y1*y2_y1);
+    // double dist_x = x3_x1 - x2_x1*c;
+    // double dist_y = y3_y1 - y2_y1*c;
+    double i_x = x2_x1*c + p[0];
+    double i_y = y2_y1*c + p[1];
+    // auto diff = vetor_reta_ponto(p_oposto, {p, p_o});
+    // double distancia {dist(p_oposto, {p, p_o})};
+    // Ponto intersecao_encontrada {p_oposto[0] - diff[0], p_oposto[1] - diff[1]};
+    Ponto intersecao_encontrada {i_x, i_y};
+    double distancia {dist(p_oposto, intersecao_encontrada)};
+    Reta encontrada {p, p_o};
+
+    static double menor_distancia { std::numeric_limits<double>::max() };
+    static Ponto menor_ponto {};
+    static Reta menor_segmento {};
+    static Ponto menor_intersecao {};
+    if (distancia < menor_distancia) {
+        menor_distancia = distancia;
+        menor_ponto = p_oposto;
+        menor_segmento = encontrada;
+        menor_intersecao = intersecao_encontrada;
+    }
+    // de qualquer forma, aqui acaba outro passo, então temos que retornar
+    // e fazer as atualizações necessárias
+    ++segmento_atual;
+    if (segmento_atual >= n) {
+        // esse foi o último segmento
+        // precisamos resetar tudo e retornar que acabou
+
+        // antes criar o objeto de retorno
+        PassoAPasso retorno {
+            Etapa::ETAPA_2,
+            {p, p_o},
+            true,
+            {p_oposto, intersecao_encontrada},
+            p,
+            p_oposto,
+            true,
+            {menor_ponto, menor_segmento, menor_distancia, menor_intersecao}
+        };
+        passo = 0;
+        segmento_atual = 0;
+        l_atual = 2;
+        r_atual = n - 1;
+        encontrado = false;
+        indice_encontrado = 0;
+        
+        menor_distancia = std::numeric_limits<double>::max();
+        menor_ponto = Ponto{};
+        menor_segmento = Reta{};
+        menor_intersecao = Ponto{};
+
+        return retorno;
+    } else {
+        // o algoritmo continuará
+        ++passo;
+        // algumas partes são resetadas
+        l_atual = 2;
+        r_atual = n - 1;
+        encontrado = false;
+        indice_encontrado = 0;
+        return {
+            Etapa::ETAPA_2,
+            {p, p_o},
+            true,
+            {p_oposto, intersecao_encontrada},
+            p,
+            p_oposto,
+            false,
+            {menor_ponto, menor_segmento, menor_distancia, menor_intersecao}
+        };
+    }
+}
+
+class AlgoritmoPassoAPasso {
+public:
+    AlgoritmoPassoAPasso(State& arg_estado, const Shader& arg_point_program, const Shader& arg_line_program) :
+        estado {arg_estado},
+        point_program {arg_point_program},
+        line_program {arg_line_program},
+        resultado_ate_agora {},
+        resultado_arrumado_para_renderizacao {false},
+        quantos {0} {
+        
+        glGenBuffers(1, &passo_vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+        glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+        
+        glGenVertexArrays(1, &passo_vao);
+        glBindVertexArray(passo_vao);
+        
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+        glEnableVertexAttribArray(1);
+
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+    void reset() {
+        resultado_ate_agora = {};
+        quantos = 0;
+    }
+    void proximo_passo(const std::vector<Ponto>& fecho) {
+        ultimo_retorno = algoritmo_guedes_v1_passo_a_passo(fecho);
+        if (ultimo_retorno.etapa_do_passo_executado == Etapa::ETAPA_2) {
+            resultado_ate_agora = ultimo_retorno.resultado_ate_agora;
+        }
+        if (ultimo_retorno.acabou) {
+            estado.passo_a_passo_em_andamento = false;
+            estado.passo_a_passo_acabou_de_acabar = true;
+            resultado_arrumado_para_renderizacao = false;
+        }
+    }
+    void arruma_renderizacao() {
+        std::array<Ponto, 6> pontos {};
+        std::size_t num = 4;
+        pontos[0] = ultimo_retorno.colorir_esse;
+        pontos[1] = ultimo_retorno.esse_tambem;
+        pontos[2] = ultimo_retorno.desenhar_essa[0];
+        pontos[3] = ultimo_retorno.desenhar_essa[1];
+        if (ultimo_retorno.desenhar_a_outra) {
+            num += 2;
+            pontos[4] = ultimo_retorno.tambem_desenhar_essa[0];
+            pontos[5] = ultimo_retorno.tambem_desenhar_essa[1];
+        }
+        quantos = num;
+
+        std::array<std::array<float, 3>, 6> cores {};
+        if (ultimo_retorno.etapa_do_passo_executado == Etapa::ETAPA_1) {
+            // usado como base: #26a6c9
+            cores[0] = {27, 181, 224};
+            cores[1] = {101, 197, 224};
+            cores[2] = {38, 166, 201};
+            cores[3] = {38, 166, 201};
+            if (ultimo_retorno.desenhar_a_outra) {
+                cores[4] = {111, 182, 201};
+                cores[5] = {111, 182, 201};
+            }
+        } else {
+            // usado como base: #c9262b
+            cores[0] = {230, 32, 39};
+            cores[1] = {230, 78, 83};
+            cores[2] = {201, 38, 43};
+            cores[3] = {201, 38, 43};
+            if (ultimo_retorno.desenhar_a_outra) {
+                cores[4] = {201, 71, 75};
+                cores[5] = {201, 71, 75};
+            }
+        }
+        std::vector<float> ps {};
+        ps.reserve(num * 5 * sizeof (float));
+        for (std::size_t i = 0; i < num; ++i) {
+            ps.push_back(pontos[i][0]);
+            ps.push_back(pontos[i][1]);
+            ps.push_back(cores[i][0] / 255.0f);
+            ps.push_back(cores[i][1] / 255.0f);
+            ps.push_back(cores[i][2] / 255.0f);
+        }
+        glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
+
+    }
+    void renderiza_passo() {
+        // isso vem junto, acho
+        // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+        glBindVertexArray(passo_vao);
+        line_program.use();
+        glDrawArrays(GL_LINES, 2, quantos - 2);
+        point_program.use();
+        glDrawArrays(GL_POINTS, 0, 2);
+    }
+    void renderiza_resultado() {
+        if (!resultado_arrumado_para_renderizacao) {
+            std::array<Ponto, 4> pontos {};
+            std::size_t num = 4;
+            pontos[0] = resultado_ate_agora.p;
+            pontos[1] = resultado_ate_agora.intersecao_encontrada;
+            pontos[2] = resultado_ate_agora.r[0];
+            pontos[3] = resultado_ate_agora.r[1];
+            std::vector<float> ps {};
+            ps.reserve(num * 5 * sizeof (float));
+            for (std::size_t i = 0; i < num; ++i) {
+                ps.push_back(pontos[i][0]);
+                ps.push_back(pontos[i][1]);
+                ps.push_back(0.149f); // 38
+                ps.push_back(0.788f); // 201
+                ps.push_back(0.682f); // 174
+            }
+            glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
+
+            resultado_arrumado_para_renderizacao = true;
+        }
+
+        glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+        glBindVertexArray(passo_vao);
+        line_program.use();
+        glDrawArrays(GL_LINES, 0, 4);
+        point_program.use();
+        glDrawArrays(GL_POINTS, 0, 4);
+    }
+private:
+    State& estado;
+    const Shader& point_program;
+    const Shader& line_program;
+    RetornoAlg resultado_ate_agora;
+    PassoAPasso ultimo_retorno;
+    bool resultado_arrumado_para_renderizacao = false;
+    std::size_t quantos;
+    unsigned int passo_vbo;
+    unsigned int passo_vao;
+};
 
 int main() {
 
@@ -948,20 +1245,20 @@ int main() {
     glBindVertexArray(0);
     
     /////////////////////////////
-    unsigned passo_vbo {};
-    glGenBuffers(1, &passo_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-    glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    // unsigned passo_vbo {};
+    // glGenBuffers(1, &passo_vbo);
+    // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+    // glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
-    unsigned passo_vao {};
-    glGenVertexArrays(1, &passo_vao);
-    glBindVertexArray(passo_vao);
+    // unsigned passo_vao {};
+    // glGenVertexArrays(1, &passo_vao);
+    // glBindVertexArray(passo_vao);
     
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
-    glEnableVertexAttribArray(1);
-    glBindVertexArray(0);
+    // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+    // glEnableVertexAttribArray(0);
+    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+    // glEnableVertexAttribArray(1);
+    // glBindVertexArray(0);
     
     std::vector<Ponto> fecho_calculado {};
     std::size_t last_size = 0;
@@ -969,9 +1266,10 @@ int main() {
     estado.pointSize = 20.0f;
     glLineWidth(estado.pointSize / 2.0f);
 
-    RetornoAlg resultado_ate_agora {};
-    bool resultado_arrumado_para_renderizacao = false;
-    std::size_t passo_quantos {};
+    // RetornoAlg resultado_ate_agora {};
+    // bool resultado_arrumado_para_renderizacao = false;
+    // std::size_t passo_quantos {};
+    AlgoritmoPassoAPasso passo_a_passo_manager {estado, point_program, color_line_program};
     while (!glfwWindowShouldClose(window)) {
         // win.processInput();
         // processar entradas??
@@ -1092,119 +1390,120 @@ int main() {
         glBindVertexArray(outros_vao);
         glDrawArrays(GL_POINTS, 0, outros_control);
 
-
         if (estado.comecar_passo_a_passo) {
             estado.passo_a_passo_em_andamento = true;
             estado.proximo_passo = true;
             estado.comecar_passo_a_passo = false;
-            resultado_ate_agora = {};
+            // resultado_ate_agora = {};
+            passo_a_passo_manager.reset();
         }
         if (estado.proximo_passo) {
             estado.proximo_passo = false;
-            auto res = algoritmo_v1_passo_a_passo(fecho_calculado);
-            if (res.etapa_do_passo_executado == Etapa::ETAPA_2) {
-                resultado_ate_agora = res.resultado_ate_agora;
-            }
-            if (res.acabou) {
-                estado.passo_a_passo_em_andamento = false;
-                estado.passo_a_passo_acabou_de_acabar = true;
-                resultado_arrumado_para_renderizacao = false;
-            }
-            std::array<Ponto, 6> pontos {};
-            std::size_t num = 4;
-            pontos[0] = res.colorir_esse;
-            pontos[1] = res.esse_tambem;
-            pontos[2] = res.desenhar_essa[0];
-            pontos[3] = res.desenhar_essa[1];
-            if (res.desenhar_a_outra) {
-                num += 2;
-                pontos[4] = res.tambem_desenhar_essa[0];
-                pontos[5] = res.tambem_desenhar_essa[1];
-            }
+            passo_a_passo_manager.proximo_passo(fecho_calculado);
+            // auto res = algoritmo_v1_passo_a_passo(fecho_calculado);
+            // if (res.etapa_do_passo_executado == Etapa::ETAPA_2) {
+            //     resultado_ate_agora = res.resultado_ate_agora;
+            // }
+            // if (res.acabou) {
+            //     estado.passo_a_passo_em_andamento = false;
+            //     estado.passo_a_passo_acabou_de_acabar = true;
+            //     resultado_arrumado_para_renderizacao = false;
+            // }
+            passo_a_passo_manager.arruma_renderizacao();
+            // std::array<Ponto, 6> pontos {};
+            // std::size_t num = 4;
+            // pontos[0] = res.colorir_esse;
+            // pontos[1] = res.esse_tambem;
+            // pontos[2] = res.desenhar_essa[0];
+            // pontos[3] = res.desenhar_essa[1];
+            // if (res.desenhar_a_outra) {
+            //     num += 2;
+            //     pontos[4] = res.tambem_desenhar_essa[0];
+            //     pontos[5] = res.tambem_desenhar_essa[1];
+            // }
 
-            std::array<std::array<float, 3>, 6> cores {};
-            if (res.etapa_do_passo_executado == Etapa::ETAPA_1) {
-                cores[0] = {};
-                cores[1] = {};
-                cores[2] = {};
-                cores[3] = {};
-                if (res.desenhar_a_outra) {
-                    cores[4] = {};
-                    cores[5] = {};
-                }
-            } else {
-                cores[0] = {};
-                cores[1] = {};
-                cores[2] = {};
-                cores[3] = {};
-                if (res.desenhar_a_outra) {
-                    cores[4] = {};
-                    cores[5] = {};
-                }
-            }
-            std::vector<float> ps {};
-            ps.reserve(num * 5 * sizeof (float));
-            for (std::size_t i = 0; i < num; ++i) {
-                ps.push_back(pontos[i][0]);
-                ps.push_back(pontos[i][1]);
-                if (res.etapa_do_passo_executado == Etapa::ETAPA_1) {
-                    ps.push_back(0.149f); // 38
-                    ps.push_back(0.149f); // 38
-                    ps.push_back(0.788f); // 201
-                } else {
-                    ps.push_back(0.149f); // 38
-                    ps.push_back(0.682f); // 174
-                    ps.push_back(0.788f); // 201
-                }
-            }
-            glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
+            // std::array<std::array<float, 3>, 6> cores {};
+            // if (res.etapa_do_passo_executado == Etapa::ETAPA_1) {
+            //     // usado como base: #26a6c9
+            //     cores[0] = {27, 181, 224};
+            //     cores[1] = {101, 197, 224};
+            //     cores[2] = {38, 166, 201};
+            //     cores[3] = {38, 166, 201};
+            //     if (res.desenhar_a_outra) {
+            //         cores[4] = {111, 182, 201};
+            //         cores[5] = {111, 182, 201};
+            //     }
+            // } else {
+            //     // usado como base: #c9262b
+            //     cores[0] = {230, 32, 39};
+            //     cores[1] = {230, 78, 83};
+            //     cores[2] = {201, 38, 43};
+            //     cores[3] = {201, 38, 43};
+            //     if (res.desenhar_a_outra) {
+            //         cores[4] = {201, 71, 75};
+            //         cores[5] = {201, 71, 75};
+            //     }
+            // }
+            // std::vector<float> ps {};
+            // ps.reserve(num * 5 * sizeof (float));
+            // for (std::size_t i = 0; i < num; ++i) {
+            //     ps.push_back(pontos[i][0]);
+            //     ps.push_back(pontos[i][1]);
+            //     ps.push_back(cores[i][0] / 255.0f);
+            //     ps.push_back(cores[i][1] / 255.0f);
+            //     ps.push_back(cores[i][2] / 255.0f);
+            // }
+            // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+            // glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
 
-            glBindVertexArray(passo_vao);
-            point_program.use();
-            glDrawArrays(GL_POINTS, 0, 2);
-            color_line_program.use();
-            passo_quantos = num - 2;
-            glDrawArrays(GL_LINES, 2, passo_quantos);
+            // passo_a_passo_manager.renderiza_passo();
+            // glBindVertexArray(passo_vao);
+            // point_program.use();
+            // glDrawArrays(GL_POINTS, 0, 2);
+            // color_line_program.use();
+            // passo_quantos = num - 2;
+            // glDrawArrays(GL_LINES, 2, passo_quantos);
         }
         if (estado.passo_a_passo_em_andamento || estado.passo_a_passo_acabou_de_acabar) {
-            glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-            glBindVertexArray(passo_vao);
-            point_program.use();
-            glDrawArrays(GL_POINTS, 0, 2);
-            color_line_program.use();
-            glDrawArrays(GL_LINES, 2, passo_quantos);
+            passo_a_passo_manager.renderiza_passo();
+            // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+            // glBindVertexArray(passo_vao);
+            // point_program.use();
+            // glDrawArrays(GL_POINTS, 0, 2);
+            // color_line_program.use();
+            // glDrawArrays(GL_LINES, 2, passo_quantos);
         }
         if (estado.mostrar_resultado_passo_a_passo) {
             estado.mostrando_resultado_passo_a_passo = true;
-            if (!resultado_arrumado_para_renderizacao) {
-                std::array<Ponto, 4> pontos {};
-                std::size_t num = 4;
-                pontos[0] = resultado_ate_agora.p;
-                pontos[1] = resultado_ate_agora.intersecao_encontrada;
-                pontos[2] = resultado_ate_agora.r[0];
-                pontos[3] = resultado_ate_agora.r[1];
-                std::vector<float> ps {};
-                ps.reserve(num * 5 * sizeof (float));
-                for (std::size_t i = 0; i < num; ++i) {
-                    ps.push_back(pontos[i][0]);
-                    ps.push_back(pontos[i][1]);
-                    ps.push_back(0.149f); // 38
-                    ps.push_back(0.788f); // 201
-                    ps.push_back(0.682f); // 174
-                }
-                glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
+            passo_a_passo_manager.renderiza_resultado();
+            // if (!resultado_arrumado_para_renderizacao) {
+            //     std::array<Ponto, 4> pontos {};
+            //     std::size_t num = 4;
+            //     pontos[0] = resultado_ate_agora.p;
+            //     pontos[1] = resultado_ate_agora.intersecao_encontrada;
+            //     pontos[2] = resultado_ate_agora.r[0];
+            //     pontos[3] = resultado_ate_agora.r[1];
+            //     std::vector<float> ps {};
+            //     ps.reserve(num * 5 * sizeof (float));
+            //     for (std::size_t i = 0; i < num; ++i) {
+            //         ps.push_back(pontos[i][0]);
+            //         ps.push_back(pontos[i][1]);
+            //         ps.push_back(0.149f); // 38
+            //         ps.push_back(0.788f); // 201
+            //         ps.push_back(0.682f); // 174
+            //     }
+            //     glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+            //     glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
 
-                resultado_arrumado_para_renderizacao = true;
-            }
+            //     resultado_arrumado_para_renderizacao = true;
+            // }
 
-            glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-            glBindVertexArray(passo_vao);
-            point_program.use();
-            glDrawArrays(GL_POINTS, 0, 4);
-            color_line_program.use();
-            glDrawArrays(GL_LINES, 0, 4);
+            // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+            // glBindVertexArray(passo_vao);
+            // point_program.use();
+            // glDrawArrays(GL_POINTS, 0, 4);
+            // color_line_program.use();
+            // glDrawArrays(GL_LINES, 0, 4);
         } else {
             estado.mostrando_resultado_passo_a_passo = false;
         }
