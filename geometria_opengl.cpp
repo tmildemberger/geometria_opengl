@@ -884,11 +884,24 @@ PassoAPasso algoritmo_guedes_v1_passo_a_passo(std::vector<Ponto> fecho) {
     double x2_x1 = p_o[0] - p[0];
     double y3_y1 = p_oposto[1] - p[1];
     double y2_y1 = p_o[1] - p[1];
-    double c = (x2_x1*x3_x1 + y2_y1*y3_y1) / (x2_x1*x2_x1 + y2_y1*y2_y1);
+    double d_p = x2_x1*x3_x1 + y2_y1*y3_y1;
+    double tam = x2_x1*x2_x1 + y2_y1*y2_y1;
+    double c = (d_p) / (tam);
     // double dist_x = x3_x1 - x2_x1*c;
     // double dist_y = y3_y1 - y2_y1*c;
     double i_x = x2_x1*c + p[0];
     double i_y = y2_y1*c + p[1];
+    if (i == 2) {
+        std::cout << p[0] << ' ' << p[1] << std::endl;
+        std::cout << p_o[0] << ' ' << p_o[1] << std::endl;
+        std::cout << p_oposto[0] << ' ' << p_oposto[1] << std::endl;
+        std::cout << d_p << std::endl;
+        std::cout << c << std::endl;
+        std::cout << tam << std::endl;
+        std::cout << x2_x1 << ' ' << y2_y1 << std::endl;
+        std::cout << x2_x1*c << ' ' << y2_y1*c << std::endl;
+        std::cout << i_x << ' ' << i_y << std::endl;
+    }
     // auto diff = vetor_reta_ponto(p_oposto, {p, p_o});
     // double distancia {dist(p_oposto, {p, p_o})};
     // Ponto intersecao_encontrada {p_oposto[0] - diff[0], p_oposto[1] - diff[1]};
@@ -1130,6 +1143,7 @@ int main() {
 
     // tamanho padrão de tela: 800x600
     GLFW::Window::options opts;
+    opts.window_width = 600;
     opts.version_major = 3;
     opts.version_minor = 3;
     opts.decorated = 1;
@@ -1265,6 +1279,9 @@ int main() {
     std::size_t outros_control = 0;
     estado.pointSize = 20.0f;
     glLineWidth(estado.pointSize / 2.0f);
+    estado.cliques.push_back({-.53726, -.48185});
+    estado.cliques.push_back({.37386, .09127});
+    estado.cliques.push_back({.46278, .52544});
 
     // RetornoAlg resultado_ate_agora {};
     // bool resultado_arrumado_para_renderizacao = false;
