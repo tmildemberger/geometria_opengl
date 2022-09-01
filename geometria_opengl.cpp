@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cmath>
+#include <map>
 //#include <numbers>
 #include <limits>
 #include <glad/glad.h>
@@ -177,11 +178,14 @@ std::array<double, 2> vetor_reta_ponto(Ponto p, Reta r) {
     double x2_x1 = r[1][0] - r[0][0];
     double y3_y1 = p[1] - r[0][1];
     double y2_y1 = r[1][1] - r[0][1];
+    // double produto_escalar = x2_x1*x3_x1 + y2_y1*y3_y1;
+    // double tamanho_ao_quadrado = x2_x1*x2_x1 + y2_y1*y2_y1;
+    // double c = (produto_escalar) / (tamanho_ao_quadrado);
     double c = (x2_x1*x3_x1 + y2_y1*y3_y1) / (x2_x1*x2_x1 + y2_y1*y2_y1);
-    // double dist_x = x3_x1 - x2_x1*c;
-    // double dist_y = y3_y1 - y2_y1*c;
-    double dist_x = p[0] - x2_x1*c;
-    double dist_y = p[1] - y2_y1*c;
+    double dist_x = x3_x1 - x2_x1*c;
+    double dist_y = y3_y1 - y2_y1*c;
+    // double dist_x = p[0] - x2_x1*c - r[0][0];
+    // double dist_y = p[1] - y2_y1*c - r[0][1];
     return {dist_x, dist_y};
 }
 
@@ -465,6 +469,28 @@ Intersecao intersecao_semireta_segmento(Ponto p1, Ponto p2, Ponto p3, Ponto p4) 
     }
 }
 
+Intersecao intersecao_com_left(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
+
+// checa se há interseção entre a semireta p1p2 e o segmento p3p4
+Intersecao intersecao_com_left(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
+    double p1_p2_p3 = area_orientada(p1, p2, p3);
+    double p1_p2_p4 = area_orientada(p1, p2, p4);
+    double p3_p4_p1 = area_orientada(p3, p4, p1);
+    double p3_p4_p2 = area_orientada(p3, p4, p2);
+    if (p1_p2_p3 == 0. || p1_p2_p4 == 0. || p3_p4_p1 == 0. || p3_p4_p2 == 0.) {
+        return Intersecao::IMPROPRIA;
+    }
+    bool left1 = p1_p2_p3 > 0.;
+    bool left2 = p1_p2_p4 > 0.;
+    bool left3 = p3_p4_p1 > 0.;
+    bool left4 = p3_p4_p2 > 0.;
+    if (left1 != left2 && left3 != left4) {
+        return Intersecao::PROPRIA;
+    } else {
+        return Intersecao::NAO;
+    }
+}
+
 Ponto ponto_intersecao(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
 
 Ponto ponto_intersecao(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
@@ -503,6 +529,146 @@ Cor point_in_polygon(Ponto ponto, std::vector<Ponto> poligono) {
     }
 }
 
+double produto_vetorial(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
+
+double produto_vetorial(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
+    double v1_x = p2[0] - p1[0];
+    double v1_y = p2[1] - p1[1];
+    double v2_x = p4[0] - p3[0];
+    double v2_y = p4[1] - p3[1];
+    return v1_x * v2_y - v1_y * v2_x;
+}
+
+double produto_escalar(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
+
+double produto_escalar(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
+    double v1_x = p2[0] - p1[0];
+    double v1_y = p2[1] - p1[1];
+    double v2_x = p4[0] - p3[0];
+    double v2_y = p4[1] - p3[1];
+    return v1_x * v2_x + v1_y * v2_y;
+}
+
+double produto_escalar_com_ortogonal(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
+
+double produto_escalar_com_ortogonal(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
+    double v1_x = p2[0] - p1[0];
+    double v1_y = p2[1] - p1[1];
+    double v2_x = p4[1] - p3[1]; // y e x trocados
+    double v2_y = p3[0] - p4[0]; // y é x invertido
+    return v1_x * v2_x + v1_y * v2_y;
+}
+
+using PoligonoComFuros = std::vector<std::vector<Ponto>>;
+
+PoligonoComFuros preparacao(const PoligonoComFuros& poly) {
+    PoligonoComFuros preparado {};
+    for (auto& comp : poly) {
+        std::vector<Ponto> nova_componente;
+        nova_componente.reserve(comp.size() * 2);
+        preparado.push_back(nova_componente);
+    }
+    return preparado;
+}
+
+PoligonoComFuros intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2);
+
+PoligonoComFuros intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2) {
+    // considerando que cada componente já tem o primeiro e último ponto iguais
+    // para poder iterar por todas as arestas dentro do loop
+    PoligonoComFuros novo1 = preparacao(poly1);
+    PoligonoComFuros novo2 = preparacao(poly2);
+    // std::map<std::pair<std::size_t, std::size_t>, Ponto> intersecoes;
+    // std::map<std::size_t, std::pair<Ponto, double>> intersecoes;
+    
+    // a maneira de indexar:
+    // std::size_t maior_tamanho = 0;
+    // for (auto vec : poly2) {
+    //     if (vec.size() > maior_tamanho) {
+    //         maior_tamanho = vec.size();
+    //     }
+    // }
+    // std::vector<std::vector<std::pair<Ponto, double>>> intersecoes;
+    std::map<std::make_pair<std::size_t, std::size_t>, std::vector<std::tuple<Ponto, double, std::size_t, std::size_t, std::size_t>>> intersecoes;
+
+    // std::map<
+
+    for (std::size_t p1_idx = 0; p1_idx < poly1.size(); ++p1_idx) {
+        auto& comp1 = poly1[p1_idx];
+        novo1.push_back({});
+        for (std::size_t i = 0; i < comp1.size() - 1; ++i) {
+            novo1[p1_idx].push_back(comp1[i]);
+            
+            for (std::size_t p2_idx = 0; p2_idx < poly2.size(); ++p2_idx) {
+                auto& comp2 = poly2[p2_idx];
+                // intersecoes.push_back({});
+                // intersecoes[p2_idx].resize(comp2.size());
+                for (std::size_t j = 0; j < comp2.size() - 1; ++j) {
+                    Ponto& p1 = comp1[i];
+                    Ponto& p2 = comp1[i+1];
+                    Ponto& p3 = comp2[j];
+                    Ponto& p4 = comp2[j+1];
+                    auto [s, t] = intersecao(p1, p2, p3, p4);
+                    if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
+                        Ponto inter {p3[0] * (1. - t) + p4[0] * t, p3[1] * (1. - t) + p4[1] * t};
+                        novo1[p1_idx].push_back(inter);
+                        // intersecoes[std::make_pair(i, j)] = inter;
+                        // intersecoes[j] = std::make_pair(inter, t);
+                        intersecoes[std::make_pair(p2_idx, j)].push_back(std::make_tuple(inter, t, p1_idx, i, novo1[p1_idx].size() - 1));
+                    }
+                }
+            }
+        }
+    }
+    for (auto& vec : intersecoes) {
+        std::sort(vec.begin(), vec.end(), [](auto a, auto b) {
+            return std::get<1>(a) < std::get<1>(b);
+        });
+    }
+    std::vector<std::map<std::size_t, std::tuple<std::size_t, std::size_t, bool>>> idas(poly1.size());
+    std::vector<std::map<std::size_t, std::tuple<std::size_t, std::size_t, bool>>> voltas(poly2.size());
+    std::size_t num_intersecoes = 0;
+    for (std::size_t p2_idx = 0; p2_idx < poly2.size(); ++p2_idx) {
+        auto& comp2 = poly2[p2_idx];
+        novo2.push_back({});
+        for (std::size_t j = 0; j < comp2.size() - 1; ++j) {
+            novo2[p2_idx].push_back(comp2[j]);
+            for (auto [ponto, posicao, p1_idx, i, pos] : intersecoes[std::make_pair(p2_idx, j)]) {
+                novo2[p2_idx].push_back(ponto);
+                auto poly2_pos = novo2[p2_idx].size() - 1;
+                bool entrando = produto_escalar_com_ortogonal(
+                    poly1[p1_idx][i],
+                    poly1[p1_idx][i+1],
+                    comp2[j],
+                    comp2[j+1]
+                ) < 0;
+                idas[p1_idx][pos] = {p2_idx, poly2_pos, entrando};
+                voltas[p2_idx][poly2_pos] = {p1_idx, pos, !entrando};
+                ++num_intersecoes;
+            }
+        }
+    }
+    if (num_intersecoes == 0) {
+        // nesse caso não houve interseções
+        // preciso adicionar muitos testes depois para ver se alguma componente
+        // de algum está dentro outra, ou algo assim
+        return {};
+    }
+    // começa a percorrer
+    std::size_t p_idx = 0;
+    for (; p_idx < poly1.size(); ++p_idx) {
+
+    }
+
+
+}
+
+enum class Tela {
+    ORIGINAL,
+    OPERACOES_BOOLEANAS,
+    TRIANGULACAO,
+};
+
 struct State {
     std::vector<Ponto> cliques;
     std::vector<std::tuple<Ponto,Cor>> outros;
@@ -516,59 +682,67 @@ struct State {
     bool mostrar_resultado_passo_a_passo;
     bool mostrando_resultado_passo_a_passo;
     bool comecar_passo_a_passo;
+
+    Tela tela;
 };
 
 void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
     State& estado = *(static_cast<State*> (glfwGetWindowUserPointer(window)));
-    if (estado.passo_a_passo_em_andamento || estado.passo_a_passo_acabou_de_acabar || estado.mostrando_resultado_passo_a_passo) {
-        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
-            if (!estado.passo_a_passo_em_andamento) {
-                if (estado.passo_a_passo_acabou_de_acabar) {
-                    estado.mostrar_resultado_passo_a_passo = true;
-                    estado.passo_a_passo_acabou_de_acabar = false;
-                } else if (estado.mostrando_resultado_passo_a_passo) {
-                    estado.mostrar_resultado_passo_a_passo = false;
+    if (estado.tela == Tela::ORIGINAL) {
+        if (estado.passo_a_passo_em_andamento || estado.passo_a_passo_acabou_de_acabar || estado.mostrando_resultado_passo_a_passo) {
+            if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
+                if (!estado.passo_a_passo_em_andamento) {
+                    if (estado.passo_a_passo_acabou_de_acabar) {
+                        estado.mostrar_resultado_passo_a_passo = true;
+                        estado.passo_a_passo_acabou_de_acabar = false;
+                    } else if (estado.mostrando_resultado_passo_a_passo) {
+                        estado.mostrar_resultado_passo_a_passo = false;
+                    } else {
+                        std::cout << "isso aqui nunca roda" << std::endl;
+                    }
                 } else {
-                    std::cout << "isso aqui nunca roda" << std::endl;
+                    estado.proximo_passo = true;
                 }
-            } else {
-                estado.proximo_passo = true;
+            }
+            return;
+        }
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+            if (!mods) {
+                double xpos {};
+                double ypos {};
+                glfwGetCursorPos(window, &xpos, &ypos);
+                int width {};
+                int height {};
+                glfwGetWindowSize(window, &width, &height);
+                double x {xpos / static_cast<double> (width) * 2. - 1.};
+                double y {1. - ypos / static_cast<double> (height) * 2.};
+                estado.cliques.push_back({x, y});
+            } else if (mods == GLFW_MOD_CONTROL) {
+                double xpos {};
+                double ypos {};
+                glfwGetCursorPos(window, &xpos, &ypos);
+                int width {};
+                int height {};
+                glfwGetWindowSize(window, &width, &height);
+                double x {xpos / static_cast<double> (width) * 2. - 1.};
+                double y {1. - ypos / static_cast<double> (height) * 2.};
+                estado.outros.push_back({{x, y}, Cor::DESCONHECIDO});
+            } else if (mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
+                estado.comecar_passo_a_passo = true;
+            } else if (mods == GLFW_MOD_SHIFT) {
+                std::cout << estado.pointSize << std::endl;
+            }
+        } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+            if (!mods) {
+                estado.should_recalculate_convex_hull = true;
+            } else if (mods == GLFW_MOD_SHIFT) {
+                estado.should_recalculate_area = true;
+            } else if (mods == GLFW_MOD_CONTROL) {
+                estado.should_recalculate_point_in_polygon = true;
             }
         }
-        return;
-    }
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-        if (!mods) {
-            double xpos {};
-            double ypos {};
-            glfwGetCursorPos(window, &xpos, &ypos);
-            int width {};
-            int height {};
-            glfwGetWindowSize(window, &width, &height);
-            double x {xpos / static_cast<double> (width) * 2. - 1.};
-            double y {1. - ypos / static_cast<double> (height) * 2.};
-            estado.cliques.push_back({x, y});
-        } else if (mods == GLFW_MOD_CONTROL) {
-            double xpos {};
-            double ypos {};
-            glfwGetCursorPos(window, &xpos, &ypos);
-            int width {};
-            int height {};
-            glfwGetWindowSize(window, &width, &height);
-            double x {xpos / static_cast<double> (width) * 2. - 1.};
-            double y {1. - ypos / static_cast<double> (height) * 2.};
-            estado.outros.push_back({{x, y}, Cor::DESCONHECIDO});
-        } else if (mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
-            estado.comecar_passo_a_passo = true;
-        }
-    } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
-        if (!mods) {
-            estado.should_recalculate_convex_hull = true;
-        } else if (mods == GLFW_MOD_SHIFT) {
-            estado.should_recalculate_area = true;
-        } else if (mods == GLFW_MOD_CONTROL) {
-            estado.should_recalculate_point_in_polygon = true;
-        }
+    } else if (estado.tela == Tela::OPERACOES_BOOLEANAS) {
+
     }
 }
 
@@ -587,6 +761,27 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
         estado.pointSize = 2.0f;
     }
     glLineWidth(std::max(estado.pointSize / 2.0f, 1.0f));
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    State& estado = *(static_cast<State*> (glfwGetWindowUserPointer(window)));
+    if (action == GLFW_RELEASE && !mods) {
+        switch (key) {
+            case GLFW_KEY_1:
+                estado.tela = Tela::ORIGINAL;
+                break;
+            case GLFW_KEY_2:
+                estado.tela = Tela::OPERACOES_BOOLEANAS;
+                break;
+            case GLFW_KEY_3:
+                estado.tela = Tela::TRIANGULACAO;
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 enum class Etapa {
@@ -810,16 +1005,6 @@ PassoAPasso algoritmo_v1_passo_a_passo(std::vector<Ponto> fecho) {
     }
 }
 
-double produto_vetorial(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
-
-double produto_vetorial(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
-    double v1_x = p2[0] - p1[0];
-    double v1_y = p2[1] - p1[1];
-    double v2_x = p4[0] - p3[0];
-    double v2_y = p4[1] - p3[1];
-    return v1_x * v2_y - v1_y * v2_x;
-}
-
 PassoAPasso algoritmo_guedes_v1_passo_a_passo(std::vector<Ponto> fecho);
 
 // recebe o fecho de início já
@@ -827,6 +1012,10 @@ PassoAPasso algoritmo_guedes_v1_passo_a_passo(std::vector<Ponto> fecho) {
 
     // n é o número de pontos no fecho convexo
     std::size_t n = fecho.size();
+
+    static bool resetar_a = false;
+    static bool resetar_b = false;
+
 
     // guarda o passo atual; é resetado quando uma execução se completa
     static std::size_t passo = 0;
@@ -837,7 +1026,35 @@ PassoAPasso algoritmo_guedes_v1_passo_a_passo(std::vector<Ponto> fecho) {
     static bool encontrado = false;
     static std::size_t indice_encontrado = 0;
 
+    // usados na segunda parte
+    static double menor_distancia { std::numeric_limits<double>::max() };
+    static Ponto menor_ponto {};
+    static Reta menor_segmento {};
+    static Ponto menor_intersecao {};
+
     double metade = (3.14159265358979323846 * (n - 2)) / 2;
+
+    if (resetar_a) {
+        l_atual = 2;
+        r_atual = n - 1;
+        encontrado = false;
+        indice_encontrado = 0;
+        resetar_a = false;
+    }
+    if (resetar_b) {
+        passo = 0;
+        segmento_atual = 0;
+        l_atual = 2;
+        r_atual = n - 1;
+        encontrado = false;
+        indice_encontrado = 0;
+        
+        menor_distancia = std::numeric_limits<double>::max();
+        menor_ponto = Ponto{};
+        menor_segmento = Reta{};
+        menor_intersecao = Ponto{};
+        resetar_b = false;
+    }
 
     std::size_t i = segmento_atual;
     std::size_t outro = (i + 1 >= n) ? (0) : (i + 1);
@@ -880,39 +1097,35 @@ PassoAPasso algoritmo_guedes_v1_passo_a_passo(std::vector<Ponto> fecho) {
     Ponto p_oposto = fecho[indice_encontrado];
     // Ponto prox_oposto = fecho[indice_encontrado_prox];
     // Ponto prev_oposto = fecho[indice_encontrado_prev];
-    double x3_x1 = p_oposto[0] - p[0];
-    double x2_x1 = p_o[0] - p[0];
-    double y3_y1 = p_oposto[1] - p[1];
-    double y2_y1 = p_o[1] - p[1];
-    double d_p = x2_x1*x3_x1 + y2_y1*y3_y1;
-    double tam = x2_x1*x2_x1 + y2_y1*y2_y1;
-    double c = (d_p) / (tam);
+    // double x3_x1 = p_oposto[0] - p[0];
+    // double x2_x1 = p_o[0] - p[0];
+    // double y3_y1 = p_oposto[1] - p[1];
+    // double y2_y1 = p_o[1] - p[1];
+    // double d_p = x2_x1*x3_x1 + y2_y1*y3_y1;
+    // double tam = x2_x1*x2_x1 + y2_y1*y2_y1;
+    // double c = (d_p) / (tam);
     // double dist_x = x3_x1 - x2_x1*c;
     // double dist_y = y3_y1 - y2_y1*c;
-    double i_x = x2_x1*c + p[0];
-    double i_y = y2_y1*c + p[1];
-    if (i == 2) {
-        std::cout << p[0] << ' ' << p[1] << std::endl;
-        std::cout << p_o[0] << ' ' << p_o[1] << std::endl;
-        std::cout << p_oposto[0] << ' ' << p_oposto[1] << std::endl;
-        std::cout << d_p << std::endl;
-        std::cout << c << std::endl;
-        std::cout << tam << std::endl;
-        std::cout << x2_x1 << ' ' << y2_y1 << std::endl;
-        std::cout << x2_x1*c << ' ' << y2_y1*c << std::endl;
-        std::cout << i_x << ' ' << i_y << std::endl;
-    }
-    // auto diff = vetor_reta_ponto(p_oposto, {p, p_o});
+    // double i_x = x2_x1*c + p[0];
+    // double i_y = y2_y1*c + p[1];
+    // if (i == 2) {
+    //     std::cout << p[0] << ' ' << p[1] << std::endl;
+    //     std::cout << p_o[0] << ' ' << p_o[1] << std::endl;
+    //     std::cout << p_oposto[0] << ' ' << p_oposto[1] << std::endl;
+    //     std::cout << d_p << std::endl;
+    //     std::cout << c << std::endl;
+    //     std::cout << tam << std::endl;
+    //     std::cout << x2_x1 << ' ' << y2_y1 << std::endl;
+    //     std::cout << x2_x1*c << ' ' << y2_y1*c << std::endl;
+    //     std::cout << i_x << ' ' << i_y << std::endl;
+    // }
+    auto diff = vetor_reta_ponto(p_oposto, {p, p_o});
     // double distancia {dist(p_oposto, {p, p_o})};
-    // Ponto intersecao_encontrada {p_oposto[0] - diff[0], p_oposto[1] - diff[1]};
-    Ponto intersecao_encontrada {i_x, i_y};
+    Ponto intersecao_encontrada {p_oposto[0] - diff[0], p_oposto[1] - diff[1]};
+    // Ponto intersecao_encontrada {i_x, i_y};
     double distancia {dist(p_oposto, intersecao_encontrada)};
     Reta encontrada {p, p_o};
 
-    static double menor_distancia { std::numeric_limits<double>::max() };
-    static Ponto menor_ponto {};
-    static Reta menor_segmento {};
-    static Ponto menor_intersecao {};
     if (distancia < menor_distancia) {
         menor_distancia = distancia;
         menor_ponto = p_oposto;
@@ -937,27 +1150,32 @@ PassoAPasso algoritmo_guedes_v1_passo_a_passo(std::vector<Ponto> fecho) {
             true,
             {menor_ponto, menor_segmento, menor_distancia, menor_intersecao}
         };
-        passo = 0;
-        segmento_atual = 0;
-        l_atual = 2;
-        r_atual = n - 1;
-        encontrado = false;
-        indice_encontrado = 0;
+
+        // isso é o resetar_b:
+        // passo = 0;
+        // segmento_atual = 0;
+        // l_atual = 2;
+        // r_atual = n - 1;
+        // encontrado = false;
+        // indice_encontrado = 0;
         
-        menor_distancia = std::numeric_limits<double>::max();
-        menor_ponto = Ponto{};
-        menor_segmento = Reta{};
-        menor_intersecao = Ponto{};
+        // menor_distancia = std::numeric_limits<double>::max();
+        // menor_ponto = Ponto{};
+        // menor_segmento = Reta{};
+        // menor_intersecao = Ponto{};
+        resetar_b = true;
 
         return retorno;
     } else {
         // o algoritmo continuará
         ++passo;
         // algumas partes são resetadas
-        l_atual = 2;
-        r_atual = n - 1;
-        encontrado = false;
-        indice_encontrado = 0;
+        // isso é o resetar_a:
+        // l_atual = 2;
+        // r_atual = n - 1;
+        // encontrado = false;
+        // indice_encontrado = 0;
+        resetar_a = true;
         return {
             Etapa::ETAPA_2,
             {p, p_o},
@@ -1113,29 +1331,29 @@ private:
 
 int main() {
 
-    {
-        // std::vector<Ponto> pontos = {{15, 15}, {8, -9}, {-2, 3}, {-13, -5}, {-17, 20}};
-        std::vector<Ponto> pontos = {{15, 15}, {8, -9}, {-2, 3}, {-13, -5}, {-17, 20}, {-20, -10}, {-10, 10}, {25, -10}, {-10, -15}, {10, -20}};
-        // std::vector<Ponto> pontos = {{2, 3}, {2, -3}, {-2, 3}, {-2, -3}};
-        for (std::size_t i = 0; i < pontos.size(); ++i) {
-            std::cout << pontos[i][0] << ' ' << pontos[i][1] << std::endl;
-        }
-        std::cout << "Começando calculo do fecho convexo:" << std::endl;
-        std::vector<Ponto> fecho = fecho_convexo(pontos);
+    // {
+    //     // std::vector<Ponto> pontos = {{15, 15}, {8, -9}, {-2, 3}, {-13, -5}, {-17, 20}};
+    //     std::vector<Ponto> pontos = {{15, 15}, {8, -9}, {-2, 3}, {-13, -5}, {-17, 20}, {-20, -10}, {-10, 10}, {25, -10}, {-10, -15}, {10, -20}};
+    //     // std::vector<Ponto> pontos = {{2, 3}, {2, -3}, {-2, 3}, {-2, -3}};
+    //     for (std::size_t i = 0; i < pontos.size(); ++i) {
+    //         std::cout << pontos[i][0] << ' ' << pontos[i][1] << std::endl;
+    //     }
+    //     std::cout << "Começando calculo do fecho convexo:" << std::endl;
+    //     std::vector<Ponto> fecho = fecho_convexo(pontos);
 
-        for (std::size_t i = 0; i < fecho.size(); ++i) {
-            std::cout << fecho[i][0] << ' ' << fecho[i][1] << std::endl;
-        }
+    //     for (std::size_t i = 0; i < fecho.size(); ++i) {
+    //         std::cout << fecho[i][0] << ' ' << fecho[i][1] << std::endl;
+    //     }
         
-        std::cout << "calculo da menor distancia:" << std::endl;
+    //     std::cout << "calculo da menor distancia:" << std::endl;
 
-        RetornoAlg coiso = algoritmo(pontos);
+    //     RetornoAlg coiso = algoritmo(pontos);
 
-        std::cout << "ponto: " << coiso.p[0] << ' ' << coiso.p[1] << std::endl;
-        std::cout << "reta: " << coiso.r[0][0] << ' ' << coiso.r[0][1] << std::endl;
-        std::cout << "    : " << coiso.r[1][0] << ' ' << coiso.r[1][1] << std::endl;
-        std::cout << "distancia: " << coiso.distancia << std::endl;
-    }
+    //     std::cout << "ponto: " << coiso.p[0] << ' ' << coiso.p[1] << std::endl;
+    //     std::cout << "reta: " << coiso.r[0][0] << ' ' << coiso.r[0][1] << std::endl;
+    //     std::cout << "    : " << coiso.r[1][0] << ' ' << coiso.r[1][1] << std::endl;
+    //     std::cout << "distancia: " << coiso.distancia << std::endl;
+    // }
 
     //return 0;
 
@@ -1162,6 +1380,7 @@ int main() {
     // glfwSetCursorPosCallback(window, cursor_position_callback);
     // glfwSetScrollCallback(window, scroll_callback);
     glfwSetScrollCallback(window, scroll_callback);
+    glfwSetKeyCallback(window, key_callback);
 
     Renderer renderer;
 
@@ -1279,9 +1498,9 @@ int main() {
     std::size_t outros_control = 0;
     estado.pointSize = 20.0f;
     glLineWidth(estado.pointSize / 2.0f);
-    estado.cliques.push_back({-.53726, -.48185});
-    estado.cliques.push_back({.37386, .09127});
-    estado.cliques.push_back({.46278, .52544});
+    // estado.cliques.push_back({-.53726, -.48185});
+    // estado.cliques.push_back({.37386, .09127});
+    // estado.cliques.push_back({.46278, .52544});
 
     // RetornoAlg resultado_ate_agora {};
     // bool resultado_arrumado_para_renderizacao = false;
