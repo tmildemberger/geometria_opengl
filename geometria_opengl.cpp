@@ -559,20 +559,178 @@ double produto_escalar_com_ortogonal(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
     return v1_x * v2_x + v1_y * v2_y;
 }
 
+Cor convexidade_do_vertice(std::vector<Ponto> poligono, std::size_t i);
+
+Cor convexidade_do_vertice(std::vector<Ponto> poligono, std::size_t i) {
+    auto& p = poligono;
+    std::size_t prev = (i == 0) ? (p.size()-1) : (i-1);
+    std::size_t prox = (i+1 >= p.size()) ? (0) : (i+1);
+    auto& p1 = p[prev];
+    auto& p2 = p[i];
+    auto& p3 = p[prox];
+    Cor nova_cor {};
+    if (area_orientada(p1, p2, p3) >= 0.) {
+        nova_cor = Cor::DENTRO;
+    } else {
+        nova_cor = Cor::FORA;
+    }
+    return nova_cor;
+}
+
+bool in_cone_convexo(Ponto p_i, Ponto p_j, Ponto p_i_menos, Ponto p_i_mais);
+
+bool in_cone_convexo(Ponto p_i, Ponto p_j, Ponto p_i_menos, Ponto p_i_mais) {
+    return left(p_i, p_j, p_i_menos) && left(p_j, p_i, p_i_mais);
+}
+
+bool in_cone_reflexo(Ponto p_i, Ponto p_j, Ponto p_i_menos, Ponto p_i_mais);
+
+bool in_cone_reflexo(Ponto p_i, Ponto p_j, Ponto p_i_menos, Ponto p_i_mais) {
+    return left(p_i_menos, p_i, p_j) || left(p_i, p_i_mais, p_j);
+}
+
+bool diagonal(const std::vector<Ponto>& poligono, std::size_t i, std::size_t j);
+
+bool diagonal(const std::vector<Ponto>& poligono, std::size_t i, std::size_t j) {
+    auto& p = poligono;
+    std::size_t prev = (i == 0) ? (p.size()-1) : (i-1);
+    std::size_t prox = (i+1 >= p.size()) ? (0) : (i+1);
+
+    if (convexidade_do_vertice(p, i) == Cor::DENTRO) {
+        // isso significa convexo (por enquanto)
+        if (!in_cone_convexo(p[i], p[j], p[prev], p[prox])) {
+            return false;
+        }
+    } else {
+        if (!in_cone_reflexo(p[i], p[j], p[prev], p[prox])) {
+            return false;
+        }
+    }
+
+    for (std::size_t k = 0; k < p.size(); ++k) {
+        auto k_prox = (k+1 >= p.size()) ? (0) : k+1;
+        if (k == i || k == j || k_prox == i || k_prox == j) {
+            continue;
+        }
+        if (intersecao_com_left(p[i], p[j], p[k], p[k_prox]) != Intersecao::NAO) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool orelha(const std::vector<Ponto>& poligono, std::size_t i);
+
+bool orelha(const std::vector<Ponto>& poligono, std::size_t i) {
+    auto& p = poligono;
+    std::size_t prev = (i == 0) ? (p.size()-1) : (i-1);
+    std::size_t prox = (i+1 >= p.size()) ? (0) : (i+1);
+    if (convexidade_do_vertice(p, i) == Cor::DENTRO) {
+        // isso significa convexo (por enquanto)
+        return diagonal(poligono, prev, prox);
+    } else {
+        return false;
+    }
+}
+
 using PoligonoComFuros = std::vector<std::vector<Ponto>>;
 
-PoligonoComFuros preparacao(const PoligonoComFuros& poly) {
-    PoligonoComFuros preparado {};
-    for (auto& comp : poly) {
-        std::vector<Ponto> nova_componente;
-        nova_componente.reserve(comp.size() * 2);
-        preparado.push_back(nova_componente);
-    }
-    return preparado;
-}
+// PoligonoComFuros preparacao(const PoligonoComFuros& poly);
+
+// PoligonoComFuros preparacao(const PoligonoComFuros& poly) {
+//     PoligonoComFuros preparado {};
+//     for (auto& comp : poly) {
+//         std::vector<Ponto> nova_componente;
+//         nova_componente.reserve(comp.size() * 2);
+//         preparado.push_back(nova_componente);
+//     }
+//     return preparado;
+// }
 
 PoligonoComFuros intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2);
 
+PoligonoComFuros intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2) {
+    // considerando que cada componente já tem o primeiro e último ponto iguais
+    // para poder iterar por todas as arestas dentro do loop
+
+    // considerando que cada poligono é composto por um vetor de sequências de pontos,
+    // onde a primeira é a única sequência anti-horária, e as seguintes são os buracos,
+    // que devem estar inteiramente dentro do primeiro
+
+    // std::vector<std::map<std::size_t, std::tuple<std::size_t, std::size_t, bool>>> idas(poly1.size());
+    // std::vector<std::map<std::size_t, std::tuple<std::size_t, std::size_t, bool>>> voltas(poly2.size());
+    // std::size_t num_intersecoes = 0;
+
+    // // std::vector<std::vector<std::pair<Ponto, double>>> intersecoes;
+    // // std::map<std::pair<std::size_t, std::size_t>, std::vector<std::tuple<Ponto, double, std::size_t, std::size_t, std::size_t>>> intersecoes;
+
+    // for (std::size_t p1_idx = 0; p1_idx < poly1.size(); ++p1_idx) {
+    //     auto& comp1 = poly1[p1_idx];
+    //     for (std::size_t i = 0; i < comp1.size() - 1; ++i) {
+            
+    //         for (std::size_t p2_idx = 0; p2_idx < poly2.size(); ++p2_idx) {
+    //             auto& comp2 = poly2[p2_idx];
+
+    //             for (std::size_t j = 0; j < comp2.size() - 1; ++j) {
+    //                 Ponto& p1 = comp1[i];
+    //                 Ponto& p2 = comp1[i+1];
+    //                 Ponto& p3 = comp2[j];
+    //                 Ponto& p4 = comp2[j+1];
+    //                 auto [s, t] = intersecao(p1, p2, p3, p4);
+    //                 if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
+    //                     Ponto inter {p3[0] * (1. - t) + p4[0] * t, p3[1] * (1. - t) + p4[1] * t};
+    //                     bool entrando = produto_escalar_com_ortogonal(p1, p2, p3, p4) < 0;
+                        
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+    // for (auto& [key, vec] : intersecoes) {
+    //     std::sort(vec.begin(), vec.end(), [](auto a, auto b) {
+    //         return std::get<1>(a) < std::get<1>(b);
+    //     });
+    // }
+    // std::vector<std::map<std::size_t, std::tuple<std::size_t, std::size_t, bool>>> idas(poly1.size());
+    // std::vector<std::map<std::size_t, std::tuple<std::size_t, std::size_t, bool>>> voltas(poly2.size());
+    // std::size_t num_intersecoes = 0;
+    // for (std::size_t p2_idx = 0; p2_idx < poly2.size(); ++p2_idx) {
+    //     auto& comp2 = poly2[p2_idx];
+    //     novo2.push_back({});
+    //     for (std::size_t j = 0; j < comp2.size() - 1; ++j) {
+    //         novo2[p2_idx].push_back(comp2[j]);
+    //         for (auto [ponto, posicao, p1_idx, i, pos] : intersecoes[std::make_pair(p2_idx, j)]) {
+    //             novo2[p2_idx].push_back(ponto);
+    //             auto poly2_pos = novo2[p2_idx].size() - 1;
+    //             bool entrando = produto_escalar_com_ortogonal(
+    //                 poly1[p1_idx][i],
+    //                 poly1[p1_idx][i+1],
+    //                 comp2[j],
+    //                 comp2[j+1]
+    //             ) < 0;
+    //             idas[p1_idx][pos] = {p2_idx, poly2_pos, entrando};
+    //             voltas[p2_idx][poly2_pos] = {p1_idx, pos, !entrando};
+    //             ++num_intersecoes;
+    //         }
+    //     }
+    // }
+    // if (num_intersecoes == 0) {
+    //     // nesse caso não houve interseções
+    //     // preciso adicionar muitos testes depois para ver se alguma componente
+    //     // de algum está dentro outra, ou algo assim
+    //     return {};
+    // }
+    // // começa a percorrer
+    // std::size_t p_idx = 0;
+    // for (; p_idx < poly1.size(); ++p_idx) {
+
+    // }
+
+    return {};
+
+}
+
+/*
 PoligonoComFuros intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2) {
     // considerando que cada componente já tem o primeiro e último ponto iguais
     // para poder iterar por todas as arestas dentro do loop
@@ -581,17 +739,8 @@ PoligonoComFuros intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros p
     // std::map<std::pair<std::size_t, std::size_t>, Ponto> intersecoes;
     // std::map<std::size_t, std::pair<Ponto, double>> intersecoes;
     
-    // a maneira de indexar:
-    // std::size_t maior_tamanho = 0;
-    // for (auto vec : poly2) {
-    //     if (vec.size() > maior_tamanho) {
-    //         maior_tamanho = vec.size();
-    //     }
-    // }
     // std::vector<std::vector<std::pair<Ponto, double>>> intersecoes;
-    std::map<std::make_pair<std::size_t, std::size_t>, std::vector<std::tuple<Ponto, double, std::size_t, std::size_t, std::size_t>>> intersecoes;
-
-    // std::map<
+    std::map<std::pair<std::size_t, std::size_t>, std::vector<std::tuple<Ponto, double, std::size_t, std::size_t, std::size_t>>> intersecoes;
 
     for (std::size_t p1_idx = 0; p1_idx < poly1.size(); ++p1_idx) {
         auto& comp1 = poly1[p1_idx];
@@ -620,7 +769,7 @@ PoligonoComFuros intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros p
             }
         }
     }
-    for (auto& vec : intersecoes) {
+    for (auto& [key, vec] : intersecoes) {
         std::sort(vec.begin(), vec.end(), [](auto a, auto b) {
             return std::get<1>(a) < std::get<1>(b);
         });
@@ -660,13 +809,16 @@ PoligonoComFuros intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros p
 
     }
 
+    return {};
 
 }
+*/
 
 enum class Tela {
     ORIGINAL,
     OPERACOES_BOOLEANAS,
     TRIANGULACAO,
+    ATIVIDADE,
 };
 
 struct State {
@@ -684,6 +836,15 @@ struct State {
     bool comecar_passo_a_passo;
 
     Tela tela;
+
+    // parte da atividade de hoje
+    std::vector<Ponto> entrada;
+    std::vector<Cor> cores_entrada;
+    bool resetar_pontos;
+    bool recebendo_pontos;
+    bool recalcular_orientacao;
+    bool recalcular_convexidade_dos_vertices;
+    bool recalcular_orelhas;
 };
 
 void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
@@ -743,6 +904,34 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
         }
     } else if (estado.tela == Tela::OPERACOES_BOOLEANAS) {
 
+    } else if (estado.tela == Tela::ATIVIDADE) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && estado.recebendo_pontos) {
+            if (!mods) {
+                double xpos {};
+                double ypos {};
+                glfwGetCursorPos(window, &xpos, &ypos);
+                int width {};
+                int height {};
+                glfwGetWindowSize(window, &width, &height);
+                double x {xpos / static_cast<double> (width) * 2. - 1.};
+                double y {1. - ypos / static_cast<double> (height) * 2.};
+                estado.entrada.push_back({x, y});
+                estado.cores_entrada.push_back(Cor::DESCONHECIDO);
+            } else if (mods == GLFW_MOD_CONTROL) {
+                estado.recebendo_pontos = false;
+            }
+        } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE && !estado.recebendo_pontos) {
+            if (mods == GLFW_MOD_CONTROL) {
+                estado.resetar_pontos = true;
+                estado.recebendo_pontos = true;
+            } else if (mods == GLFW_MOD_SHIFT) {
+                estado.recalcular_orientacao = true;
+            } else if (!mods) {
+                estado.recalcular_convexidade_dos_vertices = true;
+            } else if (mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
+                estado.recalcular_orelhas = true;
+            }
+        }
     }
 }
 
@@ -777,6 +966,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                 break;
             case GLFW_KEY_3:
                 estado.tela = Tela::TRIANGULACAO;
+                break;
+            case GLFW_KEY_4:
+                estado.tela = Tela::ATIVIDADE;
                 break;
             default:
                 break;
@@ -1373,6 +1565,7 @@ int main() {
     glfwMakeContextCurrent(window);
     
     State estado {};
+    estado.recebendo_pontos = true;
     glfwSetWindowUserPointer(window, &estado);
     
     // glfwSetCursorEnterCallback(window, cursor_enter_callback);
@@ -1401,6 +1594,8 @@ int main() {
     Shader program {"shaders/vertex.glsl", "shaders/fragment.glsl"};
     Shader point_program {"shaders/point_vertex.glsl", "shaders/point_fragment.glsl"};
     Shader color_line_program {"shaders/color_line_vertex.glsl", "shaders/color_line_fragment.glsl"};
+    
+    color_line_program.setFloat("alpha", 1.0f);
     /*
     BufferLayout layout;
     layout.push<float>(3);
@@ -1478,20 +1673,20 @@ int main() {
     glBindVertexArray(0);
     
     /////////////////////////////
-    // unsigned passo_vbo {};
-    // glGenBuffers(1, &passo_vbo);
-    // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-    // glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    unsigned atividade_vbo {};
+    glGenBuffers(1, &atividade_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+    glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
-    // unsigned passo_vao {};
-    // glGenVertexArrays(1, &passo_vao);
-    // glBindVertexArray(passo_vao);
+    unsigned atividade_vao {};
+    glGenVertexArrays(1, &atividade_vao);
+    glBindVertexArray(atividade_vao);
     
-    // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
-    // glEnableVertexAttribArray(0);
-    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
-    // glEnableVertexAttribArray(1);
-    // glBindVertexArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+    glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
     
     std::vector<Ponto> fecho_calculado {};
     std::size_t last_size = 0;
@@ -1505,6 +1700,7 @@ int main() {
     // RetornoAlg resultado_ate_agora {};
     // bool resultado_arrumado_para_renderizacao = false;
     // std::size_t passo_quantos {};
+    std::size_t atividade_size = 0;
     AlgoritmoPassoAPasso passo_a_passo_manager {estado, point_program, color_line_program};
     while (!glfwWindowShouldClose(window)) {
         // win.processInput();
@@ -1512,238 +1708,410 @@ int main() {
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
-        if (estado.cliques.size() > last_size) {
-            std::size_t diff = estado.cliques.size() - last_size;
-            std::vector<float> ps {};
-            ps.reserve(diff * 5 * sizeof (float));
-            for (std::size_t i = last_size; i < estado.cliques.size(); ++i) {
-                ps.push_back(estado.cliques[i][0]);
-                ps.push_back(estado.cliques[i][1]);
-                ps.push_back(1.0f);
-                ps.push_back(1.0f);
-                ps.push_back(1.0f);
+
+        if (estado.tela == Tela::ORIGINAL) {
+            
+            if (estado.cliques.size() > last_size) {
+                std::size_t diff = estado.cliques.size() - last_size;
+                std::vector<float> ps {};
+                ps.reserve(diff * 5 * sizeof (float));
+                for (std::size_t i = last_size; i < estado.cliques.size(); ++i) {
+                    ps.push_back(estado.cliques[i][0]);
+                    ps.push_back(estado.cliques[i][1]);
+                    ps.push_back(1.0f);
+                    ps.push_back(1.0f);
+                    ps.push_back(1.0f);
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(last_size * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
+                last_size = estado.cliques.size();
             }
+
+            if (estado.outros.size() > outros_control) {
+                std::size_t diff = estado.outros.size() - outros_control;
+                std::vector<float> ps {};
+                ps.reserve(diff * 5 * sizeof (float));
+                for (std::size_t i = outros_control; i < estado.outros.size(); ++i) {
+                    auto [ponto, cor] = estado.outros[i];
+                    ps.push_back(ponto[0]);
+                    ps.push_back(ponto[1]);
+                    // sempre começa com amarelo
+                    ps.push_back(0.788f);
+                    ps.push_back(0.682f);
+                    ps.push_back(0.078f);
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, outros_vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(outros_control * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
+                outros_control = estado.outros.size();
+            }
+            
+            if (estado.should_recalculate_convex_hull || estado.comecar_passo_a_passo) {
+                fecho_calculado = fecho_convexo(estado.cliques);
+                std::vector<float> ps {};
+                ps.reserve(fecho_calculado.size() * 2 * sizeof (float));
+                for (std::size_t i = 0; i < fecho_calculado.size(); ++i) {
+                    ps.push_back(fecho_calculado[i][0]);
+                    ps.push_back(fecho_calculado[i][1]);
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, fecho_vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(fecho_calculado.size() * 2 * sizeof (float)), ps.data());
+                estado.should_recalculate_convex_hull = false;
+            }
+
+            if (estado.should_recalculate_area) {
+                double area = area_poligono(fecho_calculado);
+                std::cout << "Area atual do fecho convexo: " << area << std::endl;
+                estado.should_recalculate_area = false;
+            }
+
+            if (estado.should_recalculate_point_in_polygon) {
+                for (auto& [ponto, cor] : estado.outros) {
+                    if (cor != Cor::DENTRO) {
+                        Cor nova_cor = point_in_polygon(ponto, fecho_calculado);
+                        cor = nova_cor;
+                    }
+                }
+                // depois disso, por enquanto, recolocamos todos os dados no buffer
+                // isso pode ser demorado (?)
+
+                std::vector<float> ps {};
+                ps.reserve(outros_control * 5 * sizeof (float));
+                for (std::size_t i = 0; i < outros_control; ++i) {
+                    auto [ponto, cor] = estado.outros[i];
+                    ps.push_back(ponto[0]);
+                    ps.push_back(ponto[1]);
+                    // agora não vai ter nenhum amarelo
+                    if (cor == Cor::DESCONHECIDO) {
+                        std::cerr << "não era para ter amarelo" << std::endl;
+                        ps.push_back(0.788f); // 201
+                        ps.push_back(0.682f); // 174
+                        ps.push_back(0.078f); // 20
+                    } else if (cor == Cor::DENTRO) {
+                        ps.push_back(0.325f); // 83
+                        ps.push_back(0.788f); // 201
+                        ps.push_back(0.078f); // 20
+                    } else {
+                        ps.push_back(0.788f); // 201
+                        ps.push_back(0.149f); // 38
+                        ps.push_back(0.078f); // 20
+                    }
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, outros_vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(outros_control * 5 * sizeof (float)), ps.data());
+                
+                estado.should_recalculate_point_in_polygon = false;
+            }
+            
+            if (fecho_calculado.size() > 0) {
+                program.use();
+                program.setFloat("alpha", 0.9f);
+                glBindBuffer(GL_ARRAY_BUFFER, fecho_vbo);
+                glBindVertexArray(fecho_vao);
+                glDrawArrays(GL_LINE_LOOP, 0, fecho_calculado.size());
+                
+                program.setFloat("alpha", 0.4f);
+                glDrawArrays(GL_TRIANGLE_FAN, 0, fecho_calculado.size());
+            }
+            
+            point_program.use();
+            point_program.setFloat("pointRadius", estado.pointSize);
+            
             glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(last_size * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
-            last_size = estado.cliques.size();
-        }
+            glBindVertexArray(vao);
+            glDrawArrays(GL_POINTS, 0, last_size);
 
-        if (estado.outros.size() > outros_control) {
-            std::size_t diff = estado.outros.size() - outros_control;
-            std::vector<float> ps {};
-            ps.reserve(diff * 5 * sizeof (float));
-            for (std::size_t i = outros_control; i < estado.outros.size(); ++i) {
-                auto [ponto, cor] = estado.outros[i];
-                ps.push_back(ponto[0]);
-                ps.push_back(ponto[1]);
-                // sempre começa com amarelo
-                ps.push_back(0.788f);
-                ps.push_back(0.682f);
-                ps.push_back(0.078f);
-            }
             glBindBuffer(GL_ARRAY_BUFFER, outros_vbo);
-            glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(outros_control * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
-            outros_control = estado.outros.size();
-        }
-        
-        if (estado.should_recalculate_convex_hull || estado.comecar_passo_a_passo) {
-            fecho_calculado = fecho_convexo(estado.cliques);
-            std::vector<float> ps {};
-            ps.reserve(fecho_calculado.size() * 2 * sizeof (float));
-            for (std::size_t i = 0; i < fecho_calculado.size(); ++i) {
-                ps.push_back(fecho_calculado[i][0]);
-                ps.push_back(fecho_calculado[i][1]);
+            glBindVertexArray(outros_vao);
+            glDrawArrays(GL_POINTS, 0, outros_control);
+
+            if (estado.comecar_passo_a_passo) {
+                estado.passo_a_passo_em_andamento = true;
+                estado.proximo_passo = true;
+                estado.comecar_passo_a_passo = false;
+                // resultado_ate_agora = {};
+                passo_a_passo_manager.reset();
             }
-            glBindBuffer(GL_ARRAY_BUFFER, fecho_vbo);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(fecho_calculado.size() * 2 * sizeof (float)), ps.data());
-            estado.should_recalculate_convex_hull = false;
-        }
+            if (estado.proximo_passo) {
+                estado.proximo_passo = false;
+                passo_a_passo_manager.proximo_passo(fecho_calculado);
+                // auto res = algoritmo_v1_passo_a_passo(fecho_calculado);
+                // if (res.etapa_do_passo_executado == Etapa::ETAPA_2) {
+                //     resultado_ate_agora = res.resultado_ate_agora;
+                // }
+                // if (res.acabou) {
+                //     estado.passo_a_passo_em_andamento = false;
+                //     estado.passo_a_passo_acabou_de_acabar = true;
+                //     resultado_arrumado_para_renderizacao = false;
+                // }
+                passo_a_passo_manager.arruma_renderizacao();
+                // std::array<Ponto, 6> pontos {};
+                // std::size_t num = 4;
+                // pontos[0] = res.colorir_esse;
+                // pontos[1] = res.esse_tambem;
+                // pontos[2] = res.desenhar_essa[0];
+                // pontos[3] = res.desenhar_essa[1];
+                // if (res.desenhar_a_outra) {
+                //     num += 2;
+                //     pontos[4] = res.tambem_desenhar_essa[0];
+                //     pontos[5] = res.tambem_desenhar_essa[1];
+                // }
 
-        if (estado.should_recalculate_area) {
-            double area = area_poligono(fecho_calculado);
-            std::cout << "Area atual do fecho convexo: " << area << std::endl;
-            estado.should_recalculate_area = false;
-        }
+                // std::array<std::array<float, 3>, 6> cores {};
+                // if (res.etapa_do_passo_executado == Etapa::ETAPA_1) {
+                //     // usado como base: #26a6c9
+                //     cores[0] = {27, 181, 224};
+                //     cores[1] = {101, 197, 224};
+                //     cores[2] = {38, 166, 201};
+                //     cores[3] = {38, 166, 201};
+                //     if (res.desenhar_a_outra) {
+                //         cores[4] = {111, 182, 201};
+                //         cores[5] = {111, 182, 201};
+                //     }
+                // } else {
+                //     // usado como base: #c9262b
+                //     cores[0] = {230, 32, 39};
+                //     cores[1] = {230, 78, 83};
+                //     cores[2] = {201, 38, 43};
+                //     cores[3] = {201, 38, 43};
+                //     if (res.desenhar_a_outra) {
+                //         cores[4] = {201, 71, 75};
+                //         cores[5] = {201, 71, 75};
+                //     }
+                // }
+                // std::vector<float> ps {};
+                // ps.reserve(num * 5 * sizeof (float));
+                // for (std::size_t i = 0; i < num; ++i) {
+                //     ps.push_back(pontos[i][0]);
+                //     ps.push_back(pontos[i][1]);
+                //     ps.push_back(cores[i][0] / 255.0f);
+                //     ps.push_back(cores[i][1] / 255.0f);
+                //     ps.push_back(cores[i][2] / 255.0f);
+                // }
+                // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+                // glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
 
-        if (estado.should_recalculate_point_in_polygon) {
-            for (auto& [ponto, cor] : estado.outros) {
-                if (cor != Cor::DENTRO) {
-                    Cor nova_cor = point_in_polygon(ponto, fecho_calculado);
-                    cor = nova_cor;
+                // passo_a_passo_manager.renderiza_passo();
+                // glBindVertexArray(passo_vao);
+                // point_program.use();
+                // glDrawArrays(GL_POINTS, 0, 2);
+                // color_line_program.use();
+                // passo_quantos = num - 2;
+                // glDrawArrays(GL_LINES, 2, passo_quantos);
+            }
+            if (estado.passo_a_passo_em_andamento || estado.passo_a_passo_acabou_de_acabar) {
+                passo_a_passo_manager.renderiza_passo();
+                // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+                // glBindVertexArray(passo_vao);
+                // point_program.use();
+                // glDrawArrays(GL_POINTS, 0, 2);
+                // color_line_program.use();
+                // glDrawArrays(GL_LINES, 2, passo_quantos);
+            }
+            if (estado.mostrar_resultado_passo_a_passo) {
+                estado.mostrando_resultado_passo_a_passo = true;
+                passo_a_passo_manager.renderiza_resultado();
+                // if (!resultado_arrumado_para_renderizacao) {
+                //     std::array<Ponto, 4> pontos {};
+                //     std::size_t num = 4;
+                //     pontos[0] = resultado_ate_agora.p;
+                //     pontos[1] = resultado_ate_agora.intersecao_encontrada;
+                //     pontos[2] = resultado_ate_agora.r[0];
+                //     pontos[3] = resultado_ate_agora.r[1];
+                //     std::vector<float> ps {};
+                //     ps.reserve(num * 5 * sizeof (float));
+                //     for (std::size_t i = 0; i < num; ++i) {
+                //         ps.push_back(pontos[i][0]);
+                //         ps.push_back(pontos[i][1]);
+                //         ps.push_back(0.149f); // 38
+                //         ps.push_back(0.788f); // 201
+                //         ps.push_back(0.682f); // 174
+                //     }
+                //     glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+                //     glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
+
+                //     resultado_arrumado_para_renderizacao = true;
+                // }
+
+                // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+                // glBindVertexArray(passo_vao);
+                // point_program.use();
+                // glDrawArrays(GL_POINTS, 0, 4);
+                // color_line_program.use();
+                // glDrawArrays(GL_LINES, 0, 4);
+            } else {
+                estado.mostrando_resultado_passo_a_passo = false;
+            }
+            
+        } else if (estado.tela == Tela::OPERACOES_BOOLEANAS) {
+            glClearColor(0.2f, 0.3f, 0.2f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            
+        } else if (estado.tela == Tela::ATIVIDADE) {
+
+            glClearColor(0.3f, 0.2f, 0.3f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            if (estado.resetar_pontos) {
+                estado.entrada.clear();
+                estado.cores_entrada.clear();
+                atividade_size = 0;
+                estado.resetar_pontos = false;
+            }
+
+            if (estado.entrada.size() > atividade_size) {
+                std::size_t diff = estado.entrada.size() - atividade_size;
+                std::vector<float> ps {};
+                ps.reserve(diff * 5 * sizeof (float));
+                for (std::size_t i = atividade_size; i < estado.entrada.size(); ++i) {
+                    auto ponto = estado.entrada[i];
+                    auto cor = estado.cores_entrada[i];
+                    ps.push_back(ponto[0]);
+                    ps.push_back(ponto[1]);
+                    // sempre começa com amarelo
+                    ps.push_back(0.788f);
+                    ps.push_back(0.682f);
+                    ps.push_back(0.078f);
                 }
+                glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(atividade_size * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
+                atividade_size = estado.entrada.size();
             }
-            // depois disso, por enquanto, recolocamos todos os dados no buffer
-            // isso pode ser demorado (?)
 
-            std::vector<float> ps {};
-            ps.reserve(outros_control * 5 * sizeof (float));
-            for (std::size_t i = 0; i < outros_control; ++i) {
-                auto [ponto, cor] = estado.outros[i];
-                ps.push_back(ponto[0]);
-                ps.push_back(ponto[1]);
-                // agora não vai ter nenhum amarelo
-                if (cor == Cor::DESCONHECIDO) {
-                    std::cerr << "não era para ter amarelo" << std::endl;
-                    ps.push_back(0.788f); // 201
-                    ps.push_back(0.682f); // 174
-                    ps.push_back(0.078f); // 20
-                } else if (cor == Cor::DENTRO) {
-                    ps.push_back(0.325f); // 83
-                    ps.push_back(0.788f); // 201
-                    ps.push_back(0.078f); // 20
+            if (estado.recalcular_orientacao) {
+                auto& v = estado.entrada;
+                int curvas_a_esquerda = 0;
+                for (std::size_t i = 1; i < v.size() - 1; ++i) {
+                    auto& p1 = v[i-1];
+                    auto& p2 = v[i];
+                    auto& p3 = v[i+1];
+                    if (left(p1, p2, p3)) {
+                        ++curvas_a_esquerda;
+                    } else if (area_orientada(p1, p2, p3) != 0.) {
+                        --curvas_a_esquerda;
+                    }
+                }
+                auto& p1 = v[0];
+                auto& p2 = v[1];
+                auto& pn_2 = v[v.size() - 2];
+                auto& pn_1 = v[v.size() - 1];
+                if (left(pn_2, pn_1, p1)) {
+                    ++curvas_a_esquerda;
+                } else if (area_orientada(pn_2, pn_1, p1) != 0.) {
+                    --curvas_a_esquerda;
+                }
+                if (left(pn_1, p1, p2)) {
+                    ++curvas_a_esquerda;
+                } else if (area_orientada(pn_1, p1, p2) != 0.) {
+                    --curvas_a_esquerda;
+                }
+                if (curvas_a_esquerda > 0) {
+                    std::cout << "orientação anti-horária" << std::endl;
                 } else {
-                    ps.push_back(0.788f); // 201
-                    ps.push_back(0.149f); // 38
-                    ps.push_back(0.078f); // 20
+                    std::cout << "orientação horária" << std::endl;
                 }
+                estado.recalcular_orientacao = false;
             }
-            glBindBuffer(GL_ARRAY_BUFFER, outros_vbo);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(outros_control * 5 * sizeof (float)), ps.data());
+
+            if (estado.recalcular_convexidade_dos_vertices) {
+                auto& v = estado.entrada;
+                for (std::size_t i = 0; i < v.size(); ++i) {
+                    std::size_t prev = (i == 0) ? (v.size()-1) : (i-1);
+                    std::size_t prox = (i+1 >= v.size()) ? (0) : (i+1);
+                    auto& p1 = v[prev];
+                    auto& p2 = v[i];
+                    auto& p3 = v[prox];
+                    Cor nova_cor {};
+                    if (area_orientada(p1, p2, p3) >= 0.) {
+                        nova_cor = Cor::DENTRO;
+                    } else {
+                        nova_cor = Cor::FORA;
+                    }
+                    estado.cores_entrada[i] = nova_cor;
+                }
+
+                std::vector<float> ps {};
+                ps.reserve(atividade_size * 5 * sizeof (float));
+                for (std::size_t i = 0; i < atividade_size; ++i) {
+                    auto ponto = estado.entrada[i];
+                    auto cor = estado.cores_entrada[i];
+                    ps.push_back(ponto[0]);
+                    ps.push_back(ponto[1]);
+                    // agora não vai ter nenhum amarelo
+                    if (cor == Cor::DESCONHECIDO) {
+                        std::cerr << "não era para ter amarelo" << std::endl;
+                        ps.push_back(0.788f); // 201
+                        ps.push_back(0.682f); // 174
+                        ps.push_back(0.078f); // 20
+                    } else if (cor == Cor::DENTRO) {
+                        ps.push_back(0.325f); // 83
+                        ps.push_back(0.788f); // 201
+                        ps.push_back(0.078f); // 20
+                    } else {
+                        ps.push_back(0.788f); // 201
+                        ps.push_back(0.149f); // 38
+                        ps.push_back(0.078f); // 20
+                    }
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(atividade_size * 5 * sizeof (float)), ps.data());
+                
+                estado.recalcular_convexidade_dos_vertices = false;
+            }
             
-            estado.should_recalculate_point_in_polygon = false;
-        }
-        
-        if (fecho_calculado.size() > 0) {
-            program.use();
-            program.setFloat("alpha", 0.9f);
-            glBindBuffer(GL_ARRAY_BUFFER, fecho_vbo);
-            glBindVertexArray(fecho_vao);
-            glDrawArrays(GL_LINE_LOOP, 0, fecho_calculado.size());
+            if (estado.recalcular_orelhas) {
+                auto& v = estado.entrada;
+                for (std::size_t i = 0; i < v.size(); ++i) {
+                    Cor nova_cor {};
+                    if (orelha(v, i)) {
+                        nova_cor = Cor::DENTRO;
+                    } else {
+                        nova_cor = Cor::FORA;
+                    }
+                    estado.cores_entrada[i] = nova_cor;
+                }
+
+                std::vector<float> ps {};
+                ps.reserve(atividade_size * 5 * sizeof (float));
+                for (std::size_t i = 0; i < atividade_size; ++i) {
+                    auto ponto = estado.entrada[i];
+                    auto cor = estado.cores_entrada[i];
+                    ps.push_back(ponto[0]);
+                    ps.push_back(ponto[1]);
+                    // agora não vai ter nenhum amarelo
+                    if (cor == Cor::DESCONHECIDO) {
+                        std::cerr << "não era para ter amarelo" << std::endl;
+                        ps.push_back(0.788f); // 201
+                        ps.push_back(0.682f); // 174
+                        ps.push_back(0.078f); // 20
+                    } else if (cor == Cor::DENTRO) {
+                        ps.push_back(0.325f); // 83
+                        ps.push_back(0.788f); // 201
+                        ps.push_back(0.078f); // 20
+                    } else {
+                        ps.push_back(0.788f); // 201
+                        ps.push_back(0.149f); // 38
+                        ps.push_back(0.078f); // 20
+                    }
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(atividade_size * 5 * sizeof (float)), ps.data());
+                
+                estado.recalcular_orelhas = false;
+            }
             
-            program.setFloat("alpha", 0.4f);
-            glDrawArrays(GL_TRIANGLE_FAN, 0, fecho_calculado.size());
+            color_line_program.use();
+            color_line_program.setFloat("alpha", 0.2f);
+            glDrawArrays(GL_TRIANGLE_FAN, 0, atividade_size);
+            color_line_program.setFloat("alpha", 1.0f);
+            glDrawArrays(GL_LINE_LOOP, 0, atividade_size);
+
+            point_program.use();
+            point_program.setFloat("pointRadius", estado.pointSize);
+            glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+            glBindVertexArray(atividade_vao);
+            glDrawArrays(GL_POINTS, 0, atividade_size);
+
         }
-        
-        point_program.use();
-        point_program.setFloat("pointRadius", estado.pointSize);
-        
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBindVertexArray(vao);
-        glDrawArrays(GL_POINTS, 0, last_size);
-
-        glBindBuffer(GL_ARRAY_BUFFER, outros_vbo);
-        glBindVertexArray(outros_vao);
-        glDrawArrays(GL_POINTS, 0, outros_control);
-
-        if (estado.comecar_passo_a_passo) {
-            estado.passo_a_passo_em_andamento = true;
-            estado.proximo_passo = true;
-            estado.comecar_passo_a_passo = false;
-            // resultado_ate_agora = {};
-            passo_a_passo_manager.reset();
-        }
-        if (estado.proximo_passo) {
-            estado.proximo_passo = false;
-            passo_a_passo_manager.proximo_passo(fecho_calculado);
-            // auto res = algoritmo_v1_passo_a_passo(fecho_calculado);
-            // if (res.etapa_do_passo_executado == Etapa::ETAPA_2) {
-            //     resultado_ate_agora = res.resultado_ate_agora;
-            // }
-            // if (res.acabou) {
-            //     estado.passo_a_passo_em_andamento = false;
-            //     estado.passo_a_passo_acabou_de_acabar = true;
-            //     resultado_arrumado_para_renderizacao = false;
-            // }
-            passo_a_passo_manager.arruma_renderizacao();
-            // std::array<Ponto, 6> pontos {};
-            // std::size_t num = 4;
-            // pontos[0] = res.colorir_esse;
-            // pontos[1] = res.esse_tambem;
-            // pontos[2] = res.desenhar_essa[0];
-            // pontos[3] = res.desenhar_essa[1];
-            // if (res.desenhar_a_outra) {
-            //     num += 2;
-            //     pontos[4] = res.tambem_desenhar_essa[0];
-            //     pontos[5] = res.tambem_desenhar_essa[1];
-            // }
-
-            // std::array<std::array<float, 3>, 6> cores {};
-            // if (res.etapa_do_passo_executado == Etapa::ETAPA_1) {
-            //     // usado como base: #26a6c9
-            //     cores[0] = {27, 181, 224};
-            //     cores[1] = {101, 197, 224};
-            //     cores[2] = {38, 166, 201};
-            //     cores[3] = {38, 166, 201};
-            //     if (res.desenhar_a_outra) {
-            //         cores[4] = {111, 182, 201};
-            //         cores[5] = {111, 182, 201};
-            //     }
-            // } else {
-            //     // usado como base: #c9262b
-            //     cores[0] = {230, 32, 39};
-            //     cores[1] = {230, 78, 83};
-            //     cores[2] = {201, 38, 43};
-            //     cores[3] = {201, 38, 43};
-            //     if (res.desenhar_a_outra) {
-            //         cores[4] = {201, 71, 75};
-            //         cores[5] = {201, 71, 75};
-            //     }
-            // }
-            // std::vector<float> ps {};
-            // ps.reserve(num * 5 * sizeof (float));
-            // for (std::size_t i = 0; i < num; ++i) {
-            //     ps.push_back(pontos[i][0]);
-            //     ps.push_back(pontos[i][1]);
-            //     ps.push_back(cores[i][0] / 255.0f);
-            //     ps.push_back(cores[i][1] / 255.0f);
-            //     ps.push_back(cores[i][2] / 255.0f);
-            // }
-            // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-            // glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
-
-            // passo_a_passo_manager.renderiza_passo();
-            // glBindVertexArray(passo_vao);
-            // point_program.use();
-            // glDrawArrays(GL_POINTS, 0, 2);
-            // color_line_program.use();
-            // passo_quantos = num - 2;
-            // glDrawArrays(GL_LINES, 2, passo_quantos);
-        }
-        if (estado.passo_a_passo_em_andamento || estado.passo_a_passo_acabou_de_acabar) {
-            passo_a_passo_manager.renderiza_passo();
-            // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-            // glBindVertexArray(passo_vao);
-            // point_program.use();
-            // glDrawArrays(GL_POINTS, 0, 2);
-            // color_line_program.use();
-            // glDrawArrays(GL_LINES, 2, passo_quantos);
-        }
-        if (estado.mostrar_resultado_passo_a_passo) {
-            estado.mostrando_resultado_passo_a_passo = true;
-            passo_a_passo_manager.renderiza_resultado();
-            // if (!resultado_arrumado_para_renderizacao) {
-            //     std::array<Ponto, 4> pontos {};
-            //     std::size_t num = 4;
-            //     pontos[0] = resultado_ate_agora.p;
-            //     pontos[1] = resultado_ate_agora.intersecao_encontrada;
-            //     pontos[2] = resultado_ate_agora.r[0];
-            //     pontos[3] = resultado_ate_agora.r[1];
-            //     std::vector<float> ps {};
-            //     ps.reserve(num * 5 * sizeof (float));
-            //     for (std::size_t i = 0; i < num; ++i) {
-            //         ps.push_back(pontos[i][0]);
-            //         ps.push_back(pontos[i][1]);
-            //         ps.push_back(0.149f); // 38
-            //         ps.push_back(0.788f); // 201
-            //         ps.push_back(0.682f); // 174
-            //     }
-            //     glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-            //     glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
-
-            //     resultado_arrumado_para_renderizacao = true;
-            // }
-
-            // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-            // glBindVertexArray(passo_vao);
-            // point_program.use();
-            // glDrawArrays(GL_POINTS, 0, 4);
-            // color_line_program.use();
-            // glDrawArrays(GL_LINES, 0, 4);
-        } else {
-            estado.mostrando_resultado_passo_a_passo = false;
-        }
-        
         //////////////////////////////////////////
 
         glfwSwapBuffers(window);

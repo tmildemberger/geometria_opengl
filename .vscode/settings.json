@@ -99,5 +99,6 @@
         "valarray": "cpp",
         "variant": "cpp"
     },
+    "editor.foldingStrategy": "indentation"
     //"C_Cpp.default.compilerPath": "D:\\build2\\build2\\bin\\g++.exe"
 }
