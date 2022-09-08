@@ -1,2 +1,0 @@
-obj/glad.c.o: glad.c /home/thiago/Downloads/glad/include/glad/glad.h \
- /home/thiago/Downloads/glad/include/KHR/khrplatform.h

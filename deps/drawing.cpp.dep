@@ -1,3 +1,0 @@
-obj/drawing.cpp.o: drawing.cpp drawing.hpp \
- /home/thiago/Downloads/glad/include/glad/glad.h \
- /home/thiago/Downloads/glad/include/KHR/khrplatform.h renderer.hpp

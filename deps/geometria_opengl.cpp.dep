@@ -1,5 +1,0 @@
-obj/geometria_opengl.cpp.o: geometria_opengl.cpp \
- /home/thiago/Downloads/glad/include/glad/glad.h \
- /home/thiago/Downloads/glad/include/KHR/khrplatform.h shader.hpp \
- thing.hpp Window.hpp stb_img.hpp stb_image.h texture.hpp drawing.hpp \
- renderer.hpp

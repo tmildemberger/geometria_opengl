@@ -1,1 +1,0 @@
-obj/stb_img.cpp.o: stb_img.cpp stb_img.hpp stb_image.h

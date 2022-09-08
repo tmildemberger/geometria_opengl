@@ -1,3 +1,0 @@
-obj/Window.cpp.o: Window.cpp Window.hpp \
- /home/thiago/Downloads/glad/include/glad/glad.h \
- /home/thiago/Downloads/glad/include/KHR/khrplatform.h

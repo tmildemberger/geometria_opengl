@@ -1,4 +1,0 @@
-obj/texture.cpp.o: texture.cpp texture.hpp \
- /home/thiago/Downloads/glad/include/glad/glad.h \
- /home/thiago/Downloads/glad/include/KHR/khrplatform.h stb_img.hpp \
- stb_image.h

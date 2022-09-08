@@ -1,3 +1,0 @@
-obj/shader.cpp.o: shader.cpp shader.hpp \
- /home/thiago/Downloads/glad/include/glad/glad.h \
- /home/thiago/Downloads/glad/include/KHR/khrplatform.h thing.hpp
