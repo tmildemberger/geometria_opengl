@@ -5,6 +5,9 @@
 #include <cstdlib>
 #include <cmath>
 #include <map>
+#include <set>
+#include <utility>
+#include <functional>
 //#include <numbers>
 #include <limits>
 #include <glad/glad.h>
@@ -471,7 +474,7 @@ Intersecao intersecao_semireta_segmento(Ponto p1, Ponto p2, Ponto p3, Ponto p4) 
 
 Intersecao intersecao_com_left(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
 
-// checa se há interseção entre a semireta p1p2 e o segmento p3p4
+// checa se há interseção entre o segmento p1p2 e o segmento p3p4
 Intersecao intersecao_com_left(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
     double p1_p2_p3 = area_orientada(p1, p2, p3);
     double p1_p2_p4 = area_orientada(p1, p2, p4);
@@ -498,12 +501,17 @@ Ponto ponto_intersecao(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
     return {p3[0] * (1. - t) + p4[0] * t, p3[1] * (1. - t) + p4[1] * t};
 }
 
-Cor point_in_polygon(Ponto ponto, std::vector<Ponto> poligono);
+bool point_in_polygon(Ponto ponto, std::vector<Ponto> poligono);
 
-Cor point_in_polygon(Ponto ponto, std::vector<Ponto> poligono) {
+// recebe um polígono sem o último ponto repetido (fecha automático)
+bool point_in_polygon(Ponto ponto, std::vector<Ponto> poligono) {
     Ponto auxiliar {ponto[0] + 1.0, ponto[1]};
     std::size_t n = poligono.size();
-    poligono.push_back(poligono[0]);
+    if (poligono[0] != poligono.back()) {
+        poligono.push_back(poligono[0]);
+    } else {
+        --n;
+    }
     std::size_t count = 0;
     for (std::size_t i = 0; i < n; ++i) {
         if (poligono[i][0] < ponto[0] && poligono[i+1][0] < ponto[0]) {
@@ -523,9 +531,9 @@ Cor point_in_polygon(Ponto ponto, std::vector<Ponto> poligono) {
     // std::cout << count << std::endl;
     if (count % 2 == 1) {
         // ímpar => dentro
-        return Cor::DENTRO;
+        return true;
     } else {
-        return Cor::FORA;
+        return false;
     }
 }
 
@@ -633,6 +641,38 @@ bool orelha(const std::vector<Ponto>& poligono, std::size_t i) {
     }
 }
 
+bool orientado_antihorario(const std::vector<Ponto>& poligono);
+
+bool orientado_antihorario(const std::vector<Ponto>& poligono) {
+    auto& v = poligono;
+    int curvas_a_esquerda = 0;
+    for (std::size_t i = 1; i < v.size() - 1; ++i) {
+        auto& p1 = v[i-1];
+        auto& p2 = v[i];
+        auto& p3 = v[i+1];
+        if (left(p1, p2, p3)) {
+            ++curvas_a_esquerda;
+        } else if (area_orientada(p1, p2, p3) != 0.) {
+            --curvas_a_esquerda;
+        }
+    }
+    auto& p1 = v[0];
+    auto& p2 = v[1];
+    auto& pn_2 = v[v.size() - 2];
+    auto& pn_1 = v[v.size() - 1];
+    if (left(pn_2, pn_1, p1)) {
+        ++curvas_a_esquerda;
+    } else if (area_orientada(pn_2, pn_1, p1) != 0.) {
+        --curvas_a_esquerda;
+    }
+    if (left(pn_1, p1, p2)) {
+        ++curvas_a_esquerda;
+    } else if (area_orientada(pn_1, p1, p2) != 0.) {
+        --curvas_a_esquerda;
+    }
+    return curvas_a_esquerda > 0;
+}
+
 using PoligonoComFuros = std::vector<std::vector<Ponto>>;
 
 // PoligonoComFuros preparacao(const PoligonoComFuros& poly);
@@ -647,87 +687,370 @@ using PoligonoComFuros = std::vector<std::vector<Ponto>>;
 //     return preparado;
 // }
 
-PoligonoComFuros intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2);
+// class Compara {
+// public:
+//     bool operator()(const std::tuple<std::size_t, std::size_t, double, double, Ponto>& a, const std::tuple<std::size_t, std::size_t, double, double, Ponto>& b) {
+//         return std::get<2>(a) < std::get<2>(b);
+//     }
+// };
 
-PoligonoComFuros intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2) {
+template<typename T>
+struct Par {
+    T a;
+    T b;
+    T operator[](std::size_t i) { if (i == 0) return a; else return b; }
+};
+
+std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2);
+
+std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2) {
     // considerando que cada componente já tem o primeiro e último ponto iguais
     // para poder iterar por todas as arestas dentro do loop
 
     // considerando que cada poligono é composto por um vetor de sequências de pontos,
     // onde a primeira é a única sequência anti-horária, e as seguintes são os buracos,
     // que devem estar inteiramente dentro do primeiro
+    // bool compare(const std::tuple<std::size_t, std::size_t, bool, double>& a, const std::tuple<std::size_t, std::size_t, bool, double>& b) {
+    //     return std::get<3>(a) < std::get<3>(b);
+    // }
 
-    // std::vector<std::map<std::size_t, std::tuple<std::size_t, std::size_t, bool>>> idas(poly1.size());
-    // std::vector<std::map<std::size_t, std::tuple<std::size_t, std::size_t, bool>>> voltas(poly2.size());
-    // std::size_t num_intersecoes = 0;
+    std::vector<std::multimap<std::size_t, std::tuple<std::size_t, std::size_t, double, double, Ponto>>> idas(poly1.size());
+    std::vector<std::multimap<std::size_t, std::tuple<std::size_t, std::size_t, double, double, Ponto>>> voltas(poly2.size());
+    // std::vector<std::size_t> num_intersecoes;
+    std::size_t num_intersecoes_geral = 0;
 
     // // std::vector<std::vector<std::pair<Ponto, double>>> intersecoes;
     // // std::map<std::pair<std::size_t, std::size_t>, std::vector<std::tuple<Ponto, double, std::size_t, std::size_t, std::size_t>>> intersecoes;
 
-    // for (std::size_t p1_idx = 0; p1_idx < poly1.size(); ++p1_idx) {
-    //     auto& comp1 = poly1[p1_idx];
-    //     for (std::size_t i = 0; i < comp1.size() - 1; ++i) {
+    for (std::size_t p1_idx = 0; p1_idx < poly1.size(); ++p1_idx) {
+        auto& comp1 = poly1[p1_idx];
+        for (std::size_t i = 0; i < comp1.size() - 1; ++i) {
             
-    //         for (std::size_t p2_idx = 0; p2_idx < poly2.size(); ++p2_idx) {
-    //             auto& comp2 = poly2[p2_idx];
+            for (std::size_t p2_idx = 0; p2_idx < poly2.size(); ++p2_idx) {
+                auto& comp2 = poly2[p2_idx];
 
-    //             for (std::size_t j = 0; j < comp2.size() - 1; ++j) {
-    //                 Ponto& p1 = comp1[i];
-    //                 Ponto& p2 = comp1[i+1];
-    //                 Ponto& p3 = comp2[j];
-    //                 Ponto& p4 = comp2[j+1];
-    //                 auto [s, t] = intersecao(p1, p2, p3, p4);
-    //                 if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
-    //                     Ponto inter {p3[0] * (1. - t) + p4[0] * t, p3[1] * (1. - t) + p4[1] * t};
-    //                     bool entrando = produto_escalar_com_ortogonal(p1, p2, p3, p4) < 0;
-                        
-    //                 }
-    //             }
-    //         }
+                for (std::size_t j = 0; j < comp2.size() - 1; ++j) {
+                    Ponto& p1 = comp1[i];
+                    Ponto& p2 = comp1[i+1];
+                    Ponto& p3 = comp2[j];
+                    Ponto& p4 = comp2[j+1];
+                    // std::cout << i << ' ' << comp1.size() << std::endl;
+                    // std::cout << j << ' ' << comp2.size() << std::endl;
+                    auto [s, t] = intersecao(p1, p2, p3, p4);
+                    // std::cout << p1[0] << ' ' << p1[1] << " - " << p2[0] << ' ' << p2[1] << std::endl;
+                    // std::cout << p3[0] << ' ' << p3[1] << " - " << p4[0] << ' ' << p4[1] << std::endl;
+                    // std::cout << s << ' ' << t << std::endl;
+                    if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
+                        Ponto inter {p3[0] * (1. - t) + p4[0] * t, p3[1] * (1. - t) + p4[1] * t};
+                        bool entrando = produto_escalar_com_ortogonal(p1, p2, p3, p4) < 0;
+                        if (entrando) {
+                            voltas[p2_idx].insert({j, {p1_idx, i, t, s, inter}});
+                            std::cout << "voltas " << p2_idx << ' ' << j << ' ' << p1_idx << ' ' << i << ' ' << t << ' ' << s << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+                        } else {
+                            idas[p1_idx].insert({i, {p2_idx, j, s, t, inter}});
+                            std::cout << "idas " << p1_idx << ' ' << i << ' ' << p2_idx << ' ' << j << ' ' << s << ' ' << t << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+                        }
+                        ++num_intersecoes_geral;
+                    }
+                }
+            }
+        }
+    }
+    // std::cout << num_intersecoes_geral;
+    
+    Par<PoligonoComFuros&> polys {poly1, poly2};
+    Par<std::vector<std::multimap<std::size_t, std::tuple<std::size_t, std::size_t, double, double, Ponto>>>&> inters {idas, voltas};
+    /*
+    for (auto aa : inters[0][0]) {
+        // bool x = decltype(aa)::nothing;
+        
+        auto& [nao, val] = aa;
+        auto& [px_idx, ix, pos_orig, pos_novo, p_inter] = val;
+        std::cout << "idas 0 " << nao << ' ' << px_idx << ' ' << ix << ' ' << ' ' << pos_orig << ' ' << pos_novo << ' ' << p_inter[0] << ' ' << p_inter[1] << std::endl;
+    }
+    auto aa = inters[1][0].equal_range(0);
+    for (auto i = aa.first; i != aa.second; ++i) {
+        // bool x = decltype(*i)::nothing;
+        
+        auto& [nao, val] = *i;
+        auto& [px_idx, ix, pos_orig, pos_novo, p_inter] = val;
+        std::cout << "voltas 0 " << nao << ' '<< px_idx << ' ' << ix << ' ' << ' ' << pos_orig << ' ' << pos_novo << ' ' << p_inter[0] << ' ' << p_inter[1] << std::endl;
+    }
+    return {};*/
+    if (num_intersecoes_geral == 0) {
+        std::size_t um = 0;
+        std::size_t dois = 1;
+        if (point_in_polygon(poly2[0][0], poly1[0])) {
+            // nada
+            ;
+        } else if (point_in_polygon(poly1[0][0], poly2[0])) {
+            // fazer o mesmo que acima mas trocado
+            um = 1;
+            dois = 0;
+        } else {
+            // nesse caso, nenhum está dentro de nenhum, e a interseção é nula;
+            // ainda não sei o que retornar nesse caso;
+            return {};
+        }
+        
+        // poly2 (polys[dois]) estando dentro de poly1 (polys[um])
+        bool dentro_de_algum_buraco = false;
+        for (std::size_t i = 1; i < polys[um].size(); ++i) {
+            if (point_in_polygon(polys[dois][0][0], polys[um][i])) {
+                dentro_de_algum_buraco = true;
+                break;
+            }
+        }
+        if (dentro_de_algum_buraco) {
+            // não há interseção
+            return {};
+        }
+        // começa com parte externa e furos de poly2
+        PoligonoComFuros retorno = polys[dois];
+        std::set<std::size_t, std::greater<std::size_t>> remover;
+        
+        // adiciona furos de poly1 dentro de poly2 para o retorno
+        // quando não estiverem dentro de um furo de poly2, e se algum
+        // furo de poly2 estiver dentro de um furo de poly1, marca para
+        // remover esse furo de poly2
+        for (std::size_t i = 1; i < polys[um].size(); ++i) {
+            if (point_in_polygon(polys[um][i][0], polys[dois][0])) {
+                bool adicionar = true;
+                for (std::size_t j = 1; j < polys[dois].size(); ++j) {
+                    if (point_in_polygon(polys[um][i][0], polys[dois][j])) {
+                        // não adicionar
+                        adicionar = false;
+                        break;
+                    }
+                    if (point_in_polygon(polys[dois][j][0], polys[um][i])) {
+                        // o furo 'j' está dentro de um furo de poly1
+                        remover.insert(j);
+                    }
+                }
+                if (adicionar) {
+                    retorno.push_back(polys[um][i]);
+                }
+            }
+        }
+        // remover os que foram marcados
+        for (auto indice : remover) {
+            // já está na ordem do maior para o menor índice
+            // isso funciona mesmo se for preciso excluir todos os últimos
+            std::swap(retorno[indice], retorno[retorno.size()-1]);
+            retorno.pop_back();
+        }
+        return {retorno};
+    }
+    // std::cout << num_intersecoes_geral << std::endl;
+    
+    // para testar isso, começamos do índice 1, pois só precisamos
+    // da informação para os furos
+    std::set<std::size_t> sem_intersecoes_poly1;
+    std::set<std::size_t> sem_intersecoes_poly2;
+    for (std::size_t p1_idx = 1; p1_idx < poly1.size(); ++p1_idx) {
+        if (idas[p1_idx].size() == 0) {
+            sem_intersecoes_poly1.insert(p1_idx);
+        }
+    }
+    for (std::size_t p2_idx = 1; p2_idx < poly2.size(); ++p2_idx) {
+        if (voltas[p2_idx].size() == 0) {
+            sem_intersecoes_poly2.insert(p2_idx);
+        }
+    }
+    // depois disso, já não tem problema remover as interseções dos multimaps
+    // à medida em que forem sendo percorridas
+    
+    // começa a percorrer
+    std::size_t intersecoes_percorridas {0};
+    
+    std::vector<PoligonoComFuros> retorno;
+    std::vector<std::vector<Ponto>> externos;
+    std::vector<std::vector<Ponto>> furos;
+    
+    // auto pr = [](const std::vector<Ponto>& c) {
+    //     std::cout << "{";
+    //     for (auto p : c) {
+    //         std::cout << " (" << p[0] << ", " << p[1] << ")";
     //     }
-    // }
-    // for (auto& [key, vec] : intersecoes) {
-    //     std::sort(vec.begin(), vec.end(), [](auto a, auto b) {
-    //         return std::get<1>(a) < std::get<1>(b);
-    //     });
-    // }
-    // std::vector<std::map<std::size_t, std::tuple<std::size_t, std::size_t, bool>>> idas(poly1.size());
-    // std::vector<std::map<std::size_t, std::tuple<std::size_t, std::size_t, bool>>> voltas(poly2.size());
-    // std::size_t num_intersecoes = 0;
-    // for (std::size_t p2_idx = 0; p2_idx < poly2.size(); ++p2_idx) {
-    //     auto& comp2 = poly2[p2_idx];
-    //     novo2.push_back({});
-    //     for (std::size_t j = 0; j < comp2.size() - 1; ++j) {
-    //         novo2[p2_idx].push_back(comp2[j]);
-    //         for (auto [ponto, posicao, p1_idx, i, pos] : intersecoes[std::make_pair(p2_idx, j)]) {
-    //             novo2[p2_idx].push_back(ponto);
-    //             auto poly2_pos = novo2[p2_idx].size() - 1;
-    //             bool entrando = produto_escalar_com_ortogonal(
-    //                 poly1[p1_idx][i],
-    //                 poly1[p1_idx][i+1],
-    //                 comp2[j],
-    //                 comp2[j+1]
-    //             ) < 0;
-    //             idas[p1_idx][pos] = {p2_idx, poly2_pos, entrando};
-    //             voltas[p2_idx][poly2_pos] = {p1_idx, pos, !entrando};
-    //             ++num_intersecoes;
-    //         }
-    //     }
-    // }
-    // if (num_intersecoes == 0) {
-    //     // nesse caso não houve interseções
-    //     // preciso adicionar muitos testes depois para ver se alguma componente
-    //     // de algum está dentro outra, ou algo assim
-    //     return {};
-    // }
-    // // começa a percorrer
-    // std::size_t p_idx = 0;
-    // for (; p_idx < poly1.size(); ++p_idx) {
-
-    // }
-
-    return {};
-
+    //     std::cout << " }" << std::endl;
+    // };
+    
+    // todos os caminhos começam em uma interseção
+    for (std::size_t poly_sel = 0; poly_sel <= 1; ++poly_sel) {
+        for (std::size_t idx_comeco = 0; idx_comeco < polys[poly_sel].size(); ++idx_comeco) {
+            while (inters[poly_sel][idx_comeco].size() > 0) {
+                std::size_t sel = (poly_sel + 1) % 2;
+                auto& [nao, val] = *(inters[poly_sel][idx_comeco].begin());
+                auto& [px_idx, ix, pos_orig, pos_novo, p_inter] = val;
+                // essa é uma interseção de saída, ao contrário do planejado na aula;
+                // mas funciona igual, e do jeito que eu já estou fazendo fica mais fácil
+                
+                // a interseção inicial de cada caminho não é removida, pra que
+                // seja possível ver quando chegou ao início de novo.
+                // as outras interseções encontradas no caminho são removidas
+                
+                Ponto inicio = p_inter;
+                std::vector<Ponto> caminho;
+                bool passou_por_fora = false;
+                // talvez isso seja desnecessário
+                // caminho.reserve(poly2.size());
+                
+                caminho.push_back(inicio);
+                // pr(caminho);
+                
+                // começa a procurar próximas interseções e próximos pontos
+                do {
+                    if (px_idx == 0) {
+                        passou_por_fora = true;
+                    }
+                    bool acabou_segmento = true;
+                    // std::cout << sel << ' ' << px_idx << ' ' << ix << std::endl;
+                    auto range_outras = inters[sel][px_idx].equal_range(ix);
+                    std::vector<std::pair<std::tuple<std::size_t, std::size_t, double, double, Ponto>, decltype (range_outras.first)>> ordenar;
+                    for (auto outra = range_outras.first; outra != range_outras.second; ++outra) {
+                        ordenar.push_back(std::make_pair((*outra).second, outra));
+                    }
+                    std::sort(ordenar.begin(), ordenar.end(), [](auto a, auto b) {
+                        return std::get<2>(a.first) < std::get<2>(b.first);
+                    });
+                    std::cout << "bla     :" << ' ' << px_idx << ' ' << ix << ' ' << pos_orig << ' ' << pos_novo << ' ' << caminho.back()[0] << ' ' << caminho.back()[1] << std::endl;
+                    // for (auto outra = range_outras.first; outra != range_outras.second; ++outra) {
+                    //     auto& [px_idx2, ix2, pos_orig2, pos_novo2, p_inter2] = (*outra).second;
+                    for (auto outra : ordenar) {
+                        auto& [px_idx2, ix2, pos_orig2, pos_novo2, p_inter2] = outra.first;
+                        if (px_idx == 0 && ix == 0 && px_idx2 == 1 && ix2 == 0) {
+                            std::cout << "esto aqui" << ' ' << pos_orig << ' ' << pos_novo << std::endl;
+                            std::cout << "     aqui" << ' ' << pos_orig2 << ' ' << pos_novo2 << std::endl;
+                        }
+                        if (pos_orig2 > pos_novo) {
+                            // essa interseção é a próxima;
+                            // remove interseção encontrada
+                            inters[sel][px_idx].erase(outra.second);
+                            
+                            // muda pro outro polígono
+                            ++sel;
+                            sel %= 2;
+                            px_idx = px_idx2;
+                            ix = ix2;
+                            pos_orig = pos_orig2;
+                            pos_novo = pos_novo2;
+                            
+                            // coloca ponto no caminho
+                            caminho.push_back(p_inter2);
+                            
+                            // como foi encontrada uma interseção, não chegamos ao outro
+                            // ponto do segmento
+                            acabou_segmento = false;
+                            break;
+                        }
+                    }
+                    if (acabou_segmento) {
+                        pos_novo = 0.0;
+                        caminho.push_back(polys[sel][px_idx][ix+1]);
+                        ++ix;
+                        if (ix >= polys[sel][px_idx].size() - 1) {
+                            ix = 0;
+                        }
+                    }
+                    // std::cout << "hmm" << std::endl;
+                // pr(caminho);
+                    // sai desse loop quando chegar de volta ao inicio do caminho
+                } while (caminho.back() != inicio);
+                
+                // std::cout << "mas nao chega aqui?" << std::endl;
+                
+                // com o caminho completo, falta saber se é um caminho externo ou um furo
+                if (passou_por_fora) {
+                    // std::cout << "aa" << std::endl;
+                    externos.push_back(caminho);
+                    // pr(externos.back());
+                } else {
+                    furos.push_back(caminho);
+                }
+            }
+        }
+    }
+    
+    // pr(externos.back());
+    
+    // se não foram encontrados caminhos exteriores, um dos dois está dentro do outro
+    if (externos.size() == 0) {
+        // isso significa que não existem interseções passando por nenhuma das
+        // duas partes externas, e por isso sabemos que uma das duas está dentro
+        // da outra (já que também sabemos que existe pelo menos uma interseção)
+        
+        if (point_in_polygon(poly2[0][0], poly1[0])) {
+            externos.push_back(poly2[0]);
+        } else {
+            externos.push_back(poly1[0]);
+        }
+    }
+    
+    // para cada caminho exterior, haverá um PoligonoComFuros
+    // aqui nós incluímos os furos corretos para completar
+    for (std::size_t i = 0; i < externos.size(); ++i) {
+        retorno.push_back({externos[i]});
+        
+        // adiciona todos os furos que ficam dentro dessa extremidade
+        for (std::size_t j = 0; j < furos.size(); ++j) {
+            if (point_in_polygon(furos[j][0], externos[i])) {
+                retorno[i].push_back(furos[j]);
+            }
+        }
+        
+        // número de furos novos, usado abaixo
+        std::size_t num_furos = retorno[i].size() - 1;
+        
+        // para um dos polígonos, só é necessário testar se os furos não
+        // estão dentro de algum dos novos furos
+        for (auto p1_idx : sem_intersecoes_poly1) {
+            if (point_in_polygon(poly1[p1_idx][0], externos[i])) {
+                bool dentro_de_algum = false;
+                for (std::size_t furos_idx = 1; furos_idx < num_furos + 1; ++furos_idx) {
+                    if (point_in_polygon(poly1[p1_idx][0], retorno[i][furos_idx])) {
+                        dentro_de_algum = true;
+                        break;
+                    }
+                }
+                if (!dentro_de_algum) {
+                    retorno[i].push_back(poly1[p1_idx]);
+                }
+            }
+        }
+        
+        num_furos = retorno[i].size() - 1;
+        
+        // para o outro, é preciso testar além disso se algum dos furos já adicionados
+        // não são internos ao furo sendo percorrido
+        std::set<std::size_t, std::greater<std::size_t>> remover;
+        for (auto p2_idx : sem_intersecoes_poly2) {
+            if (point_in_polygon(poly2[p2_idx][0], externos[i])) {
+                bool dentro_de_algum = false;
+                for (std::size_t furos_idx = 1; furos_idx < num_furos + 1; ++furos_idx) {
+                    if (point_in_polygon(poly2[p2_idx][0], retorno[i][furos_idx])) {
+                        dentro_de_algum = true;
+                        break;
+                    }
+                    if (point_in_polygon(retorno[i][furos_idx][0], poly2[p2_idx])) {
+                        remover.insert(furos_idx);
+                    }
+                }
+                if (!dentro_de_algum) {
+                    retorno[i].push_back(poly2[p2_idx]);
+                }
+            }
+        }
+        
+        // por fim, só falta remover os furos que descobrimos que estavam
+        // dentro de outro furo (os índices já estão do maior ao menor)
+        for (auto idx : remover) {
+            // std::cout << idx << std::endl;
+            std::swap(retorno[i][idx], retorno[i][retorno[i].size() - 1]);
+            retorno[i].pop_back();
+        }
+    }
+    
+    return retorno;
 }
 
 /*
@@ -845,10 +1168,105 @@ struct State {
     bool recalcular_orientacao;
     bool recalcular_convexidade_dos_vertices;
     bool recalcular_orelhas;
+
+    // parte das operações booleanas
+    std::array<PoligonoComFuros, 2> polys;
+    std::vector<PoligonoComFuros> intersecoes;
+    std::array<bool, 2> mostrando_polys;
+    bool mostrando_intersecoes;
+    std::array<bool, 2> limpar_polys;
+    std::array<bool, 2> limpar_ultimo_polys;
+    bool limpar_intersecoes;
+    bool recalcular_intersecoes;
+
+    std::array<bool, 2> recebendo_polys;
+    std::array<std::size_t, 2> polys_prontos;
 };
 
 void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
+    auto ponto_xy = [window]() -> Ponto {
+        double xpos {};
+        double ypos {};
+        glfwGetCursorPos(window, &xpos, &ypos);
+        int width {};
+        int height {};
+        glfwGetWindowSize(window, &width, &height);
+        double x {xpos / static_cast<double> (width) * 2. - 1.};
+        double y {1. - ypos / static_cast<double> (height) * 2.};
+        return {x, y};
+    };
     State& estado = *(static_cast<State*> (glfwGetWindowUserPointer(window)));
+    auto coloca_ponto_poly = [ponto_xy, &estado](std::size_t qual) {
+        Ponto ponto = ponto_xy();
+        std::size_t px_idx = estado.polys_prontos[qual];
+        if (px_idx != 0) {
+            if (!point_in_polygon(ponto, estado.polys[qual][0])) {
+                return;
+            }
+            for (std::size_t i = 1; i < px_idx; ++i) {
+                if (point_in_polygon(ponto, estado.polys[qual][i])) {
+                    return;
+                }
+            }
+        }
+        if (estado.polys[qual][px_idx].size() >= 3) {
+            for (std::size_t i = 0; i < estado.polys[qual][px_idx].size() - 2; ++i) {
+                auto& p = estado.polys[qual][px_idx];
+                if (intersecao_com_left(p[i], p[i+1], p[p.size()-1], ponto) != Intersecao::NAO) {
+                    return;
+                }
+            }
+        }
+        auto& p = estado.polys[qual][px_idx];
+        if (p.size() >= 1) {
+            for (std::size_t j = 1; j < estado.polys_prontos[qual]; ++j) {
+                for (std::size_t i = 0; i < estado.polys[qual][j].size() - 2; ++i) {
+                    auto& q = estado.polys[qual][j];
+                    if (intersecao_com_left(q[i], q[i+1], p[p.size()-1], ponto) != Intersecao::NAO) {
+                        return;
+                    }
+                }
+            }
+        }
+        estado.polys[qual][px_idx].push_back(ponto);
+        estado.recebendo_polys[qual] = true;
+        estado.mostrando_polys[qual] = true;
+    };
+    auto fecha_poligono_poly = [&estado](std::size_t qual) {
+        std::size_t px_idx = estado.polys_prontos[qual];
+        auto& vec = estado.polys[qual][px_idx];
+        if (vec.size() <= 2) {
+            return;
+        }
+        auto& p = estado.polys[qual][px_idx];
+        for (std::size_t j = 1; j < px_idx; ++j) {
+            auto& q = estado.polys[qual][j];
+            for (std::size_t i = 1; i < q.size() - 2; ++i) {
+                if (intersecao_com_left(q[i], q[i+1], p[p.size()-1], p[0]) != Intersecao::NAO) {
+                    return;
+                }
+            }
+        }
+        bool orientado_errado = orientado_antihorario(estado.polys[qual][px_idx]);
+        if (px_idx == 0) {
+            orientado_errado = !orientado_errado;
+        }
+        if (orientado_errado) {
+            estado.limpar_ultimo_polys[qual] = true;
+            return;
+        }
+        for (std::size_t j = 1; j < px_idx; ++j) {
+            auto& q = estado.polys[qual][j];
+            if (point_in_polygon(q[0], vec)) {
+                estado.limpar_ultimo_polys[qual] = true;
+                return;
+            }
+        }
+        vec.push_back(vec[0]);
+        ++estado.polys_prontos[qual];
+        // estado.polys[qual].push_back({});
+        estado.recebendo_polys[qual] = false;
+    };
     if (estado.tela == Tela::ORIGINAL) {
         if (estado.passo_a_passo_em_andamento || estado.passo_a_passo_acabou_de_acabar || estado.mostrando_resultado_passo_a_passo) {
             if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
@@ -903,7 +1321,61 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
             }
         }
     } else if (estado.tela == Tela::OPERACOES_BOOLEANAS) {
-
+        if (action != GLFW_RELEASE) return;
+        if (button == GLFW_MOUSE_BUTTON_MIDDLE && mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
+            estado.limpar_intersecoes = true;
+        }
+        if (!estado.recebendo_polys[0]) {
+            if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
+                estado.mostrando_polys[0] = !estado.mostrando_polys[0];
+            } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && mods == GLFW_MOD_SHIFT) {
+                estado.limpar_intersecoes = true;
+                estado.limpar_polys[0] = true;
+            }
+        } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_SHIFT) {
+            coloca_ponto_poly(0);
+        } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && mods == GLFW_MOD_SHIFT) {
+            // fecha o polígono
+            fecha_poligono_poly(0);
+        } else if (button == GLFW_MOUSE_BUTTON_RIGHT && mods == GLFW_MOD_SHIFT) {
+            estado.limpar_ultimo_polys[0] = true;
+            estado.recebendo_polys[0] = false;
+        }
+        if (!estado.recebendo_polys[1]) {
+            if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
+                estado.mostrando_polys[1] = !estado.mostrando_polys[1];
+            } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && mods == GLFW_MOD_CONTROL) {
+                estado.limpar_intersecoes = true;
+                estado.limpar_polys[1] = true;
+            }
+        } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_CONTROL) {
+            coloca_ponto_poly(1);
+        } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && mods == GLFW_MOD_CONTROL) {
+            // fecha o polígono
+            fecha_poligono_poly(1);
+        } else if (button == GLFW_MOUSE_BUTTON_RIGHT && mods == GLFW_MOD_CONTROL) {
+            estado.limpar_ultimo_polys[1] = true;
+            estado.recebendo_polys[1] = false;
+        }
+        if (!estado.recebendo_polys[0] && !estado.recebendo_polys[1]) {
+            if (button == GLFW_MOUSE_BUTTON_RIGHT && !mods) {
+                estado.mostrando_intersecoes = !estado.mostrando_intersecoes;
+            } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_SHIFT) {
+                estado.polys[0].push_back({});
+                coloca_ponto_poly(0);
+                if (estado.polys[0].back().size() == 0) {
+                    estado.polys[0].pop_back();
+                }
+            } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_CONTROL) {
+                estado.polys[1].push_back({});
+                coloca_ponto_poly(1);
+                if (estado.polys[1].back().size() == 0) {
+                    estado.polys[1].pop_back();
+                }
+            } else if (button == GLFW_MOUSE_BUTTON_RIGHT && mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
+                estado.recalcular_intersecoes = true;
+            }
+        }
     } else if (estado.tela == Tela::ATIVIDADE) {
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && estado.recebendo_pontos) {
             if (!mods) {
@@ -1028,7 +1500,7 @@ PassoAPasso algoritmo_v1_passo_a_passo(std::vector<Ponto> fecho) {
 
     std::size_t i = ponto_atual;
     std::size_t m = (l_atual + r_atual) / 2;
-    std::cout << l_atual << ' ' << r_atual << ' ' << i << ' ' << m << std::endl;
+    // std::cout << l_atual << ' ' << r_atual << ' ' << i << ' ' << m << std::endl;
     // corajosamente vou supor que r_atual nunca será menor que l_atual
     std::size_t atual = i;
     std::size_t meio = (i+m >= n) ? (i+m-n) : (i+m);
@@ -1546,7 +2018,42 @@ int main() {
     //     std::cout << "    : " << coiso.r[1][0] << ' ' << coiso.r[1][1] << std::endl;
     //     std::cout << "distancia: " << coiso.distancia << std::endl;
     // }
-
+    // SEMPRE LEMBRAR DE REPETIR O PRIMEIRO E ULTIMO VERTICE
+    // int meeeeeeee = 0;
+    // int meu = 0;
+    /*auto res = intersecao_poligonos(
+        {
+            {{-1, -1}, {1, -1}, {1, 1}, {-1, 1}, {-1, -1}},
+            {{0.1, 0.9}, {0.35, 0.93}, {0.75, 0.13}, {0.1, 0.9}},
+            {{0.679, 0.415}, {0.838, 0.445}, {0.835, 0.252}, {0.679, 0.415}},
+            {{0.632, 0.718}, {0.749, 0.943}, {0.924, 0.688}, {0.632, 0.718}}
+        },
+        {
+            {{0, 0}, {2, 0}, {2, 2}, {0, 2}, {0, 0}},
+            {{0.5, 0.05}, {0.5, 0.5}, {0.9, 0.5}, {0.9, 0.05}, {0.5, 0.05}},
+            {{0.535, 0.688}, {0.596, 0.960}, {0.945, 0.967}, {0.968, 0.625}, {0.535, 0.688}}
+        }
+    );*/
+    /*auto res = intersecao_poligonos(
+        {
+            {{0.679, 0.415}, {0.838, 0.445}, {0.835, 0.252}, {0.679, 0.415}}
+        },
+        {
+            {{0.5, 0.05}, {0.5, 0.5}, {0.9, 0.5}, {0.9, 0.05}, {0.5, 0.05}}
+        }
+    );*/
+    // for (auto poligono : res) {
+    //     std::cout << "poligono " << meeeeeeee << std::endl;
+    //     for (auto parte : poligono) {
+    //         std::cout << "    parte " << meu << std::endl;
+    //         for (auto ponto : parte) {
+    //             std::cout << "        " << ponto[0] << ' ' << ponto[1] << std::endl;
+    //         }
+    //         ++meu;
+    //     }
+    //     ++meeeeeeee;
+    // }
+    
     //return 0;
 
     GLFW::Session session {};
@@ -1700,6 +2207,67 @@ int main() {
     // RetornoAlg resultado_ate_agora {};
     // bool resultado_arrumado_para_renderizacao = false;
     // std::size_t passo_quantos {};
+    std::array<bool, 2> polys_pronto = {false, false};
+    std::array<std::size_t, 2> ultimo_polys_idx = {0, 0};
+    std::array<std::size_t, 2> ultimo_polys_pos = {0, 0};
+    std::array<std::size_t, 2> polys_buffer_pos = {0, 0};
+    std::array<std::vector<std::size_t>, 2> polys_indices_inicio;
+    std::array<std::vector<std::size_t>, 2> polys_indices_fim;
+
+    // estado.polys[0].push_back({});
+    // estado.polys[1].push_back({});
+    estado.mostrando_polys[0] = true;
+    estado.mostrando_polys[1] = true;
+
+    std::array<unsigned, 2> polys_vbo {};
+    glGenBuffers(1, &polys_vbo[0]);
+    glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[0]);
+    glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    
+    std::array<unsigned, 2> polys_vao {};
+    glGenVertexArrays(1, &polys_vao[0]);
+    glBindVertexArray(polys_vao[0]);
+    
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+    glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
+    
+    glGenBuffers(1, &polys_vbo[1]);
+    glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[1]);
+    glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    
+    glGenVertexArrays(1, &polys_vao[1]);
+    glBindVertexArray(polys_vao[1]);
+    
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+    glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
+
+    bool inter_resul_pronto = false;
+    unsigned inter_resul_vbo {};
+    glGenBuffers(1, &inter_resul_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, inter_resul_vbo);
+    glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    
+    unsigned inter_resul_vao {};
+    glGenVertexArrays(1, &inter_resul_vao);
+    glBindVertexArray(inter_resul_vao);
+    
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+    glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
+
+    
+    std::vector<std::size_t> inter_indices_inicio;
+    std::vector<std::size_t> inter_indices_fim;
+
+    std::size_t mano = 0;
     std::size_t atividade_size = 0;
     AlgoritmoPassoAPasso passo_a_passo_manager {estado, point_program, color_line_program};
     while (!glfwWindowShouldClose(window)) {
@@ -1767,7 +2335,7 @@ int main() {
             if (estado.should_recalculate_point_in_polygon) {
                 for (auto& [ponto, cor] : estado.outros) {
                     if (cor != Cor::DENTRO) {
-                        Cor nova_cor = point_in_polygon(ponto, fecho_calculado);
+                        Cor nova_cor = point_in_polygon(ponto, fecho_calculado) ? Cor::DENTRO : Cor::FORA;
                         cor = nova_cor;
                     }
                 }
@@ -1943,9 +2511,255 @@ int main() {
             }
             
         } else if (estado.tela == Tela::OPERACOES_BOOLEANAS) {
-            glClearColor(0.2f, 0.3f, 0.2f, 1.0f);
+            glClearColor(0.34f, 0.34f, 0.34f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             
+
+            for (std::size_t poly_sel = 0; poly_sel < 2; ++poly_sel) {
+
+                if (estado.limpar_ultimo_polys[poly_sel]) {
+                    if (estado.polys_prontos[poly_sel] == 0) {
+                        estado.limpar_polys[poly_sel] = true;
+                    } else {
+                        if (ultimo_polys_idx[poly_sel] == estado.polys_prontos[poly_sel]) {
+                            ultimo_polys_pos[poly_sel] = 0;
+                        }
+                        estado.polys[poly_sel].pop_back();
+                        // estado.polys[poly_sel].push_back({});
+                        polys_buffer_pos[poly_sel] = polys_indices_fim[poly_sel][polys_indices_fim[poly_sel].size()-2];
+                        polys_indices_inicio[poly_sel].back() = 0;
+                        polys_indices_fim[poly_sel].back() = 0;
+                    }
+                    estado.limpar_ultimo_polys[poly_sel] = false;
+                }
+                if (estado.limpar_polys[poly_sel]) {
+                    estado.polys[poly_sel] = {{}};
+                    estado.mostrando_polys[poly_sel] = false;
+                    estado.polys_prontos[poly_sel] = 0;
+                    ultimo_polys_idx[poly_sel] = 0;
+                    ultimo_polys_pos[poly_sel] = 0;
+                    polys_indices_inicio[poly_sel].clear();
+                    polys_indices_fim[poly_sel].clear();
+                    polys_pronto[poly_sel] = false;
+                    polys_buffer_pos[poly_sel] = 0;
+
+                    estado.limpar_polys[poly_sel] = false;
+                }
+                std::size_t max_idx = estado.polys_prontos[poly_sel];
+                std::size_t tamanho = 0;
+                if (estado.polys[poly_sel].size() == max_idx) {
+                    --max_idx;
+                } else {
+                    tamanho = estado.polys[poly_sel][max_idx].size();
+                }
+                if (estado.polys_prontos[poly_sel] > ultimo_polys_idx[poly_sel] || tamanho > ultimo_polys_pos[poly_sel]) {
+                    std::size_t old_buffer_pos = polys_buffer_pos[poly_sel];
+                    // std::size_t diff = estado.polys[poly_sel][estado.polys_idx[poly_sel]].size() - ultimo_polys_pos[poly_sel];
+                    std::vector<float> ps {};
+                    // ps.reserve(diff * 5 * sizeof (float));
+                    while (polys_indices_inicio[poly_sel].size() <= estado.polys_prontos[poly_sel]) {
+                        polys_indices_inicio[poly_sel].push_back(0);
+                        polys_indices_fim[poly_sel].push_back(0);
+                    }
+                    
+                    if (estado.polys_prontos[poly_sel] > ultimo_polys_idx[poly_sel]) {
+                        for (std::size_t i = ultimo_polys_idx[poly_sel]; i < estado.polys_prontos[poly_sel]; ++i) {
+                            for (std::size_t j = ultimo_polys_pos[poly_sel]; j < estado.polys[poly_sel][i].size(); ++j) {
+                                if (j == 0) {
+                                    polys_indices_inicio[poly_sel][i] = polys_buffer_pos[poly_sel];
+                                }
+                                ++polys_buffer_pos[poly_sel];
+                                auto ponto = estado.polys[poly_sel][i][j];
+                                ps.push_back(ponto[0]);
+                                ps.push_back(ponto[1]);
+                                
+                                if (poly_sel == 0) {
+                                    if (i == 0) {
+                                        ps.push_back(0.788f);
+                                        ps.push_back(0.682f);
+                                        ps.push_back(0.078f);
+                                    } else {
+                                        ps.push_back(0.325f); // 83
+                                        ps.push_back(0.788f); // 201
+                                        ps.push_back(0.078f); // 20
+                                    }
+                                } else {
+                                    if (i == 0) {
+                                        ps.push_back(0.078f); // 20
+                                        ps.push_back(0.325f); // 83
+                                        ps.push_back(0.788f); // 201
+                                    } else {
+                                        ps.push_back(0.682f);
+                                        ps.push_back(0.078f);
+                                        ps.push_back(0.788f);
+                                    }
+                                }
+                            }
+                            polys_indices_fim[poly_sel][i] = polys_buffer_pos[poly_sel];
+                            ultimo_polys_pos[poly_sel] = 0;
+                        }
+                    }
+
+                    for (std::size_t i = ultimo_polys_pos[poly_sel]; i < tamanho; ++i) {
+                        // std::cout << i << ' ' << tamanho << std::endl;
+                        if (i == 0) {
+                            polys_indices_inicio[poly_sel][estado.polys_prontos[poly_sel]] = polys_buffer_pos[poly_sel];
+                        }
+                        ++polys_buffer_pos[poly_sel];
+                        auto ponto = estado.polys[poly_sel][estado.polys_prontos[poly_sel]][i];
+                        ps.push_back(ponto[0]);
+                        ps.push_back(ponto[1]);
+                        
+                        if (poly_sel == 0) {
+                            if (estado.polys_prontos[poly_sel] == 0) {
+                                ps.push_back(0.788f);
+                                ps.push_back(0.682f);
+                                ps.push_back(0.078f);
+                            } else {
+                                ps.push_back(0.325f); // 83
+                                ps.push_back(0.788f); // 201
+                                ps.push_back(0.078f); // 20
+                            }
+                        } else {
+                            if (estado.polys_prontos[poly_sel] == 0) {
+                                ps.push_back(0.078f); // 20
+                                ps.push_back(0.325f); // 83
+                                ps.push_back(0.788f); // 201
+                            } else {
+                                ps.push_back(0.682f);
+                                ps.push_back(0.078f);
+                                ps.push_back(0.788f);
+                            }
+                        }
+                    }
+                    
+                    polys_indices_fim[poly_sel][estado.polys_prontos[poly_sel]] = polys_buffer_pos[poly_sel];
+
+                    glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[poly_sel]);
+                    glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(old_buffer_pos * 5 * sizeof (float)), static_cast<GLintptr>(ps.size() * 5 * sizeof (float)), ps.data());
+                    
+                    ultimo_polys_pos[poly_sel] = estado.polys[poly_sel][estado.polys_prontos[poly_sel]].size();
+                    ultimo_polys_idx[poly_sel] = estado.polys_prontos[poly_sel];
+                    polys_pronto[poly_sel] = true;
+                }
+                if (polys_pronto[poly_sel] && estado.mostrando_polys[poly_sel]) {
+                    
+                    glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[poly_sel]);
+                    glBindVertexArray(polys_vao[poly_sel]);
+                    std::size_t ate = polys_indices_fim[poly_sel].size();
+                    // if (estado.polys[poly_sel][estado.polys_prontos[poly_sel]].size() == 0) {
+                    //     ate--;
+                    // }
+
+                    color_line_program.use();
+                    color_line_program.setFloat("alpha", 0.2f);
+                    for (std::size_t i = 0; i < ate; ++i) {
+                        glDrawArrays(GL_TRIANGLE_FAN, polys_indices_inicio[poly_sel][i], polys_indices_fim[poly_sel][i] - polys_indices_inicio[poly_sel][i]);
+                    }
+                    color_line_program.setFloat("alpha", 1.0f);
+                    for (std::size_t i = 0; i < ate; ++i) {
+                        glDrawArrays(GL_LINE_STRIP, polys_indices_inicio[poly_sel][i], polys_indices_fim[poly_sel][i] - polys_indices_inicio[poly_sel][i]);
+                        // if (mano == 80 || mano == 0) {
+                        //     std::cout << polys_indices_inicio[poly_sel][i] << ' ' << polys_indices_fim[poly_sel][i] << std::endl;
+                        //     mano = 0;
+                        // }
+                    }
+                    ++mano;
+
+                    point_program.use();
+                    point_program.setFloat("pointRadius", estado.pointSize);
+                    glDrawArrays(GL_POINTS, 0, polys_buffer_pos[poly_sel]);
+                }
+            }
+
+            if (estado.recalcular_intersecoes) {
+                inter_indices_inicio.clear();
+                inter_indices_fim.clear();
+                // int meeeeeeee = 0;
+                // int meu = 0;
+                // for (auto poligono : std::array{estado.polys[0], estado.polys[1]}) {
+                //     std::cout << "poligono " << meeeeeeee << std::endl;
+                //     for (auto parte : poligono) {
+                //         std::cout << "    parte " << meu << std::endl;
+                //         for (auto ponto : parte) {
+                //             std::cout << "        " << ponto[0] << ' ' << ponto[1] << std::endl;
+                //         }
+                //         ++meu;
+                //     }
+                //     ++meeeeeeee;
+                // }
+                estado.intersecoes = intersecao_poligonos(estado.polys[0], estado.polys[1]);
+                int meeeeeeee = 0;
+                int meu = 0;
+                for (auto poligono : estado.intersecoes) {
+                    std::cout << "poligono " << meeeeeeee << std::endl;
+                    for (auto parte : poligono) {
+                        std::cout << "    parte " << meu << std::endl;
+                        for (auto ponto : parte) {
+                            std::cout << "        " << ponto[0] << ' ' << ponto[1] << std::endl;
+                        }
+                        ++meu;
+                    }
+                    ++meeeeeeee;
+                }
+                // estado.intersecoes.pop_back();
+                std::vector<float> ps {};
+                for (std::size_t k = 0; k < estado.intersecoes.size(); ++k) {
+                    for (std::size_t j = 0; j < estado.intersecoes[k].size(); ++j) {
+                        inter_indices_inicio.push_back(ps.size()/5);
+                        for (std::size_t i = 0; i < estado.intersecoes[k][j].size(); ++i) {
+                            auto ponto = estado.intersecoes[k][j][i];
+                            ps.push_back(ponto[0]);
+                            ps.push_back(ponto[1]);
+                            
+                            if (j == 0) {
+                                ps.push_back(0.788f); // 201
+                                ps.push_back(0.325f); // 83
+                                ps.push_back(0.078f); // 20
+                            } else {
+                                ps.push_back(0.788f); // 201
+                                ps.push_back(0.078f); // 20
+                                ps.push_back(0.325f); // 83
+                            }
+                        }
+                        inter_indices_fim.push_back(ps.size()/5);
+
+                    }
+                }
+                if (estado.intersecoes.size() == 0) {
+                    inter_resul_pronto = false;
+                } else {
+                    glBindBuffer(GL_ARRAY_BUFFER, inter_resul_vbo);
+                    glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * 5 * sizeof (float)), ps.data());
+                    inter_resul_pronto = true;
+                    estado.mostrando_intersecoes = true;
+                }
+                estado.recalcular_intersecoes = false;
+            }
+            if (inter_resul_pronto && estado.mostrando_intersecoes) {
+                glBindBuffer(GL_ARRAY_BUFFER, inter_resul_vbo);
+                glBindVertexArray(inter_resul_vao);
+
+                color_line_program.use();
+                color_line_program.setFloat("alpha", 0.2f);
+                for (std::size_t i = 0; i < inter_indices_fim.size(); ++i) {
+                    glDrawArrays(GL_TRIANGLE_FAN, inter_indices_inicio[i], inter_indices_fim[i] - inter_indices_inicio[i]);
+                }
+                color_line_program.setFloat("alpha", 1.0f);
+                for (std::size_t i = 0; i < inter_indices_fim.size(); ++i) {
+                    glDrawArrays(GL_LINE_STRIP, inter_indices_inicio[i], inter_indices_fim[i] - inter_indices_inicio[i]);
+                    // if (mano == 80 || mano == 0) {
+                    //     std::cout << inter_indices_inicio[i] << ' ' << inter_indices_fim[i] << std::endl;
+                    //     mano = 0;
+                    // }
+                }
+                // ++mano;
+
+                point_program.use();
+                point_program.setFloat("pointRadius", estado.pointSize);
+                glDrawArrays(GL_POINTS, 0, inter_indices_fim.back());
+            }
+
         } else if (estado.tela == Tela::ATIVIDADE) {
 
             glClearColor(0.3f, 0.2f, 0.3f, 1.0f);
@@ -1978,37 +2792,42 @@ int main() {
             }
 
             if (estado.recalcular_orientacao) {
-                auto& v = estado.entrada;
-                int curvas_a_esquerda = 0;
-                for (std::size_t i = 1; i < v.size() - 1; ++i) {
-                    auto& p1 = v[i-1];
-                    auto& p2 = v[i];
-                    auto& p3 = v[i+1];
-                    if (left(p1, p2, p3)) {
-                        ++curvas_a_esquerda;
-                    } else if (area_orientada(p1, p2, p3) != 0.) {
-                        --curvas_a_esquerda;
-                    }
-                }
-                auto& p1 = v[0];
-                auto& p2 = v[1];
-                auto& pn_2 = v[v.size() - 2];
-                auto& pn_1 = v[v.size() - 1];
-                if (left(pn_2, pn_1, p1)) {
-                    ++curvas_a_esquerda;
-                } else if (area_orientada(pn_2, pn_1, p1) != 0.) {
-                    --curvas_a_esquerda;
-                }
-                if (left(pn_1, p1, p2)) {
-                    ++curvas_a_esquerda;
-                } else if (area_orientada(pn_1, p1, p2) != 0.) {
-                    --curvas_a_esquerda;
-                }
-                if (curvas_a_esquerda > 0) {
+                if (orientado_antihorario(estado.entrada)) {
                     std::cout << "orientação anti-horária" << std::endl;
                 } else {
                     std::cout << "orientação horária" << std::endl;
                 }
+                // auto& v = estado.entrada;
+                // int curvas_a_esquerda = 0;
+                // for (std::size_t i = 1; i < v.size() - 1; ++i) {
+                //     auto& p1 = v[i-1];
+                //     auto& p2 = v[i];
+                //     auto& p3 = v[i+1];
+                //     if (left(p1, p2, p3)) {
+                //         ++curvas_a_esquerda;
+                //     } else if (area_orientada(p1, p2, p3) != 0.) {
+                //         --curvas_a_esquerda;
+                //     }
+                // }
+                // auto& p1 = v[0];
+                // auto& p2 = v[1];
+                // auto& pn_2 = v[v.size() - 2];
+                // auto& pn_1 = v[v.size() - 1];
+                // if (left(pn_2, pn_1, p1)) {
+                //     ++curvas_a_esquerda;
+                // } else if (area_orientada(pn_2, pn_1, p1) != 0.) {
+                //     --curvas_a_esquerda;
+                // }
+                // if (left(pn_1, p1, p2)) {
+                //     ++curvas_a_esquerda;
+                // } else if (area_orientada(pn_1, p1, p2) != 0.) {
+                //     --curvas_a_esquerda;
+                // }
+                // if (curvas_a_esquerda > 0) {
+                //     std::cout << "orientação anti-horária" << std::endl;
+                // } else {
+                //     std::cout << "orientação horária" << std::endl;
+                // }
                 estado.recalcular_orientacao = false;
             }
 
@@ -2099,6 +2918,9 @@ int main() {
                 estado.recalcular_orelhas = false;
             }
             
+            glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+            glBindVertexArray(atividade_vao);
+
             color_line_program.use();
             color_line_program.setFloat("alpha", 0.2f);
             glDrawArrays(GL_TRIANGLE_FAN, 0, atividade_size);
@@ -2107,8 +2929,6 @@ int main() {
 
             point_program.use();
             point_program.setFloat("pointRadius", estado.pointSize);
-            glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
-            glBindVertexArray(atividade_vao);
             glDrawArrays(GL_POINTS, 0, atividade_size);
 
         }

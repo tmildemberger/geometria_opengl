@@ -24,11 +24,11 @@ CXXFLAGS += -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion
 CXXFLAGS += -Wsign-promo -Wstrict-overflow=2 -Wswitch-default
 CXXFLAGS += -Wundef -Werror -Wno-unused-parameter -Wno-unused-variable
 
-#INCFLAGS += -I"D:/GLFW/include" -I"D:/glad/include" -I"D:/glm-0.9.9.3/glm"
-#LDFLAGS += -L"D:/GLFW/lib"
-#LDLIBS += -lglfw3 -lgdi32 -lopengl32
-INCFLAGS += -I"/home/thiago/Downloads/glad/include"
-LDLIBS += -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
+INCFLAGS += -I"D:/GLFW/include" -I"D:/glad/include" -I"D:/glm-0.9.9.3/glm"
+LDFLAGS += -L"D:/GLFW/lib"
+LDLIBS += -lglfw3 -lgdi32 -lopengl32
+# INCFLAGS += -I"/home/thiago/Downloads/glad/include"
+# LDLIBS += -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
 
 EXEC = $(proj)$(exe_ext)
 OBJ_DIR = obj
