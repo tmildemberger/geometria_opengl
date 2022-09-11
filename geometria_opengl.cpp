@@ -701,9 +701,9 @@ struct Par {
     T operator[](std::size_t i) { if (i == 0) return a; else return b; }
 };
 
-std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2);
+std::vector<PoligonoComFuros> op_booleana_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2, bool calcular_intersecao = true);
 
-std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2) {
+std::vector<PoligonoComFuros> op_booleana_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2, bool calcular_intersecao) {
     // considerando que cada componente já tem o primeiro e último ponto iguais
     // para poder iterar por todas as arestas dentro do loop
 
@@ -743,12 +743,22 @@ std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, Polig
                     if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
                         Ponto inter {p3[0] * (1. - t) + p4[0] * t, p3[1] * (1. - t) + p4[1] * t};
                         bool entrando = produto_escalar_com_ortogonal(p1, p2, p3, p4) < 0;
-                        if (entrando) {
-                            voltas[p2_idx].insert({j, {p1_idx, i, t, s, inter}});
-                            std::cout << "voltas " << p2_idx << ' ' << j << ' ' << p1_idx << ' ' << i << ' ' << t << ' ' << s << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+                        if (calcular_intersecao) {
+                            if (entrando) {
+                                voltas[p2_idx].insert({j, {p1_idx, i, t, s, inter}});
+                                std::cout << "voltas " << p2_idx << ' ' << j << ' ' << p1_idx << ' ' << i << ' ' << t << ' ' << s << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+                            } else {
+                                idas[p1_idx].insert({i, {p2_idx, j, s, t, inter}});
+                                std::cout << "idas " << p1_idx << ' ' << i << ' ' << p2_idx << ' ' << j << ' ' << s << ' ' << t << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+                            }
                         } else {
-                            idas[p1_idx].insert({i, {p2_idx, j, s, t, inter}});
-                            std::cout << "idas " << p1_idx << ' ' << i << ' ' << p2_idx << ' ' << j << ' ' << s << ' ' << t << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+                            if (entrando) {
+                                idas[p1_idx].insert({i, {p2_idx, j, s, t, inter}});
+                                std::cout << "idas " << p1_idx << ' ' << i << ' ' << p2_idx << ' ' << j << ' ' << s << ' ' << t << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+                            } else {
+                                voltas[p2_idx].insert({j, {p1_idx, i, t, s, inter}});
+                                std::cout << "voltas " << p2_idx << ' ' << j << ' ' << p1_idx << ' ' << i << ' ' << t << ' ' << s << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+                            }
                         }
                         ++num_intersecoes_geral;
                     }
@@ -892,6 +902,7 @@ std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, Polig
                 Ponto inicio = p_inter;
                 std::vector<Ponto> caminho;
                 bool passou_por_fora = false;
+                bool passou_por_buraco = false;
                 // talvez isso seja desnecessário
                 // caminho.reserve(poly2.size());
                 
@@ -902,6 +913,8 @@ std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, Polig
                 do {
                     if (px_idx == 0) {
                         passou_por_fora = true;
+                    } else {
+                        passou_por_buraco = true;
                     }
                     bool acabou_segmento = true;
                     // std::cout << sel << ' ' << px_idx << ' ' << ix << std::endl;
@@ -960,7 +973,7 @@ std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, Polig
                 // std::cout << "mas nao chega aqui?" << std::endl;
                 
                 // com o caminho completo, falta saber se é um caminho externo ou um furo
-                if (passou_por_fora) {
+                if ((passou_por_fora && calcular_intersecao) || (!passou_por_buraco == !calcular_intersecao)) {
                     // std::cout << "aa" << std::endl;
                     externos.push_back(caminho);
                     // pr(externos.back());
@@ -1054,7 +1067,7 @@ std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, Polig
 }
 
 /*
-PoligonoComFuros intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2) {
+PoligonoComFuros op_booleana_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2) {
     // considerando que cada componente já tem o primeiro e último ponto iguais
     // para poder iterar por todas as arestas dentro do loop
     PoligonoComFuros novo1 = preparacao(poly1);
@@ -1219,7 +1232,7 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
         }
         auto& p = estado.polys[qual][px_idx];
         if (p.size() >= 1) {
-            for (std::size_t j = 1; j < estado.polys_prontos[qual]; ++j) {
+            for (std::size_t j = 0; j < estado.polys_prontos[qual]; ++j) {
                 for (std::size_t i = 0; i < estado.polys[qual][j].size() - 2; ++i) {
                     auto& q = estado.polys[qual][j];
                     if (intersecao_com_left(q[i], q[i+1], p[p.size()-1], ponto) != Intersecao::NAO) {
@@ -1239,7 +1252,7 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
             return;
         }
         auto& p = estado.polys[qual][px_idx];
-        for (std::size_t j = 1; j < px_idx; ++j) {
+        for (std::size_t j = 0; j < px_idx; ++j) {
             auto& q = estado.polys[qual][j];
             for (std::size_t i = 1; i < q.size() - 2; ++i) {
                 if (intersecao_com_left(q[i], q[i+1], p[p.size()-1], p[0]) != Intersecao::NAO) {
@@ -2021,7 +2034,7 @@ int main() {
     // SEMPRE LEMBRAR DE REPETIR O PRIMEIRO E ULTIMO VERTICE
     // int meeeeeeee = 0;
     // int meu = 0;
-    /*auto res = intersecao_poligonos(
+    /*auto res = op_booleana_poligonos(
         {
             {{-1, -1}, {1, -1}, {1, 1}, {-1, 1}, {-1, -1}},
             {{0.1, 0.9}, {0.35, 0.93}, {0.75, 0.13}, {0.1, 0.9}},
@@ -2034,7 +2047,7 @@ int main() {
             {{0.535, 0.688}, {0.596, 0.960}, {0.945, 0.967}, {0.968, 0.625}, {0.535, 0.688}}
         }
     );*/
-    /*auto res = intersecao_poligonos(
+    /*auto res = op_booleana_poligonos(
         {
             {{0.679, 0.415}, {0.838, 0.445}, {0.835, 0.252}, {0.679, 0.415}}
         },
@@ -2553,11 +2566,16 @@ int main() {
                     tamanho = estado.polys[poly_sel][max_idx].size();
                 }
                 if (estado.polys_prontos[poly_sel] > ultimo_polys_idx[poly_sel] || tamanho > ultimo_polys_pos[poly_sel]) {
-                    std::size_t old_buffer_pos = polys_buffer_pos[poly_sel];
                     // std::size_t diff = estado.polys[poly_sel][estado.polys_idx[poly_sel]].size() - ultimo_polys_pos[poly_sel];
                     std::vector<float> ps {};
                     // ps.reserve(diff * 5 * sizeof (float));
-                    while (polys_indices_inicio[poly_sel].size() <= estado.polys_prontos[poly_sel]) {
+                    while (polys_indices_inicio[poly_sel].size() > estado.polys[poly_sel].size()) {
+                        polys_indices_inicio[poly_sel].pop_back();
+                        polys_indices_fim[poly_sel].pop_back();
+                        polys_buffer_pos[poly_sel] = polys_indices_fim[poly_sel].back();
+                    }
+                    std::size_t old_buffer_pos = polys_buffer_pos[poly_sel];
+                    while (polys_indices_inicio[poly_sel].size() < estado.polys[poly_sel].size()) {
                         polys_indices_inicio[poly_sel].push_back(0);
                         polys_indices_fim[poly_sel].push_back(0);
                     }
@@ -2633,12 +2651,12 @@ int main() {
                         }
                     }
                     
-                    polys_indices_fim[poly_sel][estado.polys_prontos[poly_sel]] = polys_buffer_pos[poly_sel];
+                    polys_indices_fim[poly_sel].back() = polys_buffer_pos[poly_sel];
 
                     glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[poly_sel]);
                     glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(old_buffer_pos * 5 * sizeof (float)), static_cast<GLintptr>(ps.size() * 5 * sizeof (float)), ps.data());
                     
-                    ultimo_polys_pos[poly_sel] = estado.polys[poly_sel][estado.polys_prontos[poly_sel]].size();
+                    ultimo_polys_pos[poly_sel] = tamanho;
                     ultimo_polys_idx[poly_sel] = estado.polys_prontos[poly_sel];
                     polys_pronto[poly_sel] = true;
                 }
@@ -2688,7 +2706,7 @@ int main() {
                 //     }
                 //     ++meeeeeeee;
                 // }
-                estado.intersecoes = intersecao_poligonos(estado.polys[0], estado.polys[1]);
+                estado.intersecoes = op_booleana_poligonos(estado.polys[0], estado.polys[1], false);
                 int meeeeeeee = 0;
                 int meu = 0;
                 for (auto poligono : estado.intersecoes) {
