@@ -673,6 +673,51 @@ bool orientado_antihorario(const std::vector<Ponto>& poligono) {
     return curvas_a_esquerda > 0;
 }
 
+bool abaixo(Ponto p, Ponto q);
+
+// retorna true se 'p' está abaixo de 'q'
+bool abaixo(Ponto p, Ponto q) {
+    return (p[1] < q[1]) || (p[1] == q[1] && p[0] > q[0]);
+}
+
+enum class Categoria {
+    START,
+    SPLIT,
+    MERGE,
+    END,
+    REGULAR
+};
+
+Categoria categoriza_ponto(std::vector<Ponto> poligono, std::size_t indice_ponto);
+
+// categoriza o ponto nas categorias acima, usando as funções acima
+Categoria categoriza_ponto(std::vector<Ponto> poligono, std::size_t indice_ponto) {
+    // isso fica mais feio mas evita usar o resto da divisão (que não é otimizado nem com -O3)
+    std::size_t next = (indice_ponto + 1 >= poligono.size()) ? 0 : indice_ponto + 1;
+    std::size_t prev = (indice_ponto == 0) ? poligono.size() - 1 : indice_ponto - 1;
+
+    bool anterior_abaixo = abaixo(poligono[prev], poligono[indice_ponto]);
+    bool proximo_abaixo = abaixo(poligono[next], poligono[indice_ponto]);
+
+    double angulo = angulo_interno(poligono[indice_ponto], poligono[prev], poligono[next]);
+
+    if (anterior_abaixo && proximo_abaixo) {
+        if (angulo < 3.14159265358979323846) {
+            return Categoria::START;
+        } else {
+            return Categoria::SPLIT;
+        }
+    } else if (!anterior_abaixo && !proximo_abaixo) {
+        if (angulo < 3.14159265358979323846) {
+            return Categoria::END;
+        } else {
+            return Categoria::MERGE;
+        }
+    }
+    return Categoria::REGULAR;
+}
+
+
 using PoligonoComFuros = std::vector<std::vector<Ponto>>;
 
 // PoligonoComFuros preparacao(const PoligonoComFuros& poly);
@@ -1171,14 +1216,14 @@ public:
         vertices.reserve(n);
         edges.reserve(n * 2);
         faces.reserve(2);
-        faces.emplace_back(nullptr);
-        faces.emplace_back(nullptr);
+        faces.push_back({nullptr});
+        faces.push_back({nullptr});
         Face* outside_face = (faces.data());
         Face* inside_face = (faces.data()) + 1;
         for (std::size_t i = 0; i < n; ++i) {
-            vertices.emplace_back(p[i], (edges.data()) + (2*i));
-            edges.emplace_back((edges.data()) + (2*i) + 1, (vertices.data()) + i, nullptr, nullptr, inside_face);
-            edges.emplace_back((edges.data()) + (2*i), (vertices.data()) + i + 1, nullptr, nullptr, outside_face);
+            vertices.push_back({p[i], (edges.data()) + (2*i)});
+            edges.push_back({(edges.data()) + (2*i) + 1, (vertices.data()) + i, nullptr, nullptr, inside_face});
+            edges.push_back({(edges.data()) + (2*i), (vertices.data()) + i + 1, nullptr, nullptr, outside_face});
         }
         edges.back().origin = (vertices.data());
 
@@ -1314,11 +1359,11 @@ public:
 
         // reserva espaço para uma nova face e duas novas arestas
         reserva_espacos(1, 2, 0);
-        faces.emplace_back(nullptr);
+        faces.push_back({nullptr});
 
         std::size_t idx = edges.size();
-        edges.emplace_back((edges.data()) + idx + 1, v1, (edges.data()) + idx + 1, (edges.data()) + idx + 1, found->face);
-        edges.emplace_back((edges.data()) + idx, v2, (edges.data()) + idx, (edges.data()) + idx, found->face);
+        edges.push_back({(edges.data()) + idx + 1, v1, (edges.data()) + idx + 1, (edges.data()) + idx + 1, found->face});
+        edges.push_back({(edges.data()) + idx, v2, (edges.data()) + idx, (edges.data()) + idx, found->face});
 
         conecta_arestas(found, &edges[idx]);
         conecta_arestas(start->prev, &edges[idx + 1]);
@@ -1349,7 +1394,7 @@ public:
         // reserva espaço para um novo vértice e duas novas arestas
         reserva_espacos(0, 2, 1);
 
-        vertices.emplace_back(p, e);
+        vertices.push_back({p, e});
         Vertex* v3 = &vertices.back();
         Edge* e8 = e->prev;
         Edge* e9 = e->twin->next;
@@ -1357,8 +1402,8 @@ public:
         e->origin = v3;
 
         std::size_t idx = edges.size();
-        edges.emplace_back((edges.data()) + idx + 1, v1, e, e8, e->face);
-        edges.emplace_back((edges.data()) + idx, v3, e9, e->twin, e->twin->face);
+        edges.push_back({(edges.data()) + idx + 1, v1, e, e8, e->face});
+        edges.push_back({(edges.data()) + idx, v3, e9, e->twin, e->twin->face});
 
         Edge* e2 = &edges[idx];
 
@@ -1377,48 +1422,57 @@ public:
 
         // aqui faço novamente uma reimplementação da órbita do vértice
         // por que? não sei
-        Edge* e = v1->edge;
-        Edge* start = e;
-        Edge* last = e;
-        e = e->prev->twin;
-        Edge* found = nullptr;
-        while (e != start) {
-            if (!left(e->twin->origin->xy, v1->xy, last->origin->xy)) {
-                // isso significa que v1 "entre" 'last' e 'e' é "reflexo" kkk
-                if (left(v1->xy, last->twin->origin->xy, p) || !left(v1->xy, e->twin->origin->xy, p)) {
-                    // encontramos uma aresta candidata a compartilhar a face com p
-                    found = last;
-                    break;
-                }
-            } else {
-                // no caso do vértice ser convexo é normal
-                if (left(v1->xy, last->twin->origin->xy, p) && !left(v1->xy, e->twin->origin->xy, p)) {
-                    // encontramos uma aresta candidata a compartilhar a face com p
-                    found = last;
-                    break;
-                }
-            }
-            last = e;
+        bool found_face = false;
+        while (!found_face) {
+            
+            Edge* e = v1->edge;
+            Edge* start = e;
+            Edge* last = e;
             e = e->prev->twin;
-        }
-        if (!found) {
-            // houve algum erro, o ponto tem que estar entre duas arestas
-            std::cerr << "erro1 em 'qual_face'" << std::endl;
-            return;
+            Edge* found = nullptr;
+            while (e != start) {
+                if (!left(e->twin->origin->xy, v1->xy, last->origin->xy)) {
+                    // isso significa que v1 "entre" 'last' e 'e' é "reflexo" kkk
+                    if (left(v1->xy, last->twin->origin->xy, p) || !left(v1->xy, e->twin->origin->xy, p)) {
+                        // encontramos uma aresta candidata a compartilhar a face com p
+                        found = last;
+                        break;
+                    }
+                } else {
+                    // no caso do vértice ser convexo é normal
+                    if (left(v1->xy, last->twin->origin->xy, p) && !left(v1->xy, e->twin->origin->xy, p)) {
+                        // encontramos uma aresta candidata a compartilhar a face com p
+                        found = last;
+                        break;
+                    }
+                }
+                last = e;
+                e = e->prev->twin;
+            }
+            if (!found) {
+                // houve algum erro, o ponto tem que estar entre duas arestas
+                std::cerr << "erro1 em 'qual_face'" << std::endl;
+                return 0;
+            }
+
+            // agora vamos calcular um segmento de 'v1' até 'p'
+            // se 'p' estiver na face de 'v1', vai existir um vértice 'v' (não necessariamente 'v1')
+            // tal que o segmento entre 'v' e 'p' não tem interseção com nenhuma aresta da face
+
+            // assim, percorremos a face de 'v1' enquanto não houver interseção entre a
+            // a aresta atual e o segmento.
+            // toda vez que encontrarmos uma interseção com uma aresta 'a', o vértice de destino
+            // de 'a' se tornará o nosso novo 'v1', começando de novo com a parte de encontrar a nova
+            // face candidata e calculando o segmento.
+            // só paramos quando uma face inteira tiver sido percorrida sem encontrar interseções.
+            Edge* a = found;
+
+            // Aresta segmento_v1_p = {v1->xy, p};
+            intersecao_com_left(found->origin->xy, found->twin->origin->xy, v1->xy, p);
         }
 
-        // agora vamos calcular um segmento de 'v1' até 'p'
-        // se 'p' estiver na face de 'v1', vai existir um vértice 'v' (não necessariamente 'v1')
-        // tal que o segmento entre 'v' e 'p' não tem interseção com nenhuma aresta da face
-
-        // assim, percorremos a face de 'v1' enquanto não houver interseção entre a
-        // a aresta atual e o segmento.
-        // toda vez que encontrarmos uma interseção com uma aresta 'a', o vértice de destino
-        // de 'a' se tornará o nosso novo 'v1', começando de novo com a parte de encontrar a nova
-        // face candidata e calculando o segmento.
-        // só paramos quando uma face inteira tiver sido percorrida sem encontrar interseções.
         
-        // demorei tanto pra pensar e escrever que acabou o tempo kk
+        
     }
 
 private:
@@ -1529,7 +1583,7 @@ struct State {
 
     // parte da atividade de hoje
     std::vector<Ponto> entrada;
-    std::vector<Cor> cores_entrada;
+    std::vector<Categoria> cores_entrada;
     bool resetar_pontos;
     bool recebendo_pontos;
     bool recalcular_orientacao;
@@ -1755,7 +1809,7 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
                 double x {xpos / static_cast<double> (width) * 2. - 1.};
                 double y {1. - ypos / static_cast<double> (height) * 2.};
                 estado.entrada.push_back({x, y});
-                estado.cores_entrada.push_back(Cor::DESCONHECIDO);
+                estado.cores_entrada.push_back(Categoria::REGULAR);
             } else if (mods == GLFW_MOD_CONTROL) {
                 estado.recebendo_pontos = false;
             }
@@ -2359,6 +2413,14 @@ private:
     unsigned int passo_vbo;
     unsigned int passo_vao;
 };
+
+std::vector<Ponto> regiao_visivel(std::vector<Ponto> poligono, Ponto p);
+
+std::vector<Ponto> regiao_visivel(std::vector<Ponto> poligono, Ponto p) {
+    for (std::size_t i = 0; i < poligono.size(); ++i) {
+        for (std::size_t)
+    }
+}
 
 int main() {
 
@@ -3204,61 +3266,58 @@ int main() {
             }
 
             if (estado.recalcular_convexidade_dos_vertices) {
-                auto& v = estado.entrada;
-                for (std::size_t i = 0; i < v.size(); ++i) {
-                    std::size_t prev = (i == 0) ? (v.size()-1) : (i-1);
-                    std::size_t prox = (i+1 >= v.size()) ? (0) : (i+1);
-                    auto& p1 = v[prev];
-                    auto& p2 = v[i];
-                    auto& p3 = v[prox];
-                    Cor nova_cor {};
-                    if (area_orientada(p1, p2, p3) >= 0.) {
-                        nova_cor = Cor::DENTRO;
-                    } else {
-                        nova_cor = Cor::FORA;
-                    }
-                    estado.cores_entrada[i] = nova_cor;
-                }
-
-                std::vector<float> ps {};
-                ps.reserve(atividade_size * 5 * sizeof (float));
-                for (std::size_t i = 0; i < atividade_size; ++i) {
-                    auto ponto = estado.entrada[i];
-                    auto cor = estado.cores_entrada[i];
-                    ps.push_back(ponto[0]);
-                    ps.push_back(ponto[1]);
-                    // agora não vai ter nenhum amarelo
-                    if (cor == Cor::DESCONHECIDO) {
-                        std::cerr << "não era para ter amarelo" << std::endl;
-                        ps.push_back(0.788f); // 201
-                        ps.push_back(0.682f); // 174
-                        ps.push_back(0.078f); // 20
-                    } else if (cor == Cor::DENTRO) {
-                        ps.push_back(0.325f); // 83
-                        ps.push_back(0.788f); // 201
-                        ps.push_back(0.078f); // 20
-                    } else {
-                        ps.push_back(0.788f); // 201
-                        ps.push_back(0.149f); // 38
-                        ps.push_back(0.078f); // 20
-                    }
-                }
-                glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(atividade_size * 5 * sizeof (float)), ps.data());
-                
                 estado.recalcular_convexidade_dos_vertices = false;
+
+                // auto& v = estado.entrada;
+                // for (std::size_t i = 0; i < v.size(); ++i) {
+                //     std::size_t prev = (i == 0) ? (v.size()-1) : (i-1);
+                //     std::size_t prox = (i+1 >= v.size()) ? (0) : (i+1);
+                //     auto& p1 = v[prev];
+                //     auto& p2 = v[i];
+                //     auto& p3 = v[prox];
+                //     Cor nova_cor {};
+                //     if (area_orientada(p1, p2, p3) >= 0.) {
+                //         nova_cor = Cor::DENTRO;
+                //     } else {
+                //         nova_cor = Cor::FORA;
+                //     }
+                //     estado.cores_entrada[i] = nova_cor;
+                // }
+
+                // std::vector<float> ps {};
+                // ps.reserve(atividade_size * 5 * sizeof (float));
+                // for (std::size_t i = 0; i < atividade_size; ++i) {
+                //     auto ponto = estado.entrada[i];
+                //     auto cor = estado.cores_entrada[i];
+                //     ps.push_back(ponto[0]);
+                //     ps.push_back(ponto[1]);
+                //     // agora não vai ter nenhum amarelo
+                //     if (cor == Cor::DESCONHECIDO) {
+                //         std::cerr << "não era para ter amarelo" << std::endl;
+                //         ps.push_back(0.788f); // 201
+                //         ps.push_back(0.682f); // 174
+                //         ps.push_back(0.078f); // 20
+                //     } else if (cor == Cor::DENTRO) {
+                //         ps.push_back(0.325f); // 83
+                //         ps.push_back(0.788f); // 201
+                //         ps.push_back(0.078f); // 20
+                //     } else {
+                //         ps.push_back(0.788f); // 201
+                //         ps.push_back(0.149f); // 38
+                //         ps.push_back(0.078f); // 20
+                //     }
+                // }
+                // glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+                // glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(atividade_size * 5 * sizeof (float)), ps.data());
+                
+                // estado.recalcular_convexidade_dos_vertices = false;
             }
             
             if (estado.recalcular_orelhas) {
                 auto& v = estado.entrada;
                 for (std::size_t i = 0; i < v.size(); ++i) {
-                    Cor nova_cor {};
-                    if (orelha(v, i)) {
-                        nova_cor = Cor::DENTRO;
-                    } else {
-                        nova_cor = Cor::FORA;
-                    }
-                    estado.cores_entrada[i] = nova_cor;
+                    Categoria nova_cat = categoriza_ponto(v, i);
+                    estado.cores_entrada[i] = nova_cat;
                 }
 
                 std::vector<float> ps {};
@@ -3268,20 +3327,36 @@ int main() {
                     auto cor = estado.cores_entrada[i];
                     ps.push_back(ponto[0]);
                     ps.push_back(ponto[1]);
-                    // agora não vai ter nenhum amarelo
-                    if (cor == Cor::DESCONHECIDO) {
-                        std::cerr << "não era para ter amarelo" << std::endl;
-                        ps.push_back(0.788f); // 201
-                        ps.push_back(0.682f); // 174
-                        ps.push_back(0.078f); // 20
-                    } else if (cor == Cor::DENTRO) {
-                        ps.push_back(0.325f); // 83
-                        ps.push_back(0.788f); // 201
-                        ps.push_back(0.078f); // 20
-                    } else {
-                        ps.push_back(0.788f); // 201
-                        ps.push_back(0.149f); // 38
-                        ps.push_back(0.078f); // 20
+                    switch (cor) {
+                        case Categoria::REGULAR:
+                            ps.push_back(static_cast<float>(201) / 255.f); // 201
+                            ps.push_back(static_cast<float>(174) / 255.f); // 174
+                            ps.push_back(static_cast<float>(20) / 255.f); // 20
+                            break;
+                        case Categoria::START:
+                            ps.push_back(static_cast<float>(174) / 255.f); // 174
+                            ps.push_back(static_cast<float>(201) / 255.f); // 201
+                            ps.push_back(static_cast<float>(20) / 255.f); // 20
+                            break;
+                        case Categoria::END:
+                            ps.push_back(static_cast<float>(201) / 255.f); // 201
+                            ps.push_back(static_cast<float>(56) / 255.f); // 56
+                            ps.push_back(static_cast<float>(20) / 255.f); // 20
+                            break;
+                        case Categoria::SPLIT:
+                            ps.push_back(static_cast<float>(20) / 255.f); // 20
+                            ps.push_back(static_cast<float>(122) / 255.f); // 122
+                            ps.push_back(static_cast<float>(201) / 255.f); // 201
+                            break;
+                        case Categoria::MERGE:
+                            ps.push_back(static_cast<float>(20) / 255.f); // 20
+                            ps.push_back(static_cast<float>(56) / 255.f); // 56
+                            ps.push_back(static_cast<float>(201) / 255.f); // 201
+                            break;
+                        default:
+                            ps.push_back(static_cast<float>(201) / 255.f); // 201
+                            ps.push_back(static_cast<float>(174) / 255.f); // 174
+                            ps.push_back(static_cast<float>(20) / 255.f); // 20
                     }
                 }
                 glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
