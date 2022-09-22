@@ -3060,7 +3060,7 @@ int main() {
                 //     }
                 //     ++meeeeeeee;
                 // }
-                estado.intersecoes = op_booleana_poligonos(estado.polys[0], estado.polys[1], true);
+                estado.intersecoes = op_booleana_poligonos(estado.polys[0], estado.polys[1], false);
                 int meeeeeeee = 0;
                 int meu = 0;
                 for (auto poligono : estado.intersecoes) {
