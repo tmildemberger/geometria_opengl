@@ -47,8 +47,10 @@ else ifeq ($(machine),CASA)
     INCFLAGS += -I"/home/thiago/Downloads/glad/include"
     LDLIBS += -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
 else
-    INCFLAGS += 
-    LDLIBS += -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
+    INCFLAGS += -I"/home/todos/alunos/ct/a1716980/glad/include"
+    LDFLAGS += -L"/home/todos/alunos/ct/a1716980/glfw-3.3.8/src"
+    INCFLAGS += -I"/home/todos/alunos/ct/a1716980/glfw-3.3.8/include"
+    LDLIBS += -lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl
 endif
 
 EXEC = $(proj)$(exe_ext)
@@ -86,8 +88,8 @@ ifeq ($(detected),WIN)
 	@mkdir $(OBJ_DIR) 2>nul ||:
 	@mkdir $(DEP_DIR) 2>nul ||:
 else
-	@mkdir -f $(OBJ_DIR) 2>/dev/null
-	@mkdir -f $(DEP_DIR) 2>/dev/null
+	@mkdir -p $(OBJ_DIR) 2>/dev/null
+	@mkdir -p $(DEP_DIR) 2>/dev/null
 endif
 
 # .PHONY: clean
