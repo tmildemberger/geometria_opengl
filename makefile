@@ -1,11 +1,25 @@
+ifeq ($(OS),Windows_NT)
+    detected := WIN
+    obj_ext := .obj
+    exe_ext := .exe
+else ifneq ($(shell hostname),archthiago)
+    detected := LINUX
+    machine := UTF
+    obj_ext := .o
+    exe_ext :=
+else
+    detected := LINUX
+    machine := CASA
+    obj_ext := .o
+    exe_ext :=
+endif
+	
 src_exts = .c .cpp
-obj_ext = .o
-exe_ext =
-tool ?= MinGW
+tool ?= GCC
 $(foreach ext,$(src_exts),$(eval src += $(wildcard *$(ext))))
 obj := $(src:%=%$(obj_ext))
 dep := $(obj:$(obj_ext)=.dep)
-ifeq ($(tool),MinGW)
+ifeq ($(tool),GCC)
 	CC = gcc -Wno-pragmas
 	CXX = g++ -Wno-pragmas
 	CPP = cpp
@@ -24,11 +38,18 @@ CXXFLAGS += -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion
 CXXFLAGS += -Wsign-promo -Wstrict-overflow=2 -Wswitch-default
 CXXFLAGS += -Wundef -Werror -Wno-unused-parameter -Wno-unused-variable
 
-INCFLAGS += -I"D:/GLFW/include" -I"D:/glad/include" -I"D:/glm-0.9.9.3/glm"
-LDFLAGS += -L"D:/GLFW/lib"
-LDLIBS += -lglfw3 -lgdi32 -lopengl32
-# INCFLAGS += -I"/home/thiago/Downloads/glad/include"
-# LDLIBS += -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
+ifeq ($(detected),WIN)
+    INCFLAGS += -I"D:/GLFW/include" -I"D:/glad/include" -I"D:/glm-0.9.9.3/glm"
+    LDFLAGS += -L"D:/GLFW/lib"
+    LDLIBS += -lglfw3 -lgdi32 -lopengl32
+    redir := 
+else ifeq ($(machine),CASA)
+    INCFLAGS += -I"/home/thiago/Downloads/glad/include"
+    LDLIBS += -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
+else
+    INCFLAGS += 
+    LDLIBS += -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
+endif
 
 EXEC = $(proj)$(exe_ext)
 OBJ_DIR = obj
@@ -43,8 +64,6 @@ build: greetings $(EXEC) end
 
 $(DEP_DIR)/%.dep: %
 	@$(CPP) $< $(INCFLAGS) -MM -MT "$(@:$(DEP_DIR)/%.dep=$(OBJ_DIR)/%$(obj_ext))" >$@
-
--include $(dep)
 
 $(EXEC): $(obj)
 	@echo  -- Linking into $@
@@ -63,8 +82,13 @@ $(OBJ_DIR)/%.c$(obj_ext): %.c
 .PHONY: greetings
 greetings: 
 	@echo  '** In project $(proj)...'
+ifeq ($(detected),WIN)
 	@mkdir $(OBJ_DIR) 2>nul ||:
 	@mkdir $(DEP_DIR) 2>nul ||:
+else
+	@mkdir -f $(OBJ_DIR) 2>/dev/null
+	@mkdir -f $(DEP_DIR) 2>/dev/null
+endif
 
 # .PHONY: clean
 # clean:
@@ -73,3 +97,5 @@ greetings:
 .PHONY: end
 end:
 	@echo  $(END)
+
+include $(wildcard dep)

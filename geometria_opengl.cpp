@@ -701,9 +701,9 @@ struct Par {
     T operator[](std::size_t i) { if (i == 0) return a; else return b; }
 };
 
-std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2);
+std::vector<PoligonoComFuros> op_booleana_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2, bool calcular_intersecao = true);
 
-std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2) {
+std::vector<PoligonoComFuros> op_booleana_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2, bool calcular_intersecao) {
     // considerando que cada componente já tem o primeiro e último ponto iguais
     // para poder iterar por todas as arestas dentro do loop
 
@@ -743,12 +743,22 @@ std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, Polig
                     if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
                         Ponto inter {p3[0] * (1. - t) + p4[0] * t, p3[1] * (1. - t) + p4[1] * t};
                         bool entrando = produto_escalar_com_ortogonal(p1, p2, p3, p4) < 0;
-                        if (entrando) {
-                            voltas[p2_idx].insert({j, {p1_idx, i, t, s, inter}});
-                            std::cout << "voltas " << p2_idx << ' ' << j << ' ' << p1_idx << ' ' << i << ' ' << t << ' ' << s << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+                        if (calcular_intersecao) {
+                            if (entrando) {
+                                voltas[p2_idx].insert({j, {p1_idx, i, t, s, inter}});
+                                std::cout << "voltas " << p2_idx << ' ' << j << ' ' << p1_idx << ' ' << i << ' ' << t << ' ' << s << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+                            } else {
+                                idas[p1_idx].insert({i, {p2_idx, j, s, t, inter}});
+                                std::cout << "idas " << p1_idx << ' ' << i << ' ' << p2_idx << ' ' << j << ' ' << s << ' ' << t << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+                            }
                         } else {
-                            idas[p1_idx].insert({i, {p2_idx, j, s, t, inter}});
-                            std::cout << "idas " << p1_idx << ' ' << i << ' ' << p2_idx << ' ' << j << ' ' << s << ' ' << t << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+                            if (entrando) {
+                                idas[p1_idx].insert({i, {p2_idx, j, s, t, inter}});
+                                std::cout << "idas " << p1_idx << ' ' << i << ' ' << p2_idx << ' ' << j << ' ' << s << ' ' << t << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+                            } else {
+                                voltas[p2_idx].insert({j, {p1_idx, i, t, s, inter}});
+                                std::cout << "voltas " << p2_idx << ' ' << j << ' ' << p1_idx << ' ' << i << ' ' << t << ' ' << s << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+                            }
                         }
                         ++num_intersecoes_geral;
                     }
@@ -892,6 +902,7 @@ std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, Polig
                 Ponto inicio = p_inter;
                 std::vector<Ponto> caminho;
                 bool passou_por_fora = false;
+                bool passou_por_buraco = false;
                 // talvez isso seja desnecessário
                 // caminho.reserve(poly2.size());
                 
@@ -902,6 +913,8 @@ std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, Polig
                 do {
                     if (px_idx == 0) {
                         passou_por_fora = true;
+                    } else {
+                        passou_por_buraco = true;
                     }
                     bool acabou_segmento = true;
                     // std::cout << sel << ' ' << px_idx << ' ' << ix << std::endl;
@@ -960,7 +973,7 @@ std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, Polig
                 // std::cout << "mas nao chega aqui?" << std::endl;
                 
                 // com o caminho completo, falta saber se é um caminho externo ou um furo
-                if (passou_por_fora) {
+                if ((passou_por_fora && calcular_intersecao) || (!passou_por_buraco == !calcular_intersecao)) {
                     // std::cout << "aa" << std::endl;
                     externos.push_back(caminho);
                     // pr(externos.back());
@@ -1054,7 +1067,7 @@ std::vector<PoligonoComFuros> intersecao_poligonos(PoligonoComFuros poly1, Polig
 }
 
 /*
-PoligonoComFuros intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2) {
+PoligonoComFuros op_booleana_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2) {
     // considerando que cada componente já tem o primeiro e último ponto iguais
     // para poder iterar por todas as arestas dentro do loop
     PoligonoComFuros novo1 = preparacao(poly1);
@@ -1136,6 +1149,360 @@ PoligonoComFuros intersecao_poligonos(PoligonoComFuros poly1, PoligonoComFuros p
 
 }
 */
+
+using Aresta = std::array<Ponto, 2>;
+
+class DCEL {
+public:
+    // poligono_simples pode ser uma sequência anti-horária de vértices
+    // ou um ciclo (com o primeiro e último vértices sendo o mesmo)
+    DCEL(std::vector<Ponto> poligono_simples) {
+        auto& p = poligono_simples;
+        std::size_t n = p.size();
+
+        if (p.back() == p[0]) {
+            --n;
+        }
+        if (n < 3) {
+            // o caso de n == 2 pode ser feito em outra função
+            return;
+        }
+
+        vertices.reserve(n);
+        edges.reserve(n * 2);
+        faces.reserve(2);
+        faces.emplace_back(nullptr);
+        faces.emplace_back(nullptr);
+        Face* outside_face = (faces.data());
+        Face* inside_face = (faces.data()) + 1;
+        for (std::size_t i = 0; i < n; ++i) {
+            vertices.emplace_back(p[i], (edges.data()) + (2*i));
+            edges.emplace_back((edges.data()) + (2*i) + 1, (vertices.data()) + i, nullptr, nullptr, inside_face);
+            edges.emplace_back((edges.data()) + (2*i), (vertices.data()) + i + 1, nullptr, nullptr, outside_face);
+        }
+        edges.back().origin = (vertices.data());
+
+        edges[0].next = &edges[2];
+        edges[0].prev = &edges[2*n - 2];
+
+        edges[2*n - 2].next = &edges[0];
+        edges[2*n - 2].prev = &edges[2*n - 4];
+        for (std::size_t i = 1; i < n - 1; ++i) {
+            edges[2*i].next = &edges[2*(i+1)];
+            edges[2*i].prev = &edges[2*(i-1)];
+        }
+
+        for (std::size_t i = 0; i < n; ++i) {
+            edges[2*i + 1].prev = edges[2*i].next;
+            edges[2*i + 1].next = edges[2*i].prev;
+        }
+
+        outside_face->edge = &edges[1];
+        inside_face->edge = &edges[0];
+    }
+
+    // recebe índice de uma face, e retorna um vetor com as arestas dela
+    // percorridas de acordo com a DCEL
+    std::vector<Aresta> arestas_de_uma_face(std::size_t face) {
+        if (face >= faces.size()) {
+            return {};
+        }
+        Edge* e = faces[face].edge;
+        Vertex* start = e->origin;
+        std::vector<Aresta> retorno;
+        retorno.push_back(Aresta{e->origin->xy, e->twin->origin->xy});
+        e = e->next;
+        while (e->face == &faces[face] && e->origin != start) {
+            retorno.push_back(Aresta{e->origin->xy, e->twin->origin->xy});
+            e = e->next;
+        }
+        if (e->face != &faces[face]) {
+            // aqui já sabemos que houve um erro kk
+            std::cerr << "erro em 'arestas_de_uma_face'" << std::endl;
+        }
+        return retorno;
+    }
+
+    // recebe índice de um vértice, e retorna um vetor com as arestas que o orbitam
+    // percorridas de acordo com a DCEL
+    std::vector<Aresta> orbita_de_um_vertice(std::size_t vertice) {
+        if (vertice >= vertices.size()) {
+            return {};
+        }
+        Edge* e = vertices[vertice].edge;
+        Edge* start = e;
+        std::vector<Aresta> retorno;
+        retorno.push_back(Aresta{e->origin->xy, e->twin->origin->xy});
+        e = e->prev->twin;
+        while (e->origin == &vertices[vertice] && e != start) {
+            retorno.push_back(Aresta{e->origin->xy, e->twin->origin->xy});
+            e = e->prev->twin;
+        }
+        if (e->origin != &vertices[vertice]) {
+            // o mesmo do de cima
+            std::cerr << "erro em 'orbita_de_um_vertice'" << std::endl;
+        }
+        return retorno;
+    }
+
+    // recebe dois índices de vértice, e adiciona à DCEL a aresta entre os vértices
+    // se ainda não existe
+    void inclui_aresta(std::size_t v1_i, std::size_t v2_i) {
+        if (v1_i >= vertices.size() || v2_i >= vertices.size() || v1_i == v2_i) {
+            return;
+        }
+        Vertex* v1 = &vertices[v1_i];
+        Vertex* v2 = &vertices[v2_i];
+
+        // aqui faço uma reimplementação da órbita do vértice
+        // por que? não sei
+        Edge* e = v1->edge;
+        Edge* start = e;
+        Edge* last = e;
+        if (e->twin->origin == v2) {
+            // aresta já existe
+            return;
+        }
+        e = e->prev->twin;
+        Edge* found = nullptr;
+        while (e != start) {
+            if (e->twin->origin == v2) {
+                // aresta já existe
+                return;
+            }
+            if (!left(e->twin->origin->xy, v1->xy, last->origin->xy)) {
+                // isso significa que v1 "entre" 'last' e 'e' é "reflexo" kkk
+                if (left(v1->xy, last->twin->origin->xy, v2->xy) || !left(v1->xy, e->twin->origin->xy, v2->xy)) {
+                    // encontramos a aresta que deve compartilhar a face com o v2
+                    found = last;
+                    break;
+                }
+            } else {
+                // no caso do vértice ser convexo é normal
+                if (left(v1->xy, last->twin->origin->xy, v2->xy) && !left(v1->xy, e->twin->origin->xy, v2->xy)) {
+                    // encontramos a aresta que deve compartilhar a face com o v2
+                    found = last;
+                    break;
+                }
+            }
+            last = e;
+            e = e->prev->twin;
+        }
+        if (!found) {
+            // houve algum erro, o ponto tem que estar entre duas arestas
+            std::cerr << "erro em 'inclui_aresta'" << std::endl;
+            return;
+        }
+
+        // agora temos que encontrar a aresta nessa face que vai até v2
+        start = found;
+        e = start->next;
+        found = nullptr;
+        while (e != start) {
+            if (e->origin == v2) {
+                // a aresta anterior é a que vai para v2
+                found = e->prev;
+                break;
+            }
+            e = e->next;
+        }
+        if (!found) {
+            // nesse caso não necessariamente houve um erro;
+            // o caso em que v1 e v2 não compartilham uma face cai aqui
+            return;
+        }
+
+        // reserva espaço para uma nova face e duas novas arestas
+        reserva_espacos(1, 2, 0);
+        faces.emplace_back(nullptr);
+
+        std::size_t idx = edges.size();
+        edges.emplace_back((edges.data()) + idx + 1, v1, (edges.data()) + idx + 1, (edges.data()) + idx + 1, found->face);
+        edges.emplace_back((edges.data()) + idx, v2, (edges.data()) + idx, (edges.data()) + idx, found->face);
+
+        conecta_arestas(found, &edges[idx]);
+        conecta_arestas(start->prev, &edges[idx + 1]);
+
+        edges[idx + 1].face = &faces.back();
+        faces.back().edge = &edges[idx + 1];
+        e = edges[idx + 1].next;
+        while (e != &edges[idx + 1]) {
+            e->face = &faces.back();
+        }
+
+        edges[idx].face->edge = &edges[idx];
+        edges[idx + 1].face->edge = &edges[idx + 1];
+
+    }
+
+    // recebe índice de uma aresta e um valor de 0 a 1 indicando onde colocar o
+    // novo vértice
+    void inclui_vertice_em_aresta(std::size_t aresta, double onde) {
+        if (onde <= 0 || onde >= 1 || aresta >= edges.size()) {
+            return;
+        }
+        Edge* e = &edges[aresta];
+        Vertex* v1 = e->origin;
+        Vertex* v2 = e->twin->origin;
+        Ponto p = {(v2->xy[0]-v1->xy[0])*onde+v1->xy[0], (v2->xy[1]-v1->xy[1])*onde+v1->xy[1]};
+
+        // reserva espaço para um novo vértice e duas novas arestas
+        reserva_espacos(0, 2, 1);
+
+        vertices.emplace_back(p, e);
+        Vertex* v3 = &vertices.back();
+        Edge* e8 = e->prev;
+        Edge* e9 = e->twin->next;
+
+        e->origin = v3;
+
+        std::size_t idx = edges.size();
+        edges.emplace_back((edges.data()) + idx + 1, v1, e, e8, e->face);
+        edges.emplace_back((edges.data()) + idx, v3, e9, e->twin, e->twin->face);
+
+        Edge* e2 = &edges[idx];
+
+        v1->edge = e2;
+
+        e8->next = e2;
+        e9->prev = e2->twin;
+        e->prev = e2;
+        e->twin->next = e2->twin;
+    }
+
+    // tenta encontrar a face em que 'p' está
+    std::size_t qual_face(Ponto p) {
+        // começa em um vértice qualquer
+        Vertex* v1 = &vertices[0];
+
+        // aqui faço novamente uma reimplementação da órbita do vértice
+        // por que? não sei
+        Edge* e = v1->edge;
+        Edge* start = e;
+        Edge* last = e;
+        e = e->prev->twin;
+        Edge* found = nullptr;
+        while (e != start) {
+            if (!left(e->twin->origin->xy, v1->xy, last->origin->xy)) {
+                // isso significa que v1 "entre" 'last' e 'e' é "reflexo" kkk
+                if (left(v1->xy, last->twin->origin->xy, p) || !left(v1->xy, e->twin->origin->xy, p)) {
+                    // encontramos uma aresta candidata a compartilhar a face com p
+                    found = last;
+                    break;
+                }
+            } else {
+                // no caso do vértice ser convexo é normal
+                if (left(v1->xy, last->twin->origin->xy, p) && !left(v1->xy, e->twin->origin->xy, p)) {
+                    // encontramos uma aresta candidata a compartilhar a face com p
+                    found = last;
+                    break;
+                }
+            }
+            last = e;
+            e = e->prev->twin;
+        }
+        if (!found) {
+            // houve algum erro, o ponto tem que estar entre duas arestas
+            std::cerr << "erro1 em 'qual_face'" << std::endl;
+            return;
+        }
+
+        // agora vamos calcular um segmento de 'v1' até 'p'
+        // se 'p' estiver na face de 'v1', vai existir um vértice 'v' (não necessariamente 'v1')
+        // tal que o segmento entre 'v' e 'p' não tem interseção com nenhuma aresta da face
+
+        // assim, percorremos a face de 'v1' enquanto não houver interseção entre a
+        // a aresta atual e o segmento.
+        // toda vez que encontrarmos uma interseção com uma aresta 'a', o vértice de destino
+        // de 'a' se tornará o nosso novo 'v1', começando de novo com a parte de encontrar a nova
+        // face candidata e calculando o segmento.
+        // só paramos quando uma face inteira tiver sido percorrida sem encontrar interseções.
+        
+        // demorei tanto pra pensar e escrever que acabou o tempo kk
+    }
+
+private:
+
+    struct Face;
+    struct Edge;
+    struct Vertex;
+
+    struct Face {
+        Edge* edge;
+    };
+    struct Edge {
+        Edge* twin;
+        Vertex* origin;
+        Edge* next;
+        Edge* prev;
+        Face* face;
+    };
+    struct Vertex {
+        Ponto xy;
+        Edge* edge;
+    };
+
+    std::vector<Face> faces;
+    std::vector<Edge> edges;
+    std::vector<Vertex> vertices;
+
+    void reserva_espacos(std::size_t n_faces, std::size_t n_edges, std::size_t n_vertices) {
+        std::size_t faces_cap = faces.capacity();
+        std::size_t edges_cap = edges.capacity();
+        std::size_t vertices_cap = vertices.capacity();
+
+        if (n_faces) {
+            Face* base = faces.data();
+            faces.reserve(faces.size() + n_faces);
+            if (faces.capacity() != faces_cap) {
+                // recalcula todos os ponteiros para face
+                for (auto& edge : edges) {
+                    edge.face = (faces.data()) + (edge.face - base);
+                }
+            }
+        }
+
+        if (n_vertices) {
+            Vertex* base = vertices.data();
+            vertices.reserve(vertices.size() + n_vertices);
+            if (vertices.capacity() != vertices_cap) {
+                // recalcula todos os ponteiros para vértice
+                for (auto& edge : edges) {
+                    edge.origin = (vertices.data()) + (edge.origin - base);
+                }
+            }
+        }
+
+        if (n_edges) {
+            Edge* base = edges.data();
+            edges.reserve(edges.size() + n_edges);
+            if (edges.capacity() != edges_cap) {
+                // recalcula todos os ponteiros para aresta
+                for (auto& face : faces) {
+                    face.edge = (edges.data()) + (face.edge - base);
+                }
+                for (auto& vertex : vertices) {
+                    vertex.edge = (edges.data()) + (vertex.edge - base);
+                }
+                for (auto& edge : edges) {
+                    edge.twin = (edges.data()) + (edge.twin - base);
+                    edge.next = (edges.data()) + (edge.next - base);
+                    edge.prev = (edges.data()) + (edge.prev - base);
+                }
+            }
+        }
+    }
+
+    void conecta_arestas(Edge* e1, Edge* e2) {
+        // conecta e1, e1->next, e2 e e2->twin corretamente, como na aula
+        e2->twin->next = e1->next;
+        e2->prev = e1;
+        e1->next->prev = e2->twin;
+        e1->next = e2;
+    }
+};
+
+
 
 enum class Tela {
     ORIGINAL,
@@ -1219,7 +1586,7 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
         }
         auto& p = estado.polys[qual][px_idx];
         if (p.size() >= 1) {
-            for (std::size_t j = 1; j < estado.polys_prontos[qual]; ++j) {
+            for (std::size_t j = 0; j < estado.polys_prontos[qual]; ++j) {
                 for (std::size_t i = 0; i < estado.polys[qual][j].size() - 2; ++i) {
                     auto& q = estado.polys[qual][j];
                     if (intersecao_com_left(q[i], q[i+1], p[p.size()-1], ponto) != Intersecao::NAO) {
@@ -1239,7 +1606,7 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
             return;
         }
         auto& p = estado.polys[qual][px_idx];
-        for (std::size_t j = 1; j < px_idx; ++j) {
+        for (std::size_t j = 0; j < px_idx; ++j) {
             auto& q = estado.polys[qual][j];
             for (std::size_t i = 1; i < q.size() - 2; ++i) {
                 if (intersecao_com_left(q[i], q[i+1], p[p.size()-1], p[0]) != Intersecao::NAO) {
@@ -2021,7 +2388,7 @@ int main() {
     // SEMPRE LEMBRAR DE REPETIR O PRIMEIRO E ULTIMO VERTICE
     // int meeeeeeee = 0;
     // int meu = 0;
-    /*auto res = intersecao_poligonos(
+    /*auto res = op_booleana_poligonos(
         {
             {{-1, -1}, {1, -1}, {1, 1}, {-1, 1}, {-1, -1}},
             {{0.1, 0.9}, {0.35, 0.93}, {0.75, 0.13}, {0.1, 0.9}},
@@ -2034,7 +2401,7 @@ int main() {
             {{0.535, 0.688}, {0.596, 0.960}, {0.945, 0.967}, {0.968, 0.625}, {0.535, 0.688}}
         }
     );*/
-    /*auto res = intersecao_poligonos(
+    /*auto res = op_booleana_poligonos(
         {
             {{0.679, 0.415}, {0.838, 0.445}, {0.835, 0.252}, {0.679, 0.415}}
         },
@@ -2553,11 +2920,16 @@ int main() {
                     tamanho = estado.polys[poly_sel][max_idx].size();
                 }
                 if (estado.polys_prontos[poly_sel] > ultimo_polys_idx[poly_sel] || tamanho > ultimo_polys_pos[poly_sel]) {
-                    std::size_t old_buffer_pos = polys_buffer_pos[poly_sel];
                     // std::size_t diff = estado.polys[poly_sel][estado.polys_idx[poly_sel]].size() - ultimo_polys_pos[poly_sel];
                     std::vector<float> ps {};
                     // ps.reserve(diff * 5 * sizeof (float));
-                    while (polys_indices_inicio[poly_sel].size() <= estado.polys_prontos[poly_sel]) {
+                    while (polys_indices_inicio[poly_sel].size() > estado.polys[poly_sel].size()) {
+                        polys_indices_inicio[poly_sel].pop_back();
+                        polys_indices_fim[poly_sel].pop_back();
+                        polys_buffer_pos[poly_sel] = polys_indices_fim[poly_sel].back();
+                    }
+                    std::size_t old_buffer_pos = polys_buffer_pos[poly_sel];
+                    while (polys_indices_inicio[poly_sel].size() < estado.polys[poly_sel].size()) {
                         polys_indices_inicio[poly_sel].push_back(0);
                         polys_indices_fim[poly_sel].push_back(0);
                     }
@@ -2633,12 +3005,12 @@ int main() {
                         }
                     }
                     
-                    polys_indices_fim[poly_sel][estado.polys_prontos[poly_sel]] = polys_buffer_pos[poly_sel];
+                    polys_indices_fim[poly_sel].back() = polys_buffer_pos[poly_sel];
 
                     glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[poly_sel]);
                     glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(old_buffer_pos * 5 * sizeof (float)), static_cast<GLintptr>(ps.size() * 5 * sizeof (float)), ps.data());
                     
-                    ultimo_polys_pos[poly_sel] = estado.polys[poly_sel][estado.polys_prontos[poly_sel]].size();
+                    ultimo_polys_pos[poly_sel] = tamanho;
                     ultimo_polys_idx[poly_sel] = estado.polys_prontos[poly_sel];
                     polys_pronto[poly_sel] = true;
                 }
@@ -2688,7 +3060,7 @@ int main() {
                 //     }
                 //     ++meeeeeeee;
                 // }
-                estado.intersecoes = intersecao_poligonos(estado.polys[0], estado.polys[1]);
+                estado.intersecoes = op_booleana_poligonos(estado.polys[0], estado.polys[1], true);
                 int meeeeeeee = 0;
                 int meu = 0;
                 for (auto poligono : estado.intersecoes) {
