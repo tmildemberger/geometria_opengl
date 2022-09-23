@@ -2417,8 +2417,42 @@ private:
 std::vector<Ponto> regiao_visivel(std::vector<Ponto> poligono, Ponto p);
 
 std::vector<Ponto> regiao_visivel(std::vector<Ponto> poligono, Ponto p) {
-    for (std::size_t i = 0; i < poligono.size(); ++i) {
-        for (std::size_t)
+    // para facilitar nos loops, o primeiro vértice do polígono
+    // é copiado para o final do vetor
+    poligono.push_back(poligono[0]);
+
+    std::vector<std::size_t> visiveis;
+    std::vector<std::size_t> arestas_candidatas;
+    bool anterior_visivel = false;
+    {
+        bool visivel = true;
+        for (std::size_t j = 0; j < poligono.size() - 3; ++j) {
+            if (intersecao_com_left(p, poligono[poligono.size() - 2], poligono[j], poligono[j + 1]) != Intersecao::NAO) {
+                visivel = false;
+                break;
+            }
+        }
+        if (visivel) {
+            anterior_visivel = true;
+        }
+    }
+    for (std::size_t i = 1; i < poligono.size() - 1; ++i) {
+        bool visivel = true;
+        for (std::size_t j = 0; j < poligono.size() - 1; ++j) {
+            if (j == i || j == i - 1) {
+                continue;
+            }
+            if (intersecao_com_left(p, poligono[i], poligono[j], poligono[j + 1]) != Intersecao::NAO) {
+                visivel = false;
+                break;
+            }
+        }
+        if (visivel) {
+            visiveis.push_back(i);
+        }
+        if (visivel != anterior_visivel && left(poligono[i-1], poligono[i], p)) {
+            arestas_candidatas.push_back(i-1);
+        }
     }
 }
 
