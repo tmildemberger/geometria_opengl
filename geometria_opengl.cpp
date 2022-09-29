@@ -1898,20 +1898,20 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
                 estado.recebendo_pontos = false;
             }
         } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE && !estado.recebendo_pontos) {
-            if (mods == GLFW_MOD_CONTROL) {
+            if (mods == GLFW_MOD_ALT) {
                 estado.resetar_pontos = true;
                 estado.recebendo_pontos = true;
             } else if (mods == GLFW_MOD_SHIFT) {
                 estado.recalcular_orientacao = true;
             } else if (!mods) {
                 estado.recalcular_convexidade_dos_vertices = true;
-            } else if (mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
+            } else if (mods == (GLFW_MOD_ALT | GLFW_MOD_SHIFT)) {
                 estado.recalcular_orelhas = true;
-            } else if (mods == GLFW_MOD_ALT) {
+            } else if (mods == GLFW_MOD_CONTROL) {
                 estado.observador = ponto_xy();
                 estado.visivel_pronto = false;
                 estado.recalcular_visivel = true;
-            } else if (mods == (GLFW_MOD_ALT | GLFW_MOD_SHIFT)) {
+            } else if (mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
                 estado.visivel_pronto = !estado.visivel_pronto;
             }
         }
@@ -3756,14 +3756,6 @@ int main() {
                 }
             }
 
-            if (estad.estado == Dcel_Data::PISCANDO) {
-                auto& c = coisas_dcel.coisas_piscar;
-                if (c.ticks == 0) {
-                    estad.estado = Dcel_Data::DCEL_PRONTA;
-                    coisas_dcel.coisas_piscar = {};
-                }
-            }
-
             glBindVertexArray(coisas_dcel.vao);
             glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
@@ -3779,6 +3771,16 @@ int main() {
             point_program.use();
             point_program.setFloat("pointRadius", estado.pointSize);
             glDrawArrays(GL_POINTS, 0, coisas_dcel.last_size);
+            
+            if (estad.estado == Dcel_Data::PISCANDO) {
+                auto& c = coisas_dcel.coisas_piscar;
+                if (c.ticks == 0) {
+                    // no tick 0, prepara o que vai ser desenhado
+                    
+                    // estad.estado = Dcel_Data::DCEL_PRONTA;
+                    // coisas_dcel.coisas_piscar = {};
+                }
+            }
         }
         //////////////////////////////////////////
 
