@@ -1,6 +1,7 @@
 #include <iostream>
 #include <array>
 #include <vector>
+#include <deque>
 #include <algorithm>
 #include <cstdlib>
 #include <cmath>
@@ -1238,8 +1239,8 @@ public:
         }
 
         for (std::size_t i = 0; i < n; ++i) {
-            edges[2*i + 1].prev = edges[2*i].next;
-            edges[2*i + 1].next = edges[2*i].prev;
+            edges[2*i + 1].prev = edges[2*i].next->twin;
+            edges[2*i + 1].next = edges[2*i].prev->twin;
         }
 
         outside_face->edge = &edges[1];
@@ -1421,17 +1422,18 @@ public:
         Vertex* v1 = &vertices[0];
 
         // aqui faço novamente uma reimplementação da órbita do vértice
-        // por que? não sei
-        bool found_face = false;
+        // por que? nesse caso acho que é porque
+        Face* found_face = nullptr;
         while (!found_face) {
             
             Edge* e = v1->edge;
             Edge* start = e;
-            Edge* last = e;
+            Edge* last = nullptr;
             e = e->prev->twin;
             Edge* found = nullptr;
-            while (e != start) {
-                if (!left(e->twin->origin->xy, v1->xy, last->origin->xy)) {
+            while (last != start) {
+                last = e->twin->next;
+                if (!left(e->twin->origin->xy, v1->xy, last->twin->origin->xy)) {
                     // isso significa que v1 "entre" 'last' e 'e' é "reflexo" kkk
                     if (left(v1->xy, last->twin->origin->xy, p) || !left(v1->xy, e->twin->origin->xy, p)) {
                         // encontramos uma aresta candidata a compartilhar a face com p
@@ -1465,14 +1467,25 @@ public:
             // de 'a' se tornará o nosso novo 'v1', começando de novo com a parte de encontrar a nova
             // face candidata e calculando o segmento.
             // só paramos quando uma face inteira tiver sido percorrida sem encontrar interseções.
-            Edge* a = found;
+            Edge* a = found->next;
 
             // Aresta segmento_v1_p = {v1->xy, p};
-            intersecao_com_left(found->origin->xy, found->twin->origin->xy, v1->xy, p);
+            // while (intersecao_com_left(a->origin->xy, a->twin->origin->xy, v1->xy, p) == Intersecao::NAO) {
+            while (true) {
+                std::cout << "testando aresta " << a - edges.data() << " e " << (intersecao_com_left(a->origin->xy, a->twin->origin->xy, v1->xy, p) == Intersecao::NAO) << std::endl;
+                if (intersecao_com_left(a->origin->xy, a->twin->origin->xy, v1->xy, p) != Intersecao::NAO) {
+                    break;
+                }
+                a = a->next;
+                if (a == found || a->next == found) {
+                    found_face = found->face;
+                }
+            }
+            v1 = a->twin->origin;
+            // se não tiver encontrado, no próximo loop recomeçaremos orbitando ao
+            // redor do vértice v1 acima
         }
-
-        
-        
+        return static_cast<std::size_t>(found_face - faces.data());
     }
 
 private:
@@ -1563,9 +1576,42 @@ enum class Tela {
     OPERACOES_BOOLEANAS,
     TRIANGULACAO,
     ATIVIDADE,
+    DCEL_TESTE,
+};
+
+enum class Dcel_Data {
+    RESETANDO,
+    RECEBENDO,
+    CRIANDO_DCEL,
+    DCEL_PRONTA,
+    PISCANDO,
+};
+
+enum class Dcel_Op {
+    ENCONTRAR_FACE,
+    PISCAR_FACE,
+};
+
+struct Dcel_Args {
+    Ponto ponto;
+};
+
+struct Dcel_Ops {
+    Dcel_Args args;
+    Dcel_Op op;
+};
+
+struct Dcel_Teste_State {
+    Dcel_Data estado;
+    std::vector<Ponto> poly;
+    bool ponto_adicionado;
+    bool poligono_fechado;
+    std::deque<Dcel_Ops> operacoes;
 };
 
 struct State {
+    Dcel_Teste_State estado_dcel_teste;
+
     std::vector<Ponto> cliques;
     std::vector<std::tuple<Ponto,Cor>> outros;
     float pointSize;
@@ -1589,6 +1635,9 @@ struct State {
     bool recalcular_orientacao;
     bool recalcular_convexidade_dos_vertices;
     bool recalcular_orelhas;
+    bool recalcular_visivel;
+    bool visivel_pronto;
+    Ponto observador;
 
     // parte das operações booleanas
     std::array<PoligonoComFuros, 2> polys;
@@ -1617,6 +1666,39 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
         return {x, y};
     };
     State& estado = *(static_cast<State*> (glfwGetWindowUserPointer(window)));
+    auto coloca_ponto_dcel = [ponto_xy, &estado]() {
+        auto& estad = estado.estado_dcel_teste;
+        auto& p = estad.poly;
+        Ponto ponto = ponto_xy();
+        if (p.size() >= 3) {
+            for (std::size_t i = 0; i < p.size() - 2; ++i) {
+                if (intersecao_com_left(p[i], p[i+1], p[p.size()-1], ponto) != Intersecao::NAO) {
+                    return;
+                }
+            }
+        }
+        p.push_back(ponto);
+        estad.ponto_adicionado = true;
+    };
+    auto fecha_poligono_dcel = [&estado]() {
+        auto& estad = estado.estado_dcel_teste;
+        auto& p = estad.poly;
+        if (p.size() <= 2) {
+            return;
+        }
+        for (std::size_t i = 1; i < p.size() - 2; ++i) {
+            if (intersecao_com_left(p[i], p[i+1], p[p.size()-1], p[0]) != Intersecao::NAO) {
+                return;
+            }
+        }
+        bool orientado_certo = orientado_antihorario(p);
+        if (!orientado_certo) {
+            estad.estado = Dcel_Data::RESETANDO;
+            return;
+        }
+        estad.poligono_fechado = true;
+        estad.estado = Dcel_Data::CRIANDO_DCEL;
+    };
     auto coloca_ponto_poly = [ponto_xy, &estado](std::size_t qual) {
         Ponto ponto = ponto_xy();
         std::size_t px_idx = estado.polys_prontos[qual];
@@ -1660,9 +1742,11 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
             return;
         }
         auto& p = estado.polys[qual][px_idx];
-        for (std::size_t j = 0; j < px_idx; ++j) {
+        for (std::size_t j = 0; j <= px_idx; ++j) {
             auto& q = estado.polys[qual][j];
-            for (std::size_t i = 1; i < q.size() - 2; ++i) {
+            std::size_t start = px_idx == j;
+            std::size_t end = (px_idx == j) + 1;
+            for (std::size_t i = start; i < q.size() - end; ++i) {
                 if (intersecao_com_left(q[i], q[i+1], p[p.size()-1], p[0]) != Intersecao::NAO) {
                     return;
                 }
@@ -1823,6 +1907,38 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
                 estado.recalcular_convexidade_dos_vertices = true;
             } else if (mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
                 estado.recalcular_orelhas = true;
+            } else if (mods == GLFW_MOD_ALT) {
+                estado.observador = ponto_xy();
+                estado.visivel_pronto = false;
+                estado.recalcular_visivel = true;
+            } else if (mods == (GLFW_MOD_ALT | GLFW_MOD_SHIFT)) {
+                estado.visivel_pronto = !estado.visivel_pronto;
+            }
+        }
+    } else if (estado.tela == Tela::DCEL_TESTE) {
+        if (action != GLFW_RELEASE) return;
+        auto& estad = estado.estado_dcel_teste;
+        auto& p = estad.poly;
+        if (p.size() == 0) {
+            estad.estado = Dcel_Data::RECEBENDO;
+        }
+        if (estad.estado == Dcel_Data::RECEBENDO) {
+            if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
+                coloca_ponto_dcel();
+            } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
+                fecha_poligono_dcel();
+            } else if (button == GLFW_MOUSE_BUTTON_RIGHT && !mods) {
+                estad.estado = Dcel_Data::RESETANDO;
+            }
+        } else if (estad.estado == Dcel_Data::DCEL_PRONTA) {
+            if (button == GLFW_MOUSE_BUTTON_RIGHT && !mods) {
+                estad.estado = Dcel_Data::RESETANDO;
+            } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
+                Ponto clicado = ponto_xy();
+                estad.operacoes.push_back({{clicado}, Dcel_Op::ENCONTRAR_FACE});
+            } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_SHIFT) {
+                Ponto clicado = ponto_xy();
+                estad.operacoes.push_back({{clicado}, Dcel_Op::PISCAR_FACE});
             }
         }
     }
@@ -1862,6 +1978,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                 break;
             case GLFW_KEY_4:
                 estado.tela = Tela::ATIVIDADE;
+                break;
+            case GLFW_KEY_5:
+                estado.tela = Tela::DCEL_TESTE;
                 break;
             default:
                 break;
@@ -2421,40 +2540,94 @@ std::vector<Ponto> regiao_visivel(std::vector<Ponto> poligono, Ponto p) {
     // é copiado para o final do vetor
     poligono.push_back(poligono[0]);
 
-    std::vector<std::size_t> visiveis;
-    std::vector<std::size_t> arestas_candidatas;
-    bool anterior_visivel = false;
-    {
-        bool visivel = true;
-        for (std::size_t j = 0; j < poligono.size() - 3; ++j) {
-            if (intersecao_com_left(p, poligono[poligono.size() - 2], poligono[j], poligono[j + 1]) != Intersecao::NAO) {
-                visivel = false;
-                break;
-            }
-        }
-        if (visivel) {
-            anterior_visivel = true;
-        }
-    }
-    for (std::size_t i = 1; i < poligono.size() - 1; ++i) {
+    std::vector<bool> visiveis(poligono.size());
+    std::multimap<std::size_t, std::pair<Ponto, double>> inters;
+    // std::vector<std::tuple<Ponto, double, std::size_t>> inters;
+    for (std::size_t i = 1; i < poligono.size(); ++i) {
         bool visivel = true;
         for (std::size_t j = 0; j < poligono.size() - 1; ++j) {
-            if (j == i || j == i - 1) {
+            if (j == i || j == i - 1 || (j == 0 && i == poligono.size() - 1)) {
                 continue;
             }
-            if (intersecao_com_left(p, poligono[i], poligono[j], poligono[j + 1]) != Intersecao::NAO) {
+            auto [s, t] = intersecao(p, poligono[i], poligono[j], poligono[j + 1]);
+
+            // if (intersecao_com_left(p, poligono[i], poligono[j], poligono[j + 1]) != Intersecao::NAO) {
+            if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
                 visivel = false;
                 break;
             }
         }
         if (visivel) {
-            visiveis.push_back(i);
-        }
-        if (visivel != anterior_visivel && left(poligono[i-1], poligono[i], p)) {
-            arestas_candidatas.push_back(i-1);
+            visiveis[i] = true;
+            auto& poly = poligono;
+            // std::size_t prev = (i == 0) ? (poly.size()-1) : (i-1);
+            std::size_t prev = i - 1;
+            std::size_t prox = (i+1 >= poly.size()) ? (1) : (i+1);
+            if (!left(poly[prev], poly[i], poly[prox]) && !(left(poly[prev], poly[i], p) && left(poly[i], poly[prox], p))) {
+                // vai ter interseção com outra aresta
+                std::size_t menor_aresta = poly.size();
+                double menor_distancia = std::numeric_limits<double>::infinity();
+                double t_do_menor = std::numeric_limits<double>::infinity();
+                for (std::size_t j = 0; j < poligono.size() - 1; ++j) {
+                    if (j == i || j == i - 1 || (j == 0 && i == poligono.size() - 1)) {
+                        continue;
+                    }
+                    auto [s, t] = intersecao(p, poly[i], poly[j], poly[j + 1]);
+                    if (t > 0 && t < 1 && s > 0 && s < menor_distancia) {
+                        menor_distancia = s;
+                        menor_aresta = j;
+                        t_do_menor = t;
+                    }
+                }
+                if (menor_aresta == poly.size()) {
+                    // deveria ter pelo menos uma interseção
+                    std::cerr << "erro em 'regiao_visivel" << std::endl;
+                    return {};
+                }
+                double dx = menor_distancia * (poly[i][0] - p[0]);
+                double dy = menor_distancia * (poly[i][1] - p[1]);
+                Ponto inter = {p[0] + dx, p[1] + dy};
+                inters.insert({menor_aresta, {inter, t_do_menor}});
+            }
         }
     }
+    std::vector<Ponto> retorno;
+    for (std::size_t i = 0; i < poligono.size(); ++i) {
+        if (visiveis[i]) {
+            retorno.push_back(poligono[i]);
+        }
+        std::vector<std::pair<Ponto, double>> sub_inters;
+        auto [begin, end] = inters.equal_range(i);
+        while (begin != end) {
+            sub_inters.push_back(begin->second);
+            ++begin;
+        }
+        std::sort(sub_inters.begin(), sub_inters.end(), [](auto a, auto b) {
+            return a.second < b.second;
+        });
+        for (auto& [ponto, t] : sub_inters) {
+            retorno.push_back(ponto);
+        }
+    }
+    return retorno;
 }
+
+struct Coisas_Para_Piscar {
+    std::size_t ticks;
+    std::size_t ticks_por_aresta;
+    std::size_t atual;
+    std::vector<Aresta> arestas;
+};
+
+struct CoisasDCEL {
+    unsigned vao;
+    unsigned vbo;
+    unsigned ebo;
+    std::size_t last_size;
+    std::size_t edge_count;
+    std::unique_ptr<DCEL> dcel_ptr;
+    Coisas_Para_Piscar coisas_piscar;
+};
 
 int main() {
 
@@ -2600,7 +2773,7 @@ int main() {
     unsigned vbo {};
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, 5*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
     unsigned vao {};
     glGenVertexArrays(1, &vao);
@@ -2616,7 +2789,7 @@ int main() {
     unsigned outros_vbo {};
     glGenBuffers(1, &outros_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, outros_vbo);
-    glBufferData(GL_ARRAY_BUFFER, 5*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
     unsigned outros_vao {};
     glGenVertexArrays(1, &outros_vao);
@@ -2632,7 +2805,7 @@ int main() {
     unsigned fecho_vbo {};
     glGenBuffers(1, &fecho_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, fecho_vbo);
-    glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
     unsigned fecho_vao {};
     glGenVertexArrays(1, &fecho_vao);
@@ -2646,7 +2819,7 @@ int main() {
     unsigned atividade_vbo {};
     glGenBuffers(1, &atividade_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
-    glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
     unsigned atividade_vao {};
     glGenVertexArrays(1, &atividade_vao);
@@ -2685,7 +2858,7 @@ int main() {
     std::array<unsigned, 2> polys_vbo {};
     glGenBuffers(1, &polys_vbo[0]);
     glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[0]);
-    glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
     std::array<unsigned, 2> polys_vao {};
     glGenVertexArrays(1, &polys_vao[0]);
@@ -2699,7 +2872,7 @@ int main() {
     
     glGenBuffers(1, &polys_vbo[1]);
     glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[1]);
-    glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
     glGenVertexArrays(1, &polys_vao[1]);
     glBindVertexArray(polys_vao[1]);
@@ -2714,7 +2887,7 @@ int main() {
     unsigned inter_resul_vbo {};
     glGenBuffers(1, &inter_resul_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, inter_resul_vbo);
-    glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
     unsigned inter_resul_vao {};
     glGenVertexArrays(1, &inter_resul_vao);
@@ -2726,12 +2899,32 @@ int main() {
     glEnableVertexAttribArray(1);
     glBindVertexArray(0);
 
+    CoisasDCEL coisas_dcel {};
+    glGenVertexArrays(1, &coisas_dcel.vao);
+    glBindVertexArray(coisas_dcel.vao);
+    
+    glGenBuffers(1, &coisas_dcel.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
+    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+    glEnableVertexAttribArray(1);
+
+    glGenBuffers(1, &coisas_dcel.ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 16*1024*sizeof (unsigned), nullptr, GL_DYNAMIC_DRAW);
+    glBindVertexArray(0);
+
     
     std::vector<std::size_t> inter_indices_inicio;
     std::vector<std::size_t> inter_indices_fim;
 
     std::size_t mano = 0;
     std::size_t atividade_size = 0;
+    // bool visivel_pronto = false;
+    std::vector<Ponto> area_visivel {};
     AlgoritmoPassoAPasso passo_a_passo_manager {estado, point_program, color_line_program};
     while (!glfwWindowShouldClose(window)) {
         // win.processInput();
@@ -3237,6 +3430,8 @@ int main() {
                 estado.entrada.clear();
                 estado.cores_entrada.clear();
                 atividade_size = 0;
+                area_visivel = {};
+                estado.visivel_pronto = false;
                 estado.resetar_pontos = false;
             }
 
@@ -3398,6 +3593,37 @@ int main() {
                 
                 estado.recalcular_orelhas = false;
             }
+
+            if (estado.recalcular_visivel) {
+                area_visivel = regiao_visivel(estado.entrada, estado.observador);
+
+                std::vector<float> ps {};
+                ps.reserve(area_visivel.size() * 5 * sizeof (float));
+                for (std::size_t i = 0; i < area_visivel.size(); ++i) {
+                    auto ponto = area_visivel[i];
+                    ps.push_back(ponto[0]);
+                    ps.push_back(ponto[1]);
+                    // sempre tem verde
+                    ps.push_back(static_cast<float>(119) / 255.f); // 119
+                    ps.push_back(static_cast<float>(201) / 255.f); // 201
+                    ps.push_back(static_cast<float>(20) / 255.f); // 20
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(512 * 5 * sizeof (float)), static_cast<GLintptr>(area_visivel.size() * 5 * sizeof (float)), ps.data());
+
+                std::array<float, 5> obs {
+                    static_cast<float>(estado.observador[0]),
+                    static_cast<float>(estado.observador[1]),
+                    static_cast<float>(20) / 255.f,  // 20
+                    static_cast<float>(201) / 255.f, // 201
+                    static_cast<float>(168) / 255.f  // 168
+                };
+
+                glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(511 * 5 * sizeof (float)), static_cast<GLintptr>(5 * sizeof (float)), obs.data());
+
+                estado.visivel_pronto = true;
+                estado.recalcular_visivel = false;
+            }
             
             glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
             glBindVertexArray(atividade_vao);
@@ -3412,6 +3638,147 @@ int main() {
             point_program.setFloat("pointRadius", estado.pointSize);
             glDrawArrays(GL_POINTS, 0, atividade_size);
 
+            if (estado.visivel_pronto) {
+                glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+                glBindVertexArray(atividade_vao);
+
+                color_line_program.use();
+                // color_line_program.setFloat("alpha", 0.2f);
+                // glDrawArrays(GL_TRIANGLE_FAN, 512, area_visivel.size());
+                color_line_program.setFloat("alpha", 1.0f);
+                glDrawArrays(GL_LINE_LOOP, 512, area_visivel.size());
+
+                point_program.use();
+                glDrawArrays(GL_POINTS, 511, area_visivel.size());
+            }
+
+        } else if (estado.tela == Tela::DCEL_TESTE) {
+
+            glClearColor(0.4f, 0.3f, 0.4f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            auto& estad = estado.estado_dcel_teste;
+            if (estad.estado == Dcel_Data::RESETANDO) {
+                estad.poly.clear();
+                estad.operacoes.clear();
+                estad.ponto_adicionado = false;
+                estad.poligono_fechado = false;
+
+                coisas_dcel.last_size = 0;
+                coisas_dcel.edge_count = 0;
+                coisas_dcel.dcel_ptr.reset();
+                coisas_dcel.coisas_piscar = {};
+                estad.estado = Dcel_Data::RECEBENDO;
+            }
+
+            if (estad.ponto_adicionado) {
+                // antigamente era como na linha a seguir, mas são a mesma coisa
+                // if (estad.poly.size() > coisas_dcel.last_size) {
+                std::size_t diff = estad.poly.size() - coisas_dcel.last_size;
+                
+                std::vector<float> ps {};
+                ps.reserve(diff * 5 * sizeof (float));
+
+                std::vector<unsigned> is {};
+                is.reserve(diff * 2 * sizeof (unsigned));
+                for (std::size_t i = coisas_dcel.last_size; i < estad.poly.size(); ++i) {
+                    auto ponto = estad.poly[i];
+                    ps.push_back(ponto[0]);
+                    ps.push_back(ponto[1]);
+                    // sempre começa com amarelo
+                    ps.push_back(0.788f);
+                    ps.push_back(0.682f);
+                    ps.push_back(0.078f);
+                    
+                    if (i >= 1) {
+                        is.push_back(i-1);
+                        is.push_back(i);
+                    }
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(coisas_dcel.last_size * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
+                
+                // atualiza arestas a serem desenhadas:
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
+                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLintptr>(coisas_dcel.edge_count * 2 * sizeof (unsigned)), static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
+                
+                // atualiza contagem de arestas
+                std::size_t edge_diff = diff;
+                if (coisas_dcel.last_size == 0) {
+                    --edge_diff;
+                }
+                coisas_dcel.edge_count += edge_diff;
+
+                coisas_dcel.last_size = estad.poly.size();
+                estad.ponto_adicionado = false;
+            }
+
+            if (estad.poligono_fechado) {
+                // adiciona a última aresta no EBO:
+                std::array<unsigned, 2> ultima_aresta {static_cast<unsigned>(estad.poly.size() - 1), 0};
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
+                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLintptr>(coisas_dcel.edge_count * 2 * sizeof (unsigned)), static_cast<GLintptr>(2 * sizeof (unsigned)), ultima_aresta.data());
+                
+                // atualiza contagem de arestas
+                ++coisas_dcel.edge_count;
+                
+                estad.poligono_fechado = false;
+            }
+
+            if (estad.estado == Dcel_Data::CRIANDO_DCEL) {
+                coisas_dcel.dcel_ptr = std::make_unique<DCEL>(estad.poly);
+                estad.estado = Dcel_Data::DCEL_PRONTA;
+            }
+
+            if (estad.estado == Dcel_Data::DCEL_PRONTA) {
+                while (estad.operacoes.size() > 0) {
+                    auto op = estad.operacoes.front();
+                    estad.operacoes.pop_front();
+                    if (op.op == Dcel_Op::ENCONTRAR_FACE) {
+                        // auto b = coisas_dcel.dcel_ptr->arestas_de_uma_face(0);
+                        // for (auto c : b) {
+                        //     std::cout << c[0][0] << ',' << c[0][1] << " -> " << c[1][0] << ',' << c[1][1] << std::endl;
+                        // }
+
+                        std::cout << "ala ó" << std::endl;
+                        auto a = coisas_dcel.dcel_ptr->qual_face(op.args.ponto);
+                        std::cout << "Indice da face: " << a << std::endl;
+                    } else if (op.op == Dcel_Op::PISCAR_FACE) {
+                        auto a = coisas_dcel.dcel_ptr->qual_face(op.args.ponto);
+                        auto b = coisas_dcel.dcel_ptr->arestas_de_uma_face(a);
+                        coisas_dcel.coisas_piscar.arestas = b;
+                        coisas_dcel.coisas_piscar.ticks = 0;
+                        coisas_dcel.coisas_piscar.ticks_por_aresta = 10;
+                        coisas_dcel.coisas_piscar.atual = 0;
+                        estad.estado = Dcel_Data::PISCANDO;
+                        break;
+                    }
+                }
+            }
+
+            if (estad.estado == Dcel_Data::PISCANDO) {
+                auto& c = coisas_dcel.coisas_piscar;
+                if (c.ticks == 0) {
+                    estad.estado = Dcel_Data::DCEL_PRONTA;
+                    coisas_dcel.coisas_piscar = {};
+                }
+            }
+
+            glBindVertexArray(coisas_dcel.vao);
+            glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
+
+            color_line_program.use();
+            // color_line_program.setFloat("alpha", 0.2f);
+            // glDrawArrays(GL_TRIANGLE_FAN, 0, coisas_dcel.last_size);
+            // color_line_program.setFloat("alpha", 1.0f);
+            // glDrawArrays(GL_LINE_LOOP, 0, coisas_dcel.last_size);
+            color_line_program.setFloat("alpha", 1.0f);
+            glDrawElements(GL_LINES, coisas_dcel.edge_count*2, GL_UNSIGNED_INT, nullptr);
+
+            point_program.use();
+            point_program.setFloat("pointRadius", estado.pointSize);
+            glDrawArrays(GL_POINTS, 0, coisas_dcel.last_size);
         }
         //////////////////////////////////////////
 
