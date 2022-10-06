@@ -5,6 +5,7 @@ in vec3 theColor;
 in float invPointSize;
 in float pointSize;
 // float triplo = invPointSize * invPointSize;
+uniform float alpha;
 
 void main() {
     vec2 circCoord = 2.0 * gl_PointCoord - 1.0;
@@ -19,6 +20,6 @@ void main() {
         // fragColor = mix(vec4(theColor.rgb, 0.0), vec4(theColor.rgb, 1.0), smoothstep(1.0, clamp((1.0 - 1.0 * invPointSize)*(2.6237*(1.0 - triplo)), squared));
         // smoothstep estava errado kk
         // finalmente: fragColor = mix(vec4(theColor.rgb, 0.0), vec4(theColor.rgb, 1.0), 1.0 - smoothstep(1.0 - (invPointSize)*(1.0 + 1.6237*(1.0 - smoothstep(7, 30, pointSize))), 1.0, squared));
-        fragColor = mix(vec4(theColor.rgb, 0.0), vec4(theColor.rgb, 1.0), 1.0 - smoothstep(1.0 - (invPointSize)*(1.0 + 1.41*(1.0 - smoothstep(7, 30, pointSize))), 1.0, squared));
+        fragColor = mix(vec4(theColor.rgb, 0.0), vec4(theColor.rgb, alpha), 1.0 - smoothstep(1.0 - (invPointSize)*(1.0 + 1.41*(1.0 - smoothstep(7, 30, pointSize))), 1.0, squared));
     }
 }
