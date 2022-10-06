@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <deque>
 #include <algorithm>
+#include <random>
 #include <cstdlib>
 #include <cmath>
 #include <map>
@@ -1789,6 +1790,7 @@ struct Dcel_Teste_State {
 struct State {
     Dcel_Teste_State estado_dcel_teste;
 
+    std::size_t novos_pontos_aleatorios;
     std::vector<Ponto> cliques;
     std::vector<std::tuple<Ponto,Cor>> outros;
     float pointSize;
@@ -2163,45 +2165,63 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     State& estado = *(static_cast<State*> (glfwGetWindowUserPointer(window)));
-    if (action == GLFW_RELEASE && !mods) {
+    if (action == GLFW_RELEASE) {
+        if (!mods) {
+            switch (key) {
+                case GLFW_KEY_1:
+                    estado.tela = Tela::ORIGINAL;
+                    break;
+                case GLFW_KEY_2:
+                    estado.tela = Tela::OPERACOES_BOOLEANAS;
+                    break;
+                case GLFW_KEY_3:
+                    estado.tela = Tela::TRIANGULACAO;
+                    break;
+                case GLFW_KEY_4:
+                    estado.tela = Tela::ATIVIDADE;
+                    break;
+                case GLFW_KEY_5:
+                    estado.tela = Tela::DCEL_TESTE;
+                    break;
+                case GLFW_KEY_A:
+                    if (estado.tela != Tela::DCEL_TESTE) {
+                        return;
+                    }
+                    if (estado.estado_dcel_teste.estado == Dcel_Data::DCEL_PRONTA) {
+                        estado.estado_dcel_teste.estado = Dcel_Data::ADICIONANDO_ARESTA;
+                    }
+                    break;
+                case GLFW_KEY_O:
+                    if (estado.tela != Tela::DCEL_TESTE) {
+                        return;
+                    }
+                    if (estado.estado_dcel_teste.estado == Dcel_Data::DCEL_PRONTA) {
+                        estado.estado_dcel_teste.estado = Dcel_Data::ESPERANDO_ORBITA;
+                    }
+                    break;
+                case GLFW_KEY_V:
+                    if (estado.tela != Tela::DCEL_TESTE) {
+                        return;
+                    }
+                    if (estado.estado_dcel_teste.estado == Dcel_Data::DCEL_PRONTA) {
+                        estado.estado_dcel_teste.estado = Dcel_Data::ADICIONANDO_VERTICE;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
         switch (key) {
-            case GLFW_KEY_1:
-                estado.tela = Tela::ORIGINAL;
-                break;
-            case GLFW_KEY_2:
-                estado.tela = Tela::OPERACOES_BOOLEANAS;
-                break;
-            case GLFW_KEY_3:
-                estado.tela = Tela::TRIANGULACAO;
-                break;
-            case GLFW_KEY_4:
-                estado.tela = Tela::ATIVIDADE;
-                break;
-            case GLFW_KEY_5:
-                estado.tela = Tela::DCEL_TESTE;
-                break;
-            case GLFW_KEY_A:
-                if (estado.tela != Tela::DCEL_TESTE) {
+            case GLFW_KEY_R:
+                if (estado.tela != Tela::ORIGINAL) {
                     return;
                 }
-                if (estado.estado_dcel_teste.estado == Dcel_Data::DCEL_PRONTA) {
-                    estado.estado_dcel_teste.estado = Dcel_Data::ADICIONANDO_ARESTA;
-                }
-                break;
-            case GLFW_KEY_O:
-                if (estado.tela != Tela::DCEL_TESTE) {
-                    return;
-                }
-                if (estado.estado_dcel_teste.estado == Dcel_Data::DCEL_PRONTA) {
-                    estado.estado_dcel_teste.estado = Dcel_Data::ESPERANDO_ORBITA;
-                }
-                break;
-            case GLFW_KEY_V:
-                if (estado.tela != Tela::DCEL_TESTE) {
-                    return;
-                }
-                if (estado.estado_dcel_teste.estado == Dcel_Data::DCEL_PRONTA) {
-                    estado.estado_dcel_teste.estado = Dcel_Data::ADICIONANDO_VERTICE;
+                if (!mods) {
+                    ++estado.novos_pontos_aleatorios;
+                } else if (mods == GLFW_MOD_SHIFT) {
+                    estado.novos_pontos_aleatorios += 10;
+                } else if (mods == GLFW_MOD_CONTROL) {
+                    estado.novos_pontos_aleatorios += 25;
                 }
                 break;
             default:
@@ -3183,6 +3203,12 @@ int main() {
     // bool visivel_pronto = false;
     std::vector<Ponto> area_visivel {};
     AlgoritmoPassoAPasso passo_a_passo_manager {estado, point_program, color_line_program};
+
+    // coisa aleatória
+    // créditos: https://en.cppreference.com/w/cpp/numeric/random/uniform_real_distribution
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(-1.0, 1.0);
     while (!glfwWindowShouldClose(window)) {
         // win.processInput();
         // processar entradas??
@@ -3191,6 +3217,11 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if (estado.tela == Tela::ORIGINAL) {
+            while (estado.novos_pontos_aleatorios --> 0) {
+                Ponto p {dis(gen), dis(gen)};
+                estado.cliques.push_back(p);
+            }
+            estado.novos_pontos_aleatorios = 0;
             
             if (estado.cliques.size() > last_size) {
                 std::size_t diff = estado.cliques.size() - last_size;
