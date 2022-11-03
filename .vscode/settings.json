@@ -99,6 +99,32 @@
         "valarray": "cpp",
         "variant": "cpp"
     },
-    "editor.foldingStrategy": "indentation"
+    "editor.foldingStrategy": "indentation",
     //"C_Cpp.default.compilerPath": "D:\\build2\\build2\\bin\\g++.exe"
+    "C_Cpp.default.compilerArgs": [
+        "-std=c++17",
+        "-pedantic",
+        "-pedantic-errors",
+        "-Wall",
+        "-Wextra",
+        "-Wcast-align",
+        "-Wcast-qual",
+        "-Wctor-dtor-privacy",
+        "-Wdisabled-optimization",
+        "-Wformat=2",
+        "-Wmissing-declarations",
+        "-Wmissing-include-dirs",
+        "-Wold-style-cast",
+        "-Woverloaded-virtual",
+        "-Wredundant-decls",
+        "-Wshadow",
+        "-Wsign-conversion",
+        "-Wsign-promo",
+        "-Wstrict-overflow=2",
+        "-Wswitch-default",
+        "-Wundef",
+        "-Wno-unused-parameter",
+        "-Wno-unused-variable"
+    ],
+    "C_Cpp.loggingLevel": "Warning",
 }

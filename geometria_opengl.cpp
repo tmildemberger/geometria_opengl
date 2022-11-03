@@ -1307,6 +1307,7 @@ public:
         outside_face->edge = &edges[1];
         inside_face->edge = &edges[0];
 
+        vertice_valido = &vertices[0];
 
         // auto& b = edges;
         // std::cout << b.data() << std::endl;
@@ -1468,7 +1469,7 @@ public:
 
         // agora temos que encontrar a aresta nessa face que vai até v2
         start = found;
-        e = start->next;
+        e = start->prev;
         found = nullptr;
         while (e != start) {
             if (e->origin == v2) {
@@ -1476,7 +1477,7 @@ public:
                 found = e->prev;
                 break;
             }
-            e = e->next;
+            e = e->prev;
         }
         if (!found) {
             // nesse caso não necessariamente houve um erro;
@@ -1570,23 +1571,79 @@ public:
         e->origin = v3;
 
         std::size_t idx = edges.size();
-        edges.push_back({(edges.data()) + idx + 1, v1, e, e8, e->face});
-        edges.push_back({(edges.data()) + idx, v3, e9, e->twin, e->twin->face});
+        edges.push_back({(edges.data()) + idx + 1, v1, e, (edges.data()) + idx + 1, e->face});
+        edges.push_back({(edges.data()) + idx, v3, (edges.data()) + idx, e->twin, e->twin->face});
 
         Edge* e2 = &edges[idx];
 
         v1->edge = e2;
+        if (e->prev != e->twin) {
+            edges[idx].prev = e8;
+            edges[idx+1].next = e9;
 
-        e8->next = e2;
-        e9->prev = e2->twin;
+            e8->next = e2;
+            e9->prev = e2->twin;
+        }
+
         e->prev = e2;
         e->twin->next = e2->twin;
+
+    }
+
+    // recebe índice de uma aresta e a deleta. se algum dos vértices ficar
+    // sem aresta, ele também vai ser deletado. se a aresta separava duas faces,
+    // uma delas será deletada. se a aresta deixa outras "soltas", elas também
+    // são deletadas
+    void deleta_aresta(std::size_t aresta, bool atualiza_geracao = true) {
+        if (aresta >= edges.size() || edges_invalidas.count(aresta)) {
+            return;
+        }
+        
+        Edge* e = &edges[aresta];
+        Vertex* v1 = e->origin;
+        Vertex* v2 = e->twin->origin;
+        Edge* e_next = e->next;
+        Edge* e_prev = e->prev;
+        interno_deleta_aresta(aresta, false);
+        while (e_next->prev == e_next->twin && !vazia()) {
+            e_next = e_next->next;
+            interno_deleta_aresta(static_cast<std::size_t>(e_next->prev - edges.data()), false);
+        }
+        while (e_prev->next == e_prev->twin && !vazia()) {
+            e_prev = e_prev->prev;
+            interno_deleta_aresta(static_cast<std::size_t>(e_prev->next - edges.data()), false);
+        }
+
+        if (atualiza_geracao) {
+            ++geracao_atual;
+        }
+    }
+    
+    // recebe índice de um vértice e todas as arestas desse vértice, o que no
+    // processo causa a remoção do vértice também
+    void deleta_vertice(std::size_t vertice, bool atualiza_geracao = true) {
+        if (vertice >= vertices.size() || vertices_invalidas.count(vertice)) {
+            return;
+        }
+
+        auto arestas = indices_orbita_de_um_vertice(vertice);
+        for (auto aresta : arestas) {
+            deleta_aresta(aresta, false);
+        }
+
+        if (atualiza_geracao) {
+            ++geracao_atual;
+        }
     }
 
     // tenta encontrar a face em que 'p' está
     std::size_t qual_face(Ponto p) {
-        // começa em um vértice qualquer
-        Vertex* v1 = &vertices[0];
+        // começa em um vértice qualquer que seja válido
+        Vertex* v1 = vertice_valido;
+        if (!vertice_valido) {
+            // se não tem vértice válido, não tem como ter face além da externa
+            return 0;
+        }
 
         // aqui faço novamente uma reimplementação da órbita do vértice
         // por que? nesse caso acho que é porque
@@ -1640,15 +1697,20 @@ public:
             // while (intersecao_com_left(a->origin->xy, a->twin->origin->xy, v1->xy, p) == Intersecao::NAO) {
             while (true) {
                 std::cout << "testando aresta " << a - edges.data() << " e " << (intersecao_com_left(a->origin->xy, a->twin->origin->xy, v1->xy, p) == Intersecao::NAO) << std::endl;
+
                 if (intersecao_com_left(a->origin->xy, a->twin->origin->xy, v1->xy, p) != Intersecao::NAO) {
-                    break;
+                    if (a->origin != v1 && a->twin->origin != v1) {
+                        break;
+                    }
                 }
                 a = a->next;
                 if (a == found || a->next == found) {
                     found_face = found->face;
+                    break;
                 }
             }
             v1 = a->twin->origin;
+            std::cout << "recomecando a partir do vertice " << (v1 - vertices.data()) << std::endl;
             // se não tiver encontrado, no próximo loop recomeçaremos orbitando ao
             // redor do vértice v1 acima
         }
@@ -1667,6 +1729,14 @@ public:
         return geracao_atual;
     }
 
+    std::size_t indice_vertice_valido() {
+        return static_cast<std::size_t>(vertice_valido - vertices.data());
+    }
+
+    bool vazia() {
+        return vertices.size() == 0 || vertices.size() == vertices_invalidas.size();
+    }
+
 private:
 
     std::vector<Face> faces;
@@ -1676,7 +1746,134 @@ private:
     std::unordered_set<std::size_t> edges_invalidas;
     std::unordered_set<std::size_t> vertices_invalidas;
 
+    Vertex* vertice_valido;
+
     std::size_t geracao_atual;
+
+
+    // recebe índice de uma aresta e a deleta. se algum dos vértices ficar
+    // sem aresta, ele também vai ser deletado. se a aresta separava duas faces,
+    // uma delas será deletada
+    void interno_deleta_aresta(std::size_t aresta, bool atualiza_geracao = true) {
+        if (aresta >= edges.size() || edges_invalidas.count(aresta)) {
+            return;
+        }
+
+        // isso serve mais para marcar que para o código (por enquanto)
+        bool deleta_v1 = false;
+        bool deleta_v2 = false;
+        // bool deleta_f = false;
+
+        Edge* e = &edges[aresta];
+        Vertex* v1 = e->origin;
+        Vertex* v2 = e->twin->origin;
+        Face* f = e->face;
+        Face* f_outra = e->twin->face;
+        Edge* f_aux = e;
+        if (f_outra != f) {
+            // deleta_f = true;
+            if (f == faces.data()) {
+                // isso significa que a face da aresta 'e' é a face externa;
+                // nesse caso, a face a ser excluída é a outra
+                f = e->twin->face;
+                f_outra = e->face;
+                f_aux = e->twin;
+            }
+
+            // f é a face que vai ser excluída
+            // f_outra é a que vai substituir agora
+            // f_aux é a aresta da face que vai ser substituída
+            Edge* a = f_aux->next;
+            while (a != f_aux) {
+                a->face = f_outra;
+                a = a->next;
+            }
+            faces_invalidas.insert(static_cast<std::size_t>(f - faces.data()));
+        }
+
+        if (e->next == e->twin) {
+            deleta_v2 = true;
+            vertices_invalidas.insert(static_cast<std::size_t>(v2 - vertices.data()));
+        }
+
+        if (e->prev == e->twin) {
+            deleta_v1 = true;
+            vertices_invalidas.insert(static_cast<std::size_t>(v1 - vertices.data()));
+        }
+
+        if (!deleta_v2) {
+            e->next->prev = e->twin->prev;
+            e->twin->prev->next = e->next;
+
+            f_outra->edge = e->next;
+            vertice_valido = v2;
+            v2->edge = e->next;
+        }
+
+        if (!deleta_v1) {
+            e->prev->next = e->twin->next;
+            e->twin->next->prev = e->prev;
+            
+            f_outra->edge = e->prev;
+            vertice_valido = v1;
+            v1->edge = e->twin->next;
+        }
+
+        edges_invalidas.insert(static_cast<std::size_t>(e - edges.data()));
+        edges_invalidas.insert(static_cast<std::size_t>(e->twin - edges.data()));
+
+        if (deleta_v1 && deleta_v2) {
+            if (f_outra->edge == e || f_outra->edge == e->twin) {
+                Edge* found = nullptr;
+                for (std::size_t i = 0; i < edges.size(); ++i) {
+                    if (edges_invalidas.count(i)) {
+                        continue;
+                    }
+                    if (edges[i].face == f_outra) {
+                        found = &edges[i];
+                        break;
+                    }
+                }
+                if (!found) {
+                    // quase certeza que isso nunca acontece
+                    faces_invalidas.insert(static_cast<std::size_t>(f_outra - faces.data()));
+                } else {
+                    f_outra->edge = found;
+                }
+            }
+            if (vertice_valido == v1 || vertice_valido == v2) {
+                for (std::size_t i = 0; i < vertices.size(); ++i) {
+                    if (vertices_invalidas.count(i)) {
+                        continue;
+                    }
+                    vertice_valido = &vertices[i];
+                    break;
+                }
+            }
+        }
+
+        if (atualiza_geracao) {
+            ++geracao_atual;
+        }
+    }
+
+    // recebe índice de um vértice e todas as arestas desse vértice, o que no
+    // processo causa a remoção do vértice também
+    void interno_deleta_vertice(std::size_t vertice, bool atualiza_geracao = true) {
+        if (vertice >= vertices.size() || vertices_invalidas.count(vertice)) {
+            return;
+        }
+
+        auto arestas = indices_orbita_de_um_vertice(vertice);
+        for (auto aresta : arestas) {
+            interno_deleta_aresta(aresta, false);
+        }
+
+        if (atualiza_geracao) {
+            ++geracao_atual;
+        }
+    }
+
 
     void reserva_espacos(std::size_t n_faces, std::size_t n_edges, std::size_t n_vertices) {
         std::size_t faces_cap = faces.capacity();
@@ -1702,6 +1899,7 @@ private:
                 for (auto& edge : edges) {
                     edge.origin = (vertices.data()) + (edge.origin - base);
                 }
+                vertice_valido = (vertices.data()) + (vertice_valido - base);
             }
         }
 
@@ -1760,6 +1958,8 @@ enum class Dcel_Data {
     ADICIONANDO_ARESTA,
     ADICIONANDO_VERTICE,
     ESPERANDO_ORBITA,
+    DELETANDO_ARESTA,
+    DELETANDO_VERTICE,
 };
 
 enum class Dcel_Op {
@@ -2118,6 +2318,9 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
             } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_SHIFT) {
                 Ponto clicado = ponto_xy();
                 estad.operacoes.push_back({{clicado}, Dcel_Op::PISCAR_FACE});
+            } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
+                Ponto clicado = ponto_xy();
+                estad.operacoes.push_back({{clicado}, Dcel_Op::CLIQUE_VERTICE});
             }
         } else if (estad.estado == Dcel_Data::ADICIONANDO_ARESTA) {
             if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
@@ -2139,6 +2342,20 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
             } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
                 Ponto clicado = ponto_xy();
                 estad.operacoes.push_back({{clicado}, Dcel_Op::PISCAR_ORBITA});
+            }
+        } else if (estad.estado == Dcel_Data::DELETANDO_ARESTA) {
+            if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
+                estad.estado = Dcel_Data::DCEL_PRONTA;
+            } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
+                Ponto clicado = ponto_xy();
+                estad.operacoes.push_back({{clicado}, Dcel_Op::CLIQUE_VERTICE});
+            }
+        } else if (estad.estado == Dcel_Data::DELETANDO_VERTICE) {
+            if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
+                estad.estado = Dcel_Data::DCEL_PRONTA;
+            } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
+                Ponto clicado = ponto_xy();
+                estad.operacoes.push_back({{clicado}, Dcel_Op::CLIQUE_VERTICE});
             }
         }
     }
@@ -2191,12 +2408,28 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                         estado.estado_dcel_teste.estado = Dcel_Data::ADICIONANDO_ARESTA;
                     }
                     break;
+                case GLFW_KEY_C:
+                    if (estado.tela != Tela::DCEL_TESTE) {
+                        return;
+                    }
+                    if (estado.estado_dcel_teste.estado == Dcel_Data::DCEL_PRONTA) {
+                        estado.estado_dcel_teste.estado = Dcel_Data::DELETANDO_ARESTA;
+                    }
+                    break;
                 case GLFW_KEY_O:
                     if (estado.tela != Tela::DCEL_TESTE) {
                         return;
                     }
                     if (estado.estado_dcel_teste.estado == Dcel_Data::DCEL_PRONTA) {
                         estado.estado_dcel_teste.estado = Dcel_Data::ESPERANDO_ORBITA;
+                    }
+                    break;
+                case GLFW_KEY_T:
+                    if (estado.tela != Tela::DCEL_TESTE) {
+                        return;
+                    }
+                    if (estado.estado_dcel_teste.estado == Dcel_Data::DCEL_PRONTA) {
+                        estado.estado_dcel_teste.estado = Dcel_Data::DELETANDO_VERTICE;
                     }
                     break;
                 case GLFW_KEY_V:
@@ -3096,7 +3329,7 @@ int main() {
     std::vector<Ponto> fecho_calculado {};
     std::size_t last_size = 0;
     std::size_t outros_control = 0;
-    estado.pointSize = 20.0f;
+    estado.pointSize = 40.0f;
     glLineWidth(estado.pointSize / 2.0f);
     // estado.cliques.push_back({-.53726, -.48185});
     // estado.cliques.push_back({.37386, .09127});
@@ -4076,6 +4309,82 @@ int main() {
             }
 
             if (estad.estado == Dcel_Data::DCEL_PRONTA) {
+                auto ponto_xy = [window]() -> Ponto {
+                    double xpos {};
+                    double ypos {};
+                    glfwGetCursorPos(window, &xpos, &ypos);
+                    int width {};
+                    int height {};
+                    glfwGetWindowSize(window, &width, &height);
+                    double x {xpos / static_cast<double> (width) * 2. - 1.};
+                    double y {1. - ypos / static_cast<double> (height) * 2.};
+                    return {x, y};
+                };
+                Ponto mouse = ponto_xy();
+                double menor_d_vertice = std::numeric_limits<double>::infinity();
+                std::size_t menor_i_vertice = 0;
+                auto [vs_r, v_iv] = coisas_dcel.dcel_ptr->vec_vertices();
+                auto& vs = vs_r.get();
+                for (std::size_t i = 0; i < vs.size(); ++i) {
+                    if (v_iv.count(i)) {
+                        continue;
+                    }
+                    double d = dist(vs[i].xy, mouse);
+                    if (d < menor_d_vertice) {
+                        menor_d_vertice = d;
+                        menor_i_vertice = i;
+                    }
+                }
+
+                double menor_d_aresta = std::numeric_limits<double>::infinity();
+                std::size_t menor_i_aresta = 0;
+                auto [es_r, e_iv] = coisas_dcel.dcel_ptr->vec_edges();
+                auto& es = es_r.get();
+                for (std::size_t i = 0; i < es.size(); i += 2) {
+                    if (e_iv.count(i)) {
+                        continue;
+                    }
+                    double d = distancia_ponto_segmento(es[i].origin->xy, es[i+1].origin->xy, mouse);
+                    if (d < menor_d_aresta) {
+                        menor_d_aresta = d;
+                        menor_i_aresta = i;
+                    }
+                }
+                auto& p1 = es[menor_i_aresta].origin->xy;
+                auto& p2 = es[menor_i_aresta+1].origin->xy;
+
+                double menor_d = menor_d_vertice;
+                std::size_t menor_i = menor_i_vertice;
+                bool vertice = true;
+                if (menor_d_aresta < menor_d_vertice) {
+                    menor_d = menor_d_aresta;
+                    menor_i = menor_i_aresta;
+                    vertice = false;
+                }
+                if (menor_d <= 0.05) {
+                    if (vertice) {
+                        glBindVertexArray(coisas_dcel.vao);
+                        glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
+                        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
+
+                        point_program.use();
+                        point_program.setFloat("pointRadius", estado.pointSize + 30.0f);
+                        point_program.setFloat("alpha", 0.5f);
+                        glDrawArrays(GL_POINTS, menor_i_vertice, 1);
+                        point_program.setFloat("alpha", 1.0f);
+                    } else {
+                        glBindVertexArray(coisas_dcel.vao);
+                        glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
+                        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
+
+                        point_program.use();
+                        point_program.setFloat("pointRadius", estado.pointSize + 30.0f);
+                        point_program.setFloat("alpha", 0.5f);
+                        glDrawElements(GL_POINTS, 2, GL_UNSIGNED_INT, reinterpret_cast<void*>(menor_i_aresta * sizeof (unsigned)));
+                        point_program.setFloat("alpha", 1.0f);
+                    }
+                }
+
                 while (estad.operacoes.size() > 0) {
                     auto op = estad.operacoes.front();
                     estad.operacoes.pop_front();
@@ -4097,6 +4406,21 @@ int main() {
                         coisas_dcel.coisas_piscar.atual = 0;
                         estad.estado = Dcel_Data::PISCANDO;
                         break;
+                    } else if (op.op == Dcel_Op::CLIQUE_VERTICE) {
+                        if (menor_d > 0.05) {
+                            continue;
+                        }
+                        if (vertice) {
+                            std::cout << "Indice do vertice: " << menor_i << std::endl;
+                            std::cout << "Indice do vertice valido: " << coisas_dcel.dcel_ptr->indice_vertice_valido() << std::endl;
+                        } else {
+                            std::cout << "Indice da aresta: " << menor_i << std::endl;
+                            std::cout << "Indice da aresta gemea: " << menor_i+1 << std::endl;
+                            std::cout << "Indice da proxima aresta: " << es[menor_i].next - es.data() << std::endl;
+                            std::cout << "Indice da aresta anterior: " << es[menor_i].prev - es.data() << std::endl;
+                            std::cout << "Indice da proxima aresta da gemea: " << es[menor_i+1].next - es.data() << std::endl;
+                            std::cout << "Indice da aresta anterior da gemea: " << es[menor_i+1].prev - es.data() << std::endl;
+                        }
                     } else {
                         estad.operacoes.push_front(op);
                         break;
@@ -4150,6 +4474,10 @@ int main() {
                     auto op = estad.operacoes.front();
                     estad.operacoes.pop_front();
                     if (op.op == Dcel_Op::PONTO_SELECIONADO) {
+                        if (menor_d > 0.05) {
+                            coisas_dcel.coisas_aresta.indices_obtidos = 0;
+                            continue;
+                        }
                         std::cout << "bla" << std::endl;
                         if (coisas_dcel.coisas_aresta.indices_obtidos == 0) {
                             coisas_dcel.coisas_aresta.p1_idx = menor_i;
@@ -4227,6 +4555,10 @@ int main() {
                     auto op = estad.operacoes.front();
                     estad.operacoes.pop_front();
                     if (op.op == Dcel_Op::CLIQUE_VERTICE) {
+                        if (menor_d > 0.05) {
+                            coisas_dcel.coisas_vertice.aresta_selecionada = false;
+                            continue;
+                        }
                         std::cout << "bla2" << std::endl;
                         if (!coisas_dcel.coisas_vertice.aresta_selecionada) {
                             coisas_dcel.coisas_vertice.aresta_idx = menor_i;
@@ -4301,6 +4633,9 @@ int main() {
                     auto op = estad.operacoes.front();
                     estad.operacoes.pop_front();
                     if (op.op == Dcel_Op::PISCAR_ORBITA) {
+                        if (menor_d > 0.05) {
+                            continue;
+                        }
                         std::cout << "bla3" << std::endl;
                         auto b = coisas_dcel.dcel_ptr->indices_orbita_de_um_vertice(menor_i);
                         coisas_dcel.coisas_piscar.arestas = b;
@@ -4308,6 +4643,130 @@ int main() {
                         coisas_dcel.coisas_piscar.ticks_por_aresta = 50;
                         coisas_dcel.coisas_piscar.atual = 0;
                         estad.estado = Dcel_Data::PISCANDO;
+                    } else {
+                        estad.operacoes.push_front(op);
+                        break;
+                    }
+                }
+            }
+
+            if (estad.estado == Dcel_Data::DELETANDO_ARESTA) {
+                auto ponto_xy = [window]() -> Ponto {
+                    double xpos {};
+                    double ypos {};
+                    glfwGetCursorPos(window, &xpos, &ypos);
+                    int width {};
+                    int height {};
+                    glfwGetWindowSize(window, &width, &height);
+                    double x {xpos / static_cast<double> (width) * 2. - 1.};
+                    double y {1. - ypos / static_cast<double> (height) * 2.};
+                    return {x, y};
+                };
+                Ponto mouse = ponto_xy();
+                double menor_d = std::numeric_limits<double>::infinity();
+                std::size_t menor_i = 0;
+                auto [es_r, iv] = coisas_dcel.dcel_ptr->vec_edges();
+                auto& es = es_r.get();
+                for (std::size_t i = 0; i < es.size(); i += 2) {
+                    if (iv.count(i)) {
+                        continue;
+                    }
+                    double d = distancia_ponto_segmento(es[i].origin->xy, es[i+1].origin->xy, mouse);
+                    if (d < menor_d) {
+                        menor_d = d;
+                        menor_i = i;
+                    }
+                }
+                auto& p1 = es[menor_i].origin->xy;
+                auto& p2 = es[menor_i+1].origin->xy;
+                if (menor_d <= 0.05) {
+                    
+                    glBindVertexArray(coisas_dcel.vao);
+                    glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
+                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
+
+                    point_program.use();
+                    point_program.setFloat("pointRadius", estado.pointSize + 30.0f);
+                    point_program.setFloat("alpha", 0.5f);
+                    glDrawElements(GL_POINTS, 2, GL_UNSIGNED_INT, reinterpret_cast<void*>(menor_i * sizeof (unsigned)));
+                    point_program.setFloat("alpha", 1.0f);
+                }
+                
+                while (estad.operacoes.size() > 0) {
+                    auto op = estad.operacoes.front();
+                    estad.operacoes.pop_front();
+                    if (op.op == Dcel_Op::CLIQUE_VERTICE) {
+                        if (menor_d > 0.05) {
+                            continue;
+                        }
+                        coisas_dcel.dcel_ptr->deleta_aresta(menor_i);
+                        estad.estado = Dcel_Data::DCEL_PRONTA;
+                        if (coisas_dcel.dcel_ptr->vazia()) {
+                            estad.estado = Dcel_Data::RESETANDO;
+                            continue;
+                        }
+                    } else {
+                        estad.operacoes.push_front(op);
+                        break;
+                    }
+                }
+            }
+
+            if (estad.estado == Dcel_Data::DELETANDO_VERTICE) {
+                auto ponto_xy = [window]() -> Ponto {
+                    double xpos {};
+                    double ypos {};
+                    glfwGetCursorPos(window, &xpos, &ypos);
+                    int width {};
+                    int height {};
+                    glfwGetWindowSize(window, &width, &height);
+                    double x {xpos / static_cast<double> (width) * 2. - 1.};
+                    double y {1. - ypos / static_cast<double> (height) * 2.};
+                    return {x, y};
+                };
+                Ponto mouse = ponto_xy();
+                double menor_d = std::numeric_limits<double>::infinity();
+                std::size_t menor_i = 0;
+                auto [vs_r, iv] = coisas_dcel.dcel_ptr->vec_vertices();
+                auto& vs = vs_r.get();
+                for (std::size_t i = 0; i < vs.size(); ++i) {
+                    if (iv.count(i)) {
+                        continue;
+                    }
+                    double d = dist(vs[i].xy, mouse);
+                    if (d < menor_d) {
+                        menor_d = d;
+                        menor_i = i;
+                    }
+                }
+                if (menor_d <= 0.05) {
+                    
+                    glBindVertexArray(coisas_dcel.vao);
+                    glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
+                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
+
+                    point_program.use();
+                    point_program.setFloat("pointRadius", estado.pointSize + 30.0f);
+                    point_program.setFloat("alpha", 0.5f);
+                    glDrawArrays(GL_POINTS, menor_i, 1);
+                    point_program.setFloat("alpha", 1.0f);
+                    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.extra_ebo);
+                    // glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(sizeof (unsigned)), )
+                }
+                
+                while (estad.operacoes.size() > 0) {
+                    auto op = estad.operacoes.front();
+                    estad.operacoes.pop_front();
+                    if (op.op == Dcel_Op::CLIQUE_VERTICE) {
+                        if (menor_d > 0.05) {
+                            continue;
+                        }
+                        coisas_dcel.dcel_ptr->deleta_vertice(menor_i);
+                        estad.estado = Dcel_Data::DCEL_PRONTA;
+                        if (coisas_dcel.dcel_ptr->vazia()) {
+                            estad.estado = Dcel_Data::RESETANDO;
+                            continue;
+                        }
                     } else {
                         estad.operacoes.push_front(op);
                         break;
@@ -4326,10 +4785,6 @@ int main() {
             // glDrawArrays(GL_LINE_LOOP, 0, coisas_dcel.last_size);
             color_line_program.setFloat("alpha", 1.0f);
             glDrawElements(GL_LINES, coisas_dcel.edge_count*2, GL_UNSIGNED_INT, nullptr);
-
-            point_program.use();
-            point_program.setFloat("pointRadius", estado.pointSize);
-            glDrawArrays(GL_POINTS, 0, coisas_dcel.last_size);
             
             if (estad.estado == Dcel_Data::PISCANDO) {
                 auto& c = coisas_dcel.coisas_piscar;
@@ -4338,7 +4793,8 @@ int main() {
                     auto& edges = edges_r.get();
                     
                     auto& e = edges[c.arestas[c.atual]];
-                    std::cout << e.origin->xy[0] << ',' << e.origin->xy[1] << " -> " << e.twin->origin->xy[0] << ',' << e.twin->origin->xy[1] << std::endl;
+                    std::cout << c.arestas[c.atual] << std::endl;
+                    // std::cout << e.origin->xy[0] << ',' << e.origin->xy[1] << " -> " << e.twin->origin->xy[0] << ',' << e.twin->origin->xy[1] << std::endl;
                     // no tick 0, prepara o que vai ser desenhado
                     // parece que não tem nada o que preparar
                     
@@ -4362,6 +4818,10 @@ int main() {
                     }
                 }
             }
+            
+            point_program.use();
+            point_program.setFloat("pointRadius", estado.pointSize);
+            glDrawArrays(GL_POINTS, 0, coisas_dcel.last_size);
         }
         //////////////////////////////////////////
 
