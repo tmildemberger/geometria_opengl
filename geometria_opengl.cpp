@@ -422,10 +422,29 @@ void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GL
 
 void mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
 
-enum class Cor {
+enum class DentroFora {
     DESCONHECIDO,
     FORA,
     DENTRO,
+};
+
+class Cor {
+public:
+    Cor(std::string hex) {
+        std::size_t start = 0;
+        if (hex[0] == '#') ++start;
+
+        r_ = std::stoul(hex.substr(start, 2), nullptr, 16);
+        g_ = std::stoul(hex.substr(start + 2, 2), nullptr, 16);
+        b_ = std::stoul(hex.substr(start + 4, 2), nullptr, 16);
+    }
+    float r() { return r_/255.f; }
+    float g() { return g_/255.f; }
+    float b() { return b_/255.f; }
+private:
+    unsigned long r_;
+    unsigned long g_;
+    unsigned long b_;
 };
 
 std::tuple<double,double> intersecao(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
@@ -608,20 +627,20 @@ double distancia_ponto_segmento(Ponto p1, Ponto p2, Ponto p) {
     return altura;
 }
 
-Cor convexidade_do_vertice(std::vector<Ponto> poligono, std::size_t i);
+DentroFora convexidade_do_vertice(std::vector<Ponto> poligono, std::size_t i);
 
-Cor convexidade_do_vertice(std::vector<Ponto> poligono, std::size_t i) {
+DentroFora convexidade_do_vertice(std::vector<Ponto> poligono, std::size_t i) {
     auto& p = poligono;
     std::size_t prev = (i == 0) ? (p.size()-1) : (i-1);
     std::size_t prox = (i+1 >= p.size()) ? (0) : (i+1);
     auto& p1 = p[prev];
     auto& p2 = p[i];
     auto& p3 = p[prox];
-    Cor nova_cor {};
+    DentroFora nova_cor {};
     if (area_orientada(p1, p2, p3) >= 0.) {
-        nova_cor = Cor::DENTRO;
+        nova_cor = DentroFora::DENTRO;
     } else {
-        nova_cor = Cor::FORA;
+        nova_cor = DentroFora::FORA;
     }
     return nova_cor;
 }
@@ -645,7 +664,7 @@ bool diagonal(const std::vector<Ponto>& poligono, std::size_t i, std::size_t j) 
     std::size_t prev = (i == 0) ? (p.size()-1) : (i-1);
     std::size_t prox = (i+1 >= p.size()) ? (0) : (i+1);
 
-    if (convexidade_do_vertice(p, i) == Cor::DENTRO) {
+    if (convexidade_do_vertice(p, i) == DentroFora::DENTRO) {
         // isso significa convexo (por enquanto)
         if (!in_cone_convexo(p[i], p[j], p[prev], p[prox])) {
             return false;
@@ -674,7 +693,7 @@ bool orelha(const std::vector<Ponto>& poligono, std::size_t i) {
     auto& p = poligono;
     std::size_t prev = (i == 0) ? (p.size()-1) : (i-1);
     std::size_t prox = (i+1 >= p.size()) ? (0) : (i+1);
-    if (convexidade_do_vertice(p, i) == Cor::DENTRO) {
+    if (convexidade_do_vertice(p, i) == DentroFora::DENTRO) {
         // isso significa convexo (por enquanto)
         return diagonal(poligono, prev, prox);
     } else {
@@ -1947,6 +1966,7 @@ enum class Tela {
     TRIANGULACAO,
     ATIVIDADE,
     DCEL_TESTE,
+    DELAUNAY,
 };
 
 enum class Dcel_Data {
@@ -1987,12 +2007,29 @@ struct Dcel_Teste_State {
     std::deque<Dcel_Ops> operacoes;
 };
 
+enum class Delaunay_Op {
+    CLIQUE,
+    TECLA,
+};
+
+struct Delaunay_Msg {
+    Ponto p;
+    int button_key;
+    int mods;
+    Delaunay_Op op;
+};
+
+struct Delaunay_State {
+    std::deque<Delaunay_Msg> eventos;
+};
+
 struct State {
     Dcel_Teste_State estado_dcel_teste;
+    Delaunay_State estado_delaunay;
 
     std::size_t novos_pontos_aleatorios;
     std::vector<Ponto> cliques;
-    std::vector<std::tuple<Ponto,Cor>> outros;
+    std::vector<std::tuple<Ponto,DentroFora>> outros;
     float pointSize;
     bool should_recalculate_convex_hull;
     bool should_recalculate_area;
@@ -2189,7 +2226,7 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
                 glfwGetWindowSize(window, &width, &height);
                 double x {xpos / static_cast<double> (width) * 2. - 1.};
                 double y {1. - ypos / static_cast<double> (height) * 2.};
-                estado.outros.push_back({{x, y}, Cor::DESCONHECIDO});
+                estado.outros.push_back({{x, y}, DentroFora::DESCONHECIDO});
             } else if (mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
                 estado.comecar_passo_a_passo = true;
             } else if (mods == GLFW_MOD_SHIFT) {
@@ -2358,6 +2395,11 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
                 estad.operacoes.push_back({{clicado}, Dcel_Op::CLIQUE_VERTICE});
             }
         }
+    } else if (estado.tela == Tela::DELAUNAY) {
+        if (action != GLFW_RELEASE) return;
+        auto& estad = estado.estado_delaunay;
+        Ponto clicado = ponto_xy();
+        estad.eventos.push_back({clicado, button, mods, Delaunay_Op::CLIQUE});
     }
 }
 
@@ -2399,6 +2441,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                     break;
                 case GLFW_KEY_5:
                     estado.tela = Tela::DCEL_TESTE;
+                    break;
+                case GLFW_KEY_6:
+                    estado.tela = Tela::DELAUNAY;
                     break;
                 case GLFW_KEY_A:
                     if (estado.tela != Tela::DCEL_TESTE) {
@@ -2446,16 +2491,41 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         }
         switch (key) {
             case GLFW_KEY_R:
-                if (estado.tela != Tela::ORIGINAL) {
+                if (estado.tela == Tela::ORIGINAL) {
+                    if (!mods) {
+                        ++estado.novos_pontos_aleatorios;
+                    } else if (mods == GLFW_MOD_SHIFT) {
+                        estado.novos_pontos_aleatorios += 10;
+                    } else if (mods == GLFW_MOD_CONTROL) {
+                        estado.novos_pontos_aleatorios += 25;
+                    }
+                } else if (estado.tela == Tela::DELAUNAY) {
+                    estado.estado_delaunay.eventos.push_back({{}, key, mods, Delaunay_Op::TECLA});
+                }
+                break;
+            case GLFW_KEY_T:
+                if (estado.tela != Tela::DELAUNAY) {
                     return;
                 }
-                if (!mods) {
-                    ++estado.novos_pontos_aleatorios;
-                } else if (mods == GLFW_MOD_SHIFT) {
-                    estado.novos_pontos_aleatorios += 10;
-                } else if (mods == GLFW_MOD_CONTROL) {
-                    estado.novos_pontos_aleatorios += 25;
+                estado.estado_delaunay.eventos.push_back({{}, key, mods, Delaunay_Op::TECLA});
+                break;
+            case GLFW_KEY_A:
+                if (estado.tela != Tela::DELAUNAY) {
+                    return;
                 }
+                estado.estado_delaunay.eventos.push_back({{}, key, mods, Delaunay_Op::TECLA});
+                break;
+            case GLFW_KEY_C:
+                if (estado.tela != Tela::DELAUNAY) {
+                    return;
+                }
+                estado.estado_delaunay.eventos.push_back({{}, key, mods, Delaunay_Op::TECLA});
+                break;
+            case GLFW_KEY_S:
+                if (estado.tela != Tela::DELAUNAY) {
+                    return;
+                }
+                estado.estado_delaunay.eventos.push_back({{}, key, mods, Delaunay_Op::TECLA});
                 break;
             default:
                 break;
@@ -3120,6 +3190,63 @@ struct CoisasDCEL {
     Coisas_Para_Adicionar_Vertice coisas_vertice;
 };
 
+enum class EstadoDelaunay {
+    INICIANDO,
+};
+
+struct CoisasDelaunay {
+    CoisasDelaunay() {
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, max_floats*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+        
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+        
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+        glEnableVertexAttribArray(1);
+        
+        glGenBuffers(1, &ebo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, max_floats*sizeof (unsigned), nullptr, GL_DYNAMIC_DRAW);
+
+        glBindVertexArray(0);
+
+        estado = EstadoDelaunay::INICIANDO;
+        last_size = 0;
+    }
+
+    void reset() {
+        // reseta tudo menos vbo e vao
+
+        estado = EstadoDelaunay::INICIANDO;
+        pontos.clear();
+        last_size = 0;
+        dcel.reset();
+    }
+
+    void triangulacao_inicial() {
+        if (estado != EstadoDelaunay::INICIANDO) {
+            // isso quer dizer que já foi triangulado uma vez
+            return;
+        }
+        // dcel = std::make_unique<DCEL>();
+    }
+
+    unsigned vbo;
+    unsigned vao;
+    unsigned ebo;
+
+    std::size_t last_size;
+    EstadoDelaunay estado;
+    std::vector<Ponto> pontos;
+    std::unique_ptr<DCEL> dcel;
+
+    static const std::size_t max_floats = 512*1024;
+};
+
 int main() {
 
     // {
@@ -3442,6 +3569,11 @@ int main() {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(-1.0, 1.0);
+
+    CoisasDelaunay delaunay;
+
+    Cor base_delaunay {"#2b2831"};
+    Cor cor_dly {"#4d9184"};
     while (!glfwWindowShouldClose(window)) {
         // win.processInput();
         // processar entradas??
@@ -3511,8 +3643,8 @@ int main() {
 
             if (estado.should_recalculate_point_in_polygon) {
                 for (auto& [ponto, cor] : estado.outros) {
-                    if (cor != Cor::DENTRO) {
-                        Cor nova_cor = point_in_polygon(ponto, fecho_calculado) ? Cor::DENTRO : Cor::FORA;
+                    if (cor != DentroFora::DENTRO) {
+                        DentroFora nova_cor = point_in_polygon(ponto, fecho_calculado) ? DentroFora::DENTRO : DentroFora::FORA;
                         cor = nova_cor;
                     }
                 }
@@ -3526,12 +3658,12 @@ int main() {
                     ps.push_back(ponto[0]);
                     ps.push_back(ponto[1]);
                     // agora não vai ter nenhum amarelo
-                    if (cor == Cor::DESCONHECIDO) {
+                    if (cor == DentroFora::DESCONHECIDO) {
                         std::cerr << "não era para ter amarelo" << std::endl;
                         ps.push_back(0.788f); // 201
                         ps.push_back(0.682f); // 174
                         ps.push_back(0.078f); // 20
-                    } else if (cor == Cor::DENTRO) {
+                    } else if (cor == DentroFora::DENTRO) {
                         ps.push_back(0.325f); // 83
                         ps.push_back(0.788f); // 201
                         ps.push_back(0.078f); // 20
@@ -4025,11 +4157,11 @@ int main() {
                 //     auto& p1 = v[prev];
                 //     auto& p2 = v[i];
                 //     auto& p3 = v[prox];
-                //     Cor nova_cor {};
+                //     DentroFora nova_cor {};
                 //     if (area_orientada(p1, p2, p3) >= 0.) {
-                //         nova_cor = Cor::DENTRO;
+                //         nova_cor = DentroFora::DENTRO;
                 //     } else {
-                //         nova_cor = Cor::FORA;
+                //         nova_cor = DentroFora::FORA;
                 //     }
                 //     estado.cores_entrada[i] = nova_cor;
                 // }
@@ -4042,12 +4174,12 @@ int main() {
                 //     ps.push_back(ponto[0]);
                 //     ps.push_back(ponto[1]);
                 //     // agora não vai ter nenhum amarelo
-                //     if (cor == Cor::DESCONHECIDO) {
+                //     if (cor == DentroFora::DESCONHECIDO) {
                 //         std::cerr << "não era para ter amarelo" << std::endl;
                 //         ps.push_back(0.788f); // 201
                 //         ps.push_back(0.682f); // 174
                 //         ps.push_back(0.078f); // 20
-                //     } else if (cor == Cor::DENTRO) {
+                //     } else if (cor == DentroFora::DENTRO) {
                 //         ps.push_back(0.325f); // 83
                 //         ps.push_back(0.788f); // 201
                 //         ps.push_back(0.078f); // 20
@@ -4822,6 +4954,79 @@ int main() {
             point_program.use();
             point_program.setFloat("pointRadius", estado.pointSize);
             glDrawArrays(GL_POINTS, 0, coisas_dcel.last_size);
+        } else if (estado.tela == Tela::DELAUNAY) {
+            glClearColor(base_delaunay.r(), base_delaunay.g(), base_delaunay.b(), 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            std::size_t novos_pontos_aleatorios = 0;
+
+            while (estado.estado_delaunay.eventos.size() > 0) {
+                auto op = estado.estado_delaunay.eventos.front();
+                estado.estado_delaunay.eventos.pop_front();
+                if (delaunay.estado == EstadoDelaunay::INICIANDO) {
+                    switch (op.op) {
+                        case Delaunay_Op::CLIQUE:
+                            if (op.button_key == GLFW_MOUSE_BUTTON_LEFT && !op.mods) {
+                                // adiciona ponto
+                                delaunay.pontos.push_back(op.p);
+                            }
+                            break;
+                        case Delaunay_Op::TECLA:
+                            if (op.button_key == GLFW_KEY_T && !op.mods) {
+                                // transforma em triangulação
+                            } else if (op.button_key == GLFW_KEY_R) {
+                                // pontos aleatórios
+                                if (!op.mods) {
+                                    ++novos_pontos_aleatorios;
+                                } else if (op.mods == GLFW_MOD_SHIFT) {
+                                    novos_pontos_aleatorios += 10;
+                                } else if (op.mods == GLFW_MOD_CONTROL) {
+                                    novos_pontos_aleatorios += 25;
+                                } else if (op.mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
+                                    novos_pontos_aleatorios += 500;
+                                }
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            while (novos_pontos_aleatorios --> 0) {
+                Ponto p {dis(gen), dis(gen)};
+                delaunay.pontos.push_back(p);
+            }
+
+            if (delaunay.pontos.size() > delaunay.last_size) {
+                if (delaunay.pontos.size() * 5 > CoisasDelaunay::max_floats) {
+                    delaunay.pontos.erase(std::next(delaunay.pontos.begin(), CoisasDelaunay::max_floats / 5), delaunay.pontos.end());
+                    std::cerr << "mais pontos do que devia; extras removidos" << std::endl;
+                }
+                std::size_t diff = delaunay.pontos.size() - delaunay.last_size;
+                std::vector<float> ps {};
+                ps.reserve(diff * 5 * sizeof (float));
+                for (std::size_t i = delaunay.last_size; i < delaunay.pontos.size(); ++i) {
+                    ps.push_back(delaunay.pontos[i][0]);
+                    ps.push_back(delaunay.pontos[i][1]);
+                    ps.push_back(cor_dly.r());
+                    ps.push_back(cor_dly.g());
+                    ps.push_back(cor_dly.b());
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(delaunay.last_size * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
+                delaunay.last_size = delaunay.pontos.size();
+            }
+
+            if (delaunay.estado == EstadoDelaunay::INICIANDO) {
+                point_program.use();
+                point_program.setFloat("pointRadius", estado.pointSize);
+                
+                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                glBindVertexArray(delaunay.vao);
+                glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+            }
+                
         }
         //////////////////////////////////////////
 
