@@ -5685,41 +5685,41 @@ int main() {
                     Ponto mouse = ponto_xy();
 
                     std::size_t face = delaunay.dcel->qual_face(mouse);
-                    auto vs = delaunay.dcel->indices_dos_vertices_de_uma_face(face);
+                    // auto vs = delaunay.dcel->indices_dos_vertices_de_uma_face(face);
                     if (face != 0) {
-                        // glBindVertexArray(delaunay.faces_vao);
-                        // glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                        // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
-                        auto [verts_r, v_invs] = delaunay.dcel->vec_vertices();
+                        glBindVertexArray(delaunay.faces_vao);
+                        glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
+                        // auto [verts_r, v_invs] = delaunay.dcel->vec_vertices();
                         
-                        auto& verts = verts_r.get();
+                        // auto& verts = verts_r.get();
 
-                        std::vector<float> ps {};
-                        ps.reserve(1 * 5 * sizeof (float));
-                            ps.push_back(ve.xy[0]);
-                            ps.push_back(ponto.xy[1]);
-                            // sempre começa com amarelo
-                            ps.push_back(cor_dly.r());
-                            ps.push_back(cor_dly.g());
-                            ps.push_back(cor_dly.b());
-                        }
+                        // std::vector<float> ps {};
+                        // ps.reserve(1 * 5 * sizeof (float));
+                        //     ps.push_back(ve.xy[0]);
+                        //     ps.push_back(ponto.xy[1]);
+                        //     // sempre começa com amarelo
+                        //     ps.push_back(cor_dly.r());
+                        //     ps.push_back(cor_dly.g());
+                        //     ps.push_back(cor_dly.b());
+                        // }
 
-                        glBindVertexArray(delaunay.extra_vao);
-                        glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
-                        glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * sizeof (float)), ps.data());
+                        // glBindVertexArray(delaunay.extra_vao);
+                        // glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
+                        // glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * sizeof (float)), ps.data());
                         
-                        // atualiza arestas a serem desenhadas:
-                        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
-                        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
+                        // // atualiza arestas a serem desenhadas:
+                        // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
+                        // glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
                         
-                        point_program.use();
-                        point_program.setFloat("pointRadius", 600);
+                        // point_program.use();
+                        // point_program.setFloat("pointRadius", 600);
                         
-                        glDrawArrays(GL_POINTS, 0, 1);
+                        // glDrawArrays(GL_POINTS, 0, 1);
 
-                        // circle_program.use();
-                        // circle_program.setFloat("alpha", 0.8f);
-                        // glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, reinterpret_cast<void*>((face - 1)*3*sizeof (unsigned)));
+                        circle_program.use();
+                        circle_program.setFloat("alpha", 0.8f);
+                        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, reinterpret_cast<void*>((face - 1)*3*sizeof (unsigned)));
                     }
                 }
             }
