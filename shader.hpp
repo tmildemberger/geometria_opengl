@@ -15,8 +15,10 @@ private:
     //used only by the constructor
     unsigned int compile(const std::string& path, GLenum type) const;
     unsigned int link(unsigned int vertID, unsigned int fragID) const;
+    unsigned int link(unsigned int vertID, unsigned int fragID, unsigned int geoID) const;
 public:
     Shader(const std::string& pathvert, const std::string& pathfrag);
+    Shader(const std::string& pathvert, const std::string& pathfrag, const std::string& pathgeo);
 
     void use() const;
 

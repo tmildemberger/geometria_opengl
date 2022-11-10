@@ -21,6 +21,22 @@ Shader::Shader(const std::string& pathvert, const std::string& pathfrag) {
     }
 }
 
+Shader::Shader(const std::string& pathvert, const std::string& pathfrag, const std::string& pathgeo) {
+    try {
+        unsigned int vertexID { compile(pathvert, GL_VERTEX_SHADER) };
+        unsigned int fragmentID { compile(pathfrag, GL_FRAGMENT_SHADER) };
+        unsigned int geometryID { compile(pathgeo, GL_GEOMETRY_SHADER) };
+
+        this->ID = link(vertexID, fragmentID, geometryID);
+
+        glDeleteShader(vertexID);
+        glDeleteShader(fragmentID);
+        glDeleteShader(geometryID);
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << '\n';
+    }
+}
+
 unsigned int Shader::compile(const std::string& path, GLenum type) const {
     std::ifstream file;
     file.open(path);
@@ -45,7 +61,7 @@ unsigned int Shader::compile(const std::string& path, GLenum type) const {
         char infoLog[512];
         glGetShaderInfoLog(shaderID, 512, NULL, infoLog);
         std::string message { "ERROR::SHADER::" };
-        message.append((type == GL_VERTEX_SHADER) ? ("VERTEX") : ("FRAGMENT"));
+        message.append((type == GL_VERTEX_SHADER) ? ("VERTEX") : ((type == GL_FRAGMENT_SHADER) ? "FRAGMENT" : "GEOMETRY"));
         message.append("::COMPILATION_FAILED\n");
         message.append(infoLog);
         throw std::runtime_error { message };
@@ -57,6 +73,23 @@ unsigned int Shader::link(unsigned int vertID, unsigned int fragID) const {
     unsigned int shaderProgramID { glCreateProgram() };
     glAttachShader(shaderProgramID, vertID);
     glAttachShader(shaderProgramID, fragID);
+    glLinkProgram(shaderProgramID);
+    int success { 0 };
+    glGetProgramiv(shaderProgramID, GL_LINK_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetProgramInfoLog(shaderProgramID, 512, NULL, infoLog);
+        throw std::runtime_error { "ERROR::SHADER::PROGRAM::LINK_FAILED\n" +
+                                 std::string {infoLog} };
+    }
+    return shaderProgramID;
+}
+
+unsigned int Shader::link(unsigned int vertID, unsigned int fragID, unsigned int geoID) const {
+    unsigned int shaderProgramID { glCreateProgram() };
+    glAttachShader(shaderProgramID, vertID);
+    glAttachShader(shaderProgramID, fragID);
+    glAttachShader(shaderProgramID, geoID);
     glLinkProgram(shaderProgramID);
     int success { 0 };
     glGetProgramiv(shaderProgramID, GL_LINK_STATUS, &success);
