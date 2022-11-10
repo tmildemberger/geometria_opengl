@@ -1264,20 +1264,54 @@ private:
     struct Edge;
     struct Vertex;
 
+    // agora é tudo índice
     struct Face {
-        Edge* edge;
+        std::size_t edge;
     };
     struct Edge {
-        Edge* twin;
-        Vertex* origin;
-        Edge* next;
-        Edge* prev;
-        Face* face;
+        std::size_t twin;
+        std::size_t origin;
+        std::size_t next;
+        std::size_t prev;
+        std::size_t face;
     };
     struct Vertex {
         Ponto xy;
-        Edge* edge;
+        std::size_t edge;
     };
+
+    Edge* f_edge(std::size_t f) { return &edges[faces[f].edge]; }
+    Edge* f_edge(Face* f) { return &edges[f->edge]; }
+    std::size_t fi_edge(std::size_t f) { return faces[f].edge; }
+    std::size_t fi_edge(Face* f) { return f->edge; }
+
+    Edge* e_twin(std::size_t e) { return &edges[edges[e].twin]; }
+    Edge* e_twin(Edge* e) { return &edges[e->twin]; }
+    std::size_t ei_twin(std::size_t e) { return edges[e].twin; }
+    std::size_t ei_twin(Edge* e) { return e->twin; }
+    Vertex* e_origin(std::size_t e) { return &vertices[edges[e].origin]; }
+    Vertex* e_origin(Edge* e) { return &vertices[e->origin]; }
+    std::size_t ei_origin(std::size_t e) { return edges[e].origin; }
+    std::size_t ei_origin(Edge* e) { return e->origin; }
+    Edge* e_next(std::size_t e) { return &edges[edges[e].next]; }
+    Edge* e_next(Edge* e) { return &edges[e->next]; }
+    std::size_t ei_next(std::size_t e) { return edges[e].next; }
+    std::size_t ei_next(Edge* e) { return e->next; }
+    Edge* e_prev(std::size_t e) { return &edges[edges[e].prev]; }
+    Edge* e_prev(Edge* e) { return &edges[e->prev]; }
+    std::size_t ei_prev(std::size_t e) { return edges[e].prev; }
+    std::size_t ei_prev(Edge* e) { return e->prev; }
+    Face* e_face(std::size_t e) { return &faces[edges[e].face]; }
+    Face* e_face(Edge* e) { return &faces[e->face]; }
+    std::size_t ei_face(std::size_t e) { return edges[e].face; }
+    std::size_t ei_face(Edge* e) { return e->face; }
+
+    Edge* v_edge(std::size_t v) { return &edges[vertices[v].edge]; }
+    Edge* v_edge(Vertex* v) { return &edges[v->edge]; }
+    std::size_t vi_edge(std::size_t v) { return vertices[v].edge; }
+    std::size_t vi_edge(Vertex* v) { return v->edge; }
+
+    static const std::size_t def = 123456789123456789ull;
 
 public:
     // poligono_simples pode ser uma sequência anti-horária de vértices
@@ -1297,44 +1331,36 @@ public:
         vertices.reserve(n);
         edges.reserve(n * 2);
         faces.reserve(2);
-        faces.push_back({nullptr});
-        faces.push_back({nullptr});
-        Face* outside_face = (faces.data());
-        Face* inside_face = (faces.data()) + 1;
+        faces.push_back({def});
+        faces.push_back({def});
+        std::size_t outside_face = 0;
+        std::size_t inside_face = 1;
         for (std::size_t i = 0; i < n; ++i) {
-            vertices.push_back({p[i], (edges.data()) + (2*i)});
-            edges.push_back({(edges.data()) + (2*i) + 1, (vertices.data()) + i, nullptr, nullptr, inside_face});
-            edges.push_back({(edges.data()) + (2*i), (vertices.data()) + i + 1, nullptr, nullptr, outside_face});
+            vertices.push_back({p[i], 2*i});
+            edges.push_back({2*i + 1, i, def, def, inside_face});
+            edges.push_back({2*i, i + 1, def, def, outside_face});
         }
-        edges.back().origin = (vertices.data());
+        edges.back().origin = 0;
 
-        edges[0].next = &edges[2];
-        edges[0].prev = &edges[2*n - 2];
+        edges[0].next = 2;
+        edges[0].prev = 2*n - 2;
 
-        edges[2*n - 2].next = &edges[0];
-        edges[2*n - 2].prev = &edges[2*n - 4];
+        edges[2*n - 2].next = 0;
+        edges[2*n - 2].prev = 2*n - 4;
         for (std::size_t i = 1; i < n - 1; ++i) {
-            edges[2*i].next = &edges[2*(i+1)];
-            edges[2*i].prev = &edges[2*(i-1)];
+            edges[2*i].next = 2*(i+1);
+            edges[2*i].prev = 2*(i-1);
         }
 
         for (std::size_t i = 0; i < n; ++i) {
-            edges[2*i + 1].prev = edges[2*i].next->twin;
-            edges[2*i + 1].next = edges[2*i].prev->twin;
+            edges[2*i + 1].prev = e_next(2*i)->twin;
+            edges[2*i + 1].next = e_prev(2*i)->twin;
         }
 
-        outside_face->edge = &edges[1];
-        inside_face->edge = &edges[0];
+        faces[outside_face].edge = 1;
+        faces[inside_face].edge = 0;
 
-        vertice_valido = &vertices[0];
-
-        // auto& b = edges;
-        // std::cout << b.data() << std::endl;
-        // for (std::size_t i = 0; i < b.size(); ++i) {
-        //     auto& c = b[i];
-        //     // std::cout << c.origin->xy[0] << ',' << c.origin->xy[1] << " -> " << c.twin->origin->xy[0] << ',' << c.twin->origin->xy[1] << std::endl;
-        //     std::cout << &c << ' ' << c.twin << ' ' << c.next << ' ' << c.prev << std::endl;
-        // }
+        vertice_valido = 0;
 
         geracao_atual = 1;
     }
@@ -1345,16 +1371,16 @@ public:
         if (face >= faces.size()) {
             return {};
         }
-        Edge* e = faces[face].edge;
-        Vertex* start = e->origin;
+        Edge* e = f_edge(face);
+        Vertex* start = e_origin(e);
         std::vector<Aresta> retorno;
-        retorno.push_back(Aresta{e->origin->xy, e->twin->origin->xy});
-        e = e->next;
-        while (e->face == &faces[face] && e->origin != start) {
-            retorno.push_back(Aresta{e->origin->xy, e->twin->origin->xy});
-            e = e->next;
+        retorno.push_back(Aresta{e_origin(e)->xy, e_origin(e_twin(e))->xy});
+        e = e_next(e);
+        while (e->face == face && e_origin(e) != start) {
+            retorno.push_back(Aresta{e_origin(e)->xy, e_origin(e_twin(e))->xy});
+            e = e_next(e);
         }
-        if (e->face != &faces[face]) {
+        if (e->face != face) {
             // aqui já sabemos que houve um erro kk
             std::cerr << "erro em 'arestas_de_uma_face'" << std::endl;
         }
@@ -1367,18 +1393,18 @@ public:
         if (face >= faces.size()) {
             return {};
         }
-        Edge* e = faces[face].edge;
+        std::size_t e = fi_edge(face);
         // Vertex* start = e->origin;
-        Edge* start = e;
+        std::size_t start = e;
         std::vector<std::size_t> retorno;
-        retorno.push_back(static_cast<std::size_t>(e - edges.data()));
-        e = e->next;
+        retorno.push_back(e);
+        e = ei_next(e);
         // while (e->face == &faces[face] && e->origin != start) {
-        while (e->face == &faces[face] && e != start) {
-            retorno.push_back(static_cast<std::size_t>(e - edges.data()));
-            e = e->next;
+        while (ei_face(e) == face && e != start) {
+            retorno.push_back(e);
+            e = ei_next(e);
         }
-        if (e->face != &faces[face]) {
+        if (ei_face(e) == face) {
             // aqui já sabemos que houve um erro kk
             std::cerr << "erro em 'arestas_de_uma_face'" << std::endl;
         }
@@ -1391,18 +1417,18 @@ public:
         if (vertice >= vertices.size()) {
             return {};
         }
-        Edge* e = vertices[vertice].edge;
+        Edge* e = v_edge(vertice);
         Edge* start = e;
         Edge* last = nullptr;
-        e = e->prev->twin;
+        e = e_twin(e_prev(e));
         std::vector<Aresta> retorno;
-        while (e->origin == &vertices[vertice] && last != start) {
-            last = e->twin->next;
-            retorno.push_back(Aresta{e->origin->xy, e->twin->origin->xy});
+        while (e->origin == vertice && last != start) {
+            last = e_twin(e_prev(e));
+            retorno.push_back(Aresta{e_origin(e)->xy, e_origin(e_twin(e))->xy});
             last = e;
-            e = e->prev->twin;
+            e = e_twin(e_prev(e));
         }
-        if (e->origin != &vertices[vertice]) {
+        if (e->origin != vertice) {
             // o mesmo do de cima
             std::cerr << "erro em 'orbita_de_um_vertice'" << std::endl;
         }
@@ -1415,18 +1441,18 @@ public:
         if (vertice >= vertices.size()) {
             return {};
         }
-        Edge* e = vertices[vertice].edge;
-        Edge* start = e;
-        Edge* last = nullptr;
-        e = e->prev->twin;
+        std::size_t e = vi_edge(vertice);
+        std::size_t start = e;
+        std::size_t last = def;
+        e = ei_twin(e_prev(e));
         std::vector<std::size_t> retorno;
-        while (e->origin == &vertices[vertice] && last != start) {
-            last = e->twin->next;
-            retorno.push_back(static_cast<std::size_t>(e - edges.data()));
+        while (ei_origin(e) == vertice && last != start) {
+            last = ei_twin(e_prev(e));
+            retorno.push_back(e);
             last = e;
-            e = e->prev->twin;
+            e = ei_twin(e_prev(e));
         }
-        if (e->origin != &vertices[vertice]) {
+        if (ei_origin(e) != vertice) {
             // o mesmo do de cima
             std::cerr << "erro em 'orbita_de_um_vertice'" << std::endl;
         }
@@ -1765,7 +1791,7 @@ private:
     std::unordered_set<std::size_t> edges_invalidas;
     std::unordered_set<std::size_t> vertices_invalidas;
 
-    Vertex* vertice_valido;
+    std::size_t vertice_valido;
 
     std::size_t geracao_atual;
 
