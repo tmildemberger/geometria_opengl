@@ -54,7 +54,7 @@ void main() {
     gl_PointSize = raio;
     invPointSize = sqrt(1.0 / raio);
     pointSize = raio;
-    outColor = theColor[0];
+    outColor = vec3(0.0f, 1.0f, 1.0f) - theColor[0];
     borderSize = 20.0f;
     EmitVertex();
     
