@@ -4,15 +4,26 @@ layout (location = 0) out vec4 fragColor;
 in vec3 outColor;
 in float invPointSize;
 in float pointSize;
+in float aaaRadius;
 in float borderSize;
+in vec2 centerPos;
 // float triplo = invPointSize * invPointSize;
 uniform float alpha;
 
 void main() {
-
-    vec2 circCoord = 2.0 * gl_PointCoord - 1.0;
+    // fragColor = vec4(outColor.rgb, alpha / 3.0f);
+    vec2 pos = 2.0f * ((gl_FragCoord.xy - 0.5f) / 600.0f) - 1.0f;
+    float squared = dot(pos - centerPos, pos - centerPos) / (aaaRadius*aaaRadius);
+    // if (squared < 1) {
+    //     fragColor = vec4(outColor.rgb, alpha / 1.7f);
+    // }
+    
+    // vec2 circCoord = 2.0 * gl_PointCoord - 1.0;
     // 
-    float squared = dot(circCoord, circCoord);
+    // float squared = dot(circCoord, circCoord);
+    // vec2 pos = (gl_FragCoord.xy - 0.5f) / 600.0f;
+    // float squared = dot(pos - centerPos, pos - centerPos);
+    
     if (squared > 1.0) {
         // fragColor = vec4(outColor.rgb, alpha / 2.0f);
         discard;
