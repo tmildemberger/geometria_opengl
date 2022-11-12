@@ -3835,8 +3835,8 @@ private:
                 v_prox_l = v_prox_l_edge->origin;
             }
             if (v_prox_r_edge) {
-                while ( left(v_l->xy, v_r->xy, v_prox_r_edge->twin->next->origin->xy) &&
-                        in_circle(v_l->xy, v_r->xy, v_prox_r->xy, v_prox_r_edge->twin->next->origin->xy) > 0) {
+                while ( left(v_l->xy, v_r->xy, v_prox_r_edge->twin->next->twin->origin->xy) &&
+                        in_circle(v_l->xy, v_r->xy, v_prox_r->xy, v_prox_r_edge->twin->next->twin->origin->xy) > 0) {
                     DCEL::Edge* prox = v_prox_r_edge->twin->next;
                     std::cout << "tirou (" << static_cast<std::size_t>(v_prox_r_edge->origin - dcel->vertices.data()) << ',' << static_cast<std::size_t>(v_prox_r_edge->twin->origin - dcel->vertices.data()) << ')' << std::endl;
                     dcel->interno_deleta_aresta(static_cast<std::size_t>(v_prox_r_edge - dcel->edges.data()), false);
