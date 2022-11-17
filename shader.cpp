@@ -120,6 +120,11 @@ void Shader::setFloat(const std::string& name, const float value) const {
     glUseProgram(this->ID);
     glUniform1f(glGetUniformLocation(this->ID, name.c_str()), value);
 }
+
+void Shader::setVec3(const std::string& name, const float value1, const float value2, const float value3) const {
+    glUseProgram(this->ID);
+    glUniform3f(glGetUniformLocation(this->ID, name.c_str()), value1, value2, value3);
+}
 /*
 void Shader::setTransform(float* transformMatrix) const {
     glProgramUniformMatrix4fv(this->ID, glGetUniformLocation(this->ID,

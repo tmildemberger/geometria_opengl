@@ -9,9 +9,11 @@ in float borderSize;
 in vec2 centerPos;
 // float triplo = invPointSize * invPointSize;
 uniform float alpha;
+uniform vec3 color;
 
 void main() {
     // fragColor = vec4(outColor.rgb, alpha / 3.0f);
+    vec3 realColor = (color == 0) ? outColor : color;
     vec2 pos = 2.0f * ((gl_FragCoord.xy - 0.5f) / 600.0f) - 1.0f;
     float squared = dot(pos - centerPos, pos - centerPos) / (aaaRadius*aaaRadius);
     // if (squared < 1) {
@@ -38,9 +40,9 @@ void main() {
         // fragColor = mix(vec4(outColor.rgb, 0.0), vec4(outColor.rgb, alpha), 1.0 - smoothstep(1.0 - (invPointSize)*(1.0 + 1.41*(1.0 - smoothstep(7, 30, pointSize))), 1.0, squared));
         
         if (squared > (pointSize-2*borderSize)*(pointSize-2*borderSize) / (pointSize*pointSize) ) {
-            fragColor = mix(vec4(outColor.rgb, 0.0), vec4(outColor.rgb, alpha), 1.0 - smoothstep(1.0, 0.0, squared));
+            fragColor = mix(vec4(realColor.rgb, 0.0), vec4(realColor.rgb, alpha), 1.0 - smoothstep(1.0, 0.0, squared));
         } else {
-            fragColor = vec4(outColor.rgb, alpha / 4.0f);
+            fragColor = vec4(realColor.rgb, alpha / 4.0f);
         }
         
         // 1.0 = pointSize^2

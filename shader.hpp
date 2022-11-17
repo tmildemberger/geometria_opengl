@@ -25,6 +25,7 @@ public:
     // void setBool(const std::string& name, const bool value) const;
     // void setInt(const std::string& name, const int value) const;
     void setFloat(const std::string& name, const float value) const;
+    void setVec3(const std::string& name, const float value1, const float value2, const float value3) const;
 
     /*void setTransform(float* transformMatrix) const;
     void setModelTransform(float* transformMatrix) const;
