@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <array>
 #include <vector>
 #include <unordered_set>
@@ -3644,6 +3645,22 @@ struct CoisasDelaunay {
     }
 
     void triangulacao_inicial() {
+        double menor = std::numeric_limits<double>::infinity();
+        double menor_x = std::numeric_limits<double>::infinity();
+        double menor_y = std::numeric_limits<double>::infinity();
+        for (std::size_t i = 0; i < pontos.size(); ++i) {
+            for (std::size_t j = 0; j < pontos.size(); ++j) {
+                if (i == j) continue;
+                if (dist(pontos[i], pontos[j]) < menor) {
+                    menor = dist(pontos[i], pontos[j]);
+                    menor_x = std::abs(pontos[i][0] - pontos[j][0]);
+                    menor_y = std::abs(pontos[i][1] - pontos[j][1]);
+                }
+            }
+        }
+        std::cout << "menor distancia: " << menor << std::endl;
+        std::cout << "menor_x distancia: " << menor_x << std::endl;
+        std::cout << "menor_y distancia: " << menor_y << std::endl;
         if (estado != EstadoDelaunay::INICIANDO) {
             // isso quer dizer que já foi triangulado uma vez
             return;
@@ -3843,6 +3860,14 @@ private:
             // }
         } if (!v_prox_l) {
             std::cout << "mas como pode? " << v_l - dcel->vertices.data() << std::endl;
+            std::fstream arq("caso", std::ios::out);
+            if (arq.is_open()) {
+                arq << dcel->vertices.size();
+                for (std::size_t k = 0; k < dcel->vertices.size(); ++k) {
+                    arq << dcel->vertices[k].xy[0] << ' ' << dcel->vertices[k].xy[1] << std::endl;
+                }
+                arq.close();
+            }
             // vertice_maluco = static_cast<std::size_t>(v_l - dcel->vertices.data());
             DCEL::Edge* e = v_l->edge;
             DCEL::Edge* start = e;
@@ -4223,7 +4248,7 @@ int main() {
     std::vector<Ponto> fecho_calculado {};
     std::size_t last_size = 0;
     std::size_t outros_control = 0;
-    estado.pointSize = 40.0f;
+    estado.pointSize = 4.0f;
     glLineWidth(estado.pointSize / 2.0f);
     // estado.cliques.push_back({-.53726, -.48185});
     // estado.cliques.push_back({.37386, .09127});
@@ -4335,8 +4360,8 @@ int main() {
     // créditos: https://en.cppreference.com/w/cpp/numeric/random/uniform_real_distribution
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis_x(-1.0, 1.0);
-    std::uniform_real_distribution<> dis_y(-1.0, 1.0);
+    std::uniform_real_distribution<> dis_x(-1000.0, 1000.0);
+    std::uniform_real_distribution<> dis_y(-1000.0, 1000.0);
 
     CoisasDelaunay delaunay;
 
@@ -5938,8 +5963,8 @@ int main() {
                 std::vector<float> ps {};
                 ps.reserve(diff * 5 * sizeof (float));
                 for (std::size_t i = delaunay.last_size; i < delaunay.pontos.size(); ++i) {
-                    ps.push_back(delaunay.pontos[i][0]);
-                    ps.push_back(delaunay.pontos[i][1]);
+                    ps.push_back(delaunay.pontos[i][0]/1000.0f);
+                    ps.push_back(delaunay.pontos[i][1]/1000.0f);
                     ps.push_back(cor_dly.r());
                     ps.push_back(cor_dly.g());
                     ps.push_back(cor_dly.b());
@@ -5967,8 +5992,8 @@ int main() {
                         ps.push_back(2.0f);
                         ps.push_back(2.0f);
                     } else {
-                        ps.push_back(ponto.xy[0]);
-                        ps.push_back(ponto.xy[1]);
+                        ps.push_back(ponto.xy[0]/1000.0f);
+                        ps.push_back(ponto.xy[1]/1000.0f);
                     }
                     // if (i != vertice_maluco) {
                     //     ps.push_back(cor_dly.r());
