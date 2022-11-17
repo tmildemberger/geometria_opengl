@@ -1303,6 +1303,7 @@ private:
         Edge* next;
         Edge* prev;
         Face* face;
+        std::size_t componente;
     };
     struct Vertex {
         Ponto xy;
@@ -1335,8 +1336,8 @@ public:
         Face* inside_face = (faces.data()) + 1;
         for (std::size_t i = 0; i < n; ++i) {
             vertices.push_back({p[i], (edges.data()) + (2*i)});
-            edges.push_back({(edges.data()) + (2*i) + 1, (vertices.data()) + i, nullptr, nullptr, inside_face});
-            edges.push_back({(edges.data()) + (2*i), (vertices.data()) + i + 1, nullptr, nullptr, outside_face});
+            edges.push_back({(edges.data()) + (2*i) + 1, (vertices.data()) + i, nullptr, nullptr, inside_face, 0});
+            edges.push_back({(edges.data()) + (2*i), (vertices.data()) + i + 1, nullptr, nullptr, outside_face, 0});
         }
         edges.back().origin = (vertices.data());
 
@@ -1584,8 +1585,8 @@ public:
         faces.push_back({nullptr});
 
         std::size_t idx = edges.size();
-        edges.push_back({(edges.data()) + idx + 1, v2, (edges.data()) + idx + 1, (edges.data()) + idx + 1, found->face});
-        edges.push_back({(edges.data()) + idx, v1, (edges.data()) + idx, (edges.data()) + idx, found->face});
+        edges.push_back({(edges.data()) + idx + 1, v2, (edges.data()) + idx + 1, (edges.data()) + idx + 1, found->face, 0});
+        edges.push_back({(edges.data()) + idx, v1, (edges.data()) + idx, (edges.data()) + idx, found->face, 0});
 
         // std::cout << edges.size() << ' ' << idx << std::endl;
         conecta_arestas(found, &edges[idx]);
@@ -1655,8 +1656,8 @@ public:
         e->origin = v3;
 
         std::size_t idx = edges.size();
-        edges.push_back({(edges.data()) + idx + 1, v1, e, (edges.data()) + idx + 1, e->face});
-        edges.push_back({(edges.data()) + idx, v3, (edges.data()) + idx, e->twin, e->twin->face});
+        edges.push_back({(edges.data()) + idx + 1, v1, e, (edges.data()) + idx + 1, e->face, 0});
+        edges.push_back({(edges.data()) + idx, v3, (edges.data()) + idx, e->twin, e->twin->face, 0});
 
         Edge* e2 = &edges[idx];
 
@@ -1884,6 +1885,8 @@ private:
         if (v1_i >= vertices.size() || v2_i >= vertices.size() || v1_i == v2_i) {
             return false;
         }
+        std::size_t menor = std::min(v1_i, v2_i);
+        // std::cout << menor << ' ' << v1_i << ' ' << v2_i << std::endl;
         // reserva espaço para uma nova face e duas novas arestas
         reserva_espacos(1, 2, 0);
 
@@ -1987,16 +1990,35 @@ private:
         // }
 
         std::size_t idx = edges.size();
-        edges.push_back({(edges.data()) + idx + 1, v2, (edges.data()) + idx + 1, (edges.data()) + idx + 1, faces.data()});
-        edges.push_back({(edges.data()) + idx, v1, (edges.data()) + idx, (edges.data()) + idx, faces.data()});
+        edges.push_back({(edges.data()) + idx + 1, v2, (edges.data()) + idx + 1, (edges.data()) + idx + 1, faces.data(), menor});
+        edges.push_back({(edges.data()) + idx, v1, (edges.data()) + idx, (edges.data()) + idx, faces.data(), menor});
 
         vertice_valido = v1;
 
+        std::size_t v2_c = 0;
+        std::size_t v1_c = 0;
         if (found_v2) {
             // std::cout << " --- " << found_v2->origin - vertices.data() << ' ' << found_v2->twin->origin - vertices.data() << std::endl;
             conecta_arestas(found_v2, &edges[idx]);
             edges[idx].face = found_v2->face;
             edges[idx + 1].face = found_v2->face;
+            v2_c = found_v2->componente;
+            if (v2_c < menor) {
+                for (auto& ed : edges) {
+                    if (ed.componente == menor) {
+                        ed.componente = v2_c;
+                    }
+                }
+                // edges[idx].componente = v2_c;
+                // edges[idx + 1].componente = v2_c;
+                menor = v2_c;
+            } else if (v2_c > menor) {
+                for (auto& ed : edges) {
+                    if (ed.componente == v2_c) {
+                        ed.componente = menor;
+                    }
+                }
+            }
         }
         v2->edge = &edges[idx];
         if (found_v1) {
@@ -2004,11 +2026,31 @@ private:
             conecta_arestas(found_v1, &edges[idx + 1]);
             edges[idx + 1].face = found_v1->face;
             edges[idx].face = found_v1->face;
+            v1_c = found_v1->componente;
+            if (v1_c < menor) {
+                for (auto& ed : edges) {
+                    if (ed.componente == menor) {
+                        ed.componente = v1_c;
+                    }
+                }
+                menor = v1_c;
+                // edges[idx].componente = v1_c;
+                // edges[idx + 1].componente = v1_c;
+            } else if (v1_c > menor) {
+                for (auto& ed : edges) {
+                    if (ed.componente == v1_c) {
+                        ed.componente = menor;
+                    }
+                }
+            }
         }
         v1->edge = &edges[idx + 1];
 
         if (found_v1 && found_v2) {
             if (found_v1->face != faces.data()) {
+                if (v1_c != v2_c) {
+                    std::cout << "ta errado isso ai" << std::endl;
+                }
                 faces.push_back({nullptr});
                 edges[idx + 1].face = &faces.back();
                 faces.back().edge = &edges[idx + 1];
@@ -2053,6 +2095,9 @@ private:
                     e = e->next;
                 } while (e != &edges[idx]);
                 if (curvas_a_esquerda_e1 > 0 || curvas_a_esquerda_e2 > 0) {
+                    if (v1_c != v2_c) {
+                        std::cout << "ta muito errado isso ai" << std::endl;
+                    }
                     // isso quer dizer que a face fechou
                     faces.push_back({nullptr});
                     // std::cout << "encontrei " << curvas_a_esquerda << "curvas a esquerda, por isso crio face " << &faces.back() - faces.data() << std::endl;
@@ -2066,6 +2111,12 @@ private:
                     while (e != start) {
                         e->face = &faces.back();
                         e = e->next;
+                    }
+                } else {
+                    // aqui decidiu não criar face
+                    if (v1_c == v2_c) {
+                        // mas era pra criar
+                        std::cout << "ta extremamente errado isso ai" << std::endl;
                     }
                 }
             }
@@ -3715,6 +3766,16 @@ struct CoisasDelaunay {
         // std::cout << "aaa" << std::endl;
         ++dcel->geracao_atual;
         estado = EstadoDelaunay::OK;
+        std::set<std::size_t> componentes;
+        for (std::size_t i = 0; i < dcel->edges.size(); ++i) {
+            if (dcel->edges_invalidas.count(i) > 0) continue;
+            if (dcel->edges[i].componente != 0) {
+                if (componentes.count(dcel->edges[i].componente) == 0) {
+                    std::cout << "ah velho" << dcel->edges[i].componente << std::endl;
+                    componentes.insert(dcel->edges[i].componente);
+                }
+            }
+        }
     }
 private:
 
@@ -4274,7 +4335,8 @@ int main() {
     // créditos: https://en.cppreference.com/w/cpp/numeric/random/uniform_real_distribution
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(-1.0, 1.0);
+    std::uniform_real_distribution<> dis_x(-1.0, 1.0);
+    std::uniform_real_distribution<> dis_y(-1.0, 1.0);
 
     CoisasDelaunay delaunay;
 
@@ -4289,7 +4351,7 @@ int main() {
 
         if (estado.tela == Tela::ORIGINAL) {
             while (estado.novos_pontos_aleatorios --> 0) {
-                Ponto p {dis(gen), dis(gen)};
+                Ponto p {dis_x(gen), dis_y(gen)};
                 estado.cliques.push_back(p);
             }
             estado.novos_pontos_aleatorios = 0;
@@ -5847,7 +5909,7 @@ int main() {
 
             if (novos_pontos_aleatorios > 0) {
                 while (novos_pontos_aleatorios --> 0) {
-                    Ponto p {dis(gen), dis(gen)};
+                    Ponto p {dis_x(gen), dis_y(gen)};
                     delaunay.pontos.push_back(p);
                 }
                 // for (std::size_t i = 0; i < delaunay.pontos.size(); ++i) {
