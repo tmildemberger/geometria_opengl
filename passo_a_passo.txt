@@ -1,0 +1,30 @@
+coloca na pilha 0 16
+
+enquanto isso mostra somente pontos
+
+aperta T:
+mostra linhas em 0 e 16
+coloca na pilha 8 16
+coloca na pilha 0 8
+
+aperta T:
+mostra linhas em 0 e 8
+coloca na pilha 4 8
+coloca na pilha 0 4
+
+aperta T:
+mostra linhas em 0 e 4
+coloca na pilha 2 4
+coloca na pilha 0 2
+
+aperta T:
+mostra linhas em 0 e 2
+mostra nova linha
+
+aperta T:
+mostra linhas em 2 e 4
+mostra nova linha
+
+aperta T:
+mostra linhas em 0 e 4
+mostra pontos esquerda e direita

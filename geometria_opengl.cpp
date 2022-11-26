@@ -440,9 +440,14 @@ public:
         g_ = std::stoul(hex.substr(start + 2, 2), nullptr, 16);
         b_ = std::stoul(hex.substr(start + 4, 2), nullptr, 16);
     }
-    float r() { return r_/255.f; }
-    float g() { return g_/255.f; }
-    float b() { return b_/255.f; }
+    Cor() {
+        r_ = 0;
+        g_ = 0;
+        b_ = 0;
+    }
+    float r() const { return r_/255.f; }
+    float g() const { return g_/255.f; }
+    float b() const { return b_/255.f; }
 private:
     unsigned long r_;
     unsigned long g_;
@@ -1871,6 +1876,7 @@ public:
 private:
 
     friend class CoisasDelaunay;
+    friend class DelaunayPassoAPasso;
 
     struct EnganaCompilador {
         explicit EnganaCompilador() = default;
@@ -2873,6 +2879,12 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                 }
                 estado.estado_delaunay.eventos.push_back({{}, key, mods, Delaunay_Op::TECLA});
                 break;
+            case GLFW_KEY_E:
+                if (estado.tela != Tela::DELAUNAY) {
+                    return;
+                }
+                estado.estado_delaunay.eventos.push_back({{}, key, mods, Delaunay_Op::TECLA});
+                break;
             case GLFW_KEY_O:
                 if (estado.tela != Tela::DCEL_TESTE || mods) {
                     return;
@@ -3566,6 +3578,7 @@ struct CoisasDCEL {
 
 enum class EstadoDelaunay {
     INICIANDO,
+    TRIANGULANDO,
     OK,
 };
 
@@ -3580,7 +3593,7 @@ struct CoisasDelaunay {
     CoisasDelaunay() {
         glGenBuffers(1, &extra_vbo);
         glBindBuffer(GL_ARRAY_BUFFER, extra_vbo);
-        glBufferData(GL_ARRAY_BUFFER, 10*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, 128*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
         
         glGenVertexArrays(1, &extra_vao);
         glBindVertexArray(extra_vao);
@@ -3798,7 +3811,7 @@ private:
 
     // o 'j' não é incluso
     bool delaunay_div_conq_recursivo(std::size_t i, std::size_t j) {
-        // std::cout << "chamada com (i,j): " << i << ' ' << j << std::endl;
+        std::cout << "chamada com (i,j): " << i << ' ' << j << std::endl;
         if (j - i <= 2) {
             // caso base
             if (j - i == 1) {
@@ -4035,6 +4048,497 @@ public:
 
     static const std::size_t max_floats = 512*1024;
 };
+
+const Cor base_delaunay {"#2b2831"};
+const Cor cor_dly {"#4d9184"};
+
+class DelaunayPassoAPasso {
+public:
+    DelaunayPassoAPasso(State& arg_estado, CoisasDelaunay& arg_delaunay, const Shader& arg_point_program, const Shader& arg_line_program, const Shader& arg_circle_program) :
+        estado {arg_estado},
+        delaunay {arg_delaunay},
+        point_program {arg_point_program},
+        line_program {arg_line_program},
+        circle_program {arg_circle_program},
+        pacote {arg_delaunay} {
+        situacao = Situacao::RESETADO;
+        proxima_situacao = Situacao::RESETADO;
+        caderninho = {};
+        // recursao_atual = {};
+        ultima_recursao = {};
+    }
+    void reset() {
+        situacao = Situacao::RESETADO;
+        proxima_situacao = Situacao::RESETADO;
+        caderninho = {};
+        // recursao_atual = {};
+        ultima_recursao = {};
+        pilha_recursao.clear();
+        
+        // também reseta parcialmente o CoisasDelaunay
+        // para reter os pontos, mas todo o resto ir de vala
+        delaunay.estado = EstadoDelaunay::INICIANDO;
+        delaunay.last_size = 0;
+        delaunay.edge_count = 0;
+        delaunay.triangle_count = 0;
+        delaunay.last_gen = 0;
+        delaunay.dcel.reset();
+    }
+    void prepara_triangulacao() {
+        if (delaunay.estado != EstadoDelaunay::INICIANDO || delaunay.estado_entrada != EntradaDelaunay::NORMAL || delaunay.pontos.size() < 3) {
+            return;
+        }
+        delaunay.mostrando_circulo = false;
+        delaunay.estado = EstadoDelaunay::TRIANGULANDO;
+
+        std::sort(delaunay.pontos.begin(), delaunay.pontos.end(), [](Ponto p1, Ponto p2) { if (p1[0] < p2[0]) return true; else if (p1[0] == p2[0]) return p1[1] > p2[1]; else return false; });
+        delaunay.dcel = std::make_unique<DCEL>(DCEL::EnganaCompilador{}, delaunay.pontos);
+
+        // só recoloca os pontos no vbo na nova ordem
+        {
+            std::size_t diff = delaunay.pontos.size();
+            std::vector<float> ps {};
+            ps.reserve(diff * 5 * sizeof (float));
+            for (std::size_t i = 0; i < delaunay.pontos.size(); ++i) {
+                // ps.push_back(delaunay.pontos[i][0]/1000.0f);
+                ps.push_back((delaunay.pontos[i][0]+991.040)/4.0f);
+                ps.push_back(delaunay.pontos[i][1]/1000.0f);
+                ps.push_back(cor_dly.r());
+                ps.push_back(cor_dly.g());
+                ps.push_back(cor_dly.b());
+            }
+            glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
+            delaunay.last_size = delaunay.pontos.size();
+        }
+
+        // não tenho certeza disso
+        situacao = Situacao::PRONTO_PARA_COMECAR;
+
+        pilha_recursao.push_back({ {0, delaunay.pontos.size()}, false });
+        proxima_situacao = Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO;
+
+        // delaunay_div_conq_recursivo(0, pontos.size());
+
+        // ++delaunay.dcel->geracao_atual;
+        // delaunay.estado = EstadoDelaunay::OK;
+
+        // ultimo_retorno = algoritmo_guedes_v1_passo_a_passo(fecho);
+        // if (ultimo_retorno.etapa_do_passo_executado == Etapa::ETAPA_2) {
+        //     resultado_ate_agora = ultimo_retorno.resultado_ate_agora;
+        // }
+        // if (ultimo_retorno.acabou) {
+        //     estado.passo_a_passo_em_andamento = false;
+        //     estado.passo_a_passo_acabou_de_acabar = true;
+        //     resultado_arrumado_para_renderizacao = false;
+        // }
+    }
+    void proximo_passo() {
+        situacao = proxima_situacao;
+        Acao acao = Acao::A_DEFINIR;
+        bool atualizar_linhas_verticais = false;
+
+        switch (situacao) {
+            case Situacao::ACABOU:
+                reset();
+                return;
+            case Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO:{
+                auto [recursao_atual, expandida] = pilha_recursao.back();
+                auto [i, j] = recursao_atual;
+                if (j - i <= 2) {
+                    acao = Acao::CASO_BASE;
+                } else if (!expandida) {
+                    acao = Acao::EXPANDIR_E_VER_PROXIMO;
+                } else {
+                    acao = Acao::PROCURAR_TANGENTES;
+                }
+                }
+                break;
+            default:
+                break;
+        }
+
+        auto [recursao_atual, expandida] = pilha_recursao.back();
+        auto [i, j] = recursao_atual;
+        switch (acao) {
+            case Acao::CASO_BASE:
+                if (j - i == 2) {
+                    if (!delaunay.dcel->novo_inclui_aresta(i, i + 1)) {
+                        std::cout << "mas que 1" << std::endl;
+                        proxima_situacao = Situacao::ENCONTRAMOS_ERRO;
+                    }
+                    pacote.caso_base(delaunay.dcel->vertices[i].xy, delaunay.dcel->vertices[i+1].xy);
+                } else {
+                    pacote.caso_base(delaunay.dcel->vertices[i].xy);
+                }
+                pilha_recursao.pop_back();
+                situacao = Situacao::MOSTRANDO_MUDANCAS_BASE;
+                if (pilha_recursao.size() != 0) {
+                    proxima_situacao = Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO;
+                } else {
+                    proxima_situacao = Situacao::ACABOU;
+                }
+                break;
+
+            case Acao::EXPANDIR_E_VER_PROXIMO:{
+                pilha_recursao.back() = { recursao_atual, true };
+                std::size_t m = (i + j + 1) / 2;
+                pilha_recursao.push_back({ {m, j}, false });
+                pilha_recursao.push_back({ {i, m}, false });
+                proxima_situacao = Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO;
+                }
+                break;
+
+            case Acao::A_DEFINIR:
+            default:
+                break;
+        }
+
+        {
+            // atualiza vbo extra para mostrar linhas da recursão atual
+            float x_l = static_cast<float>((delaunay.pontos[std::get<0>(recursao_atual)][0]+991.040)/4.0f);
+            float x_r = static_cast<float>((delaunay.pontos[std::get<1>(recursao_atual) - 1][0]+991.040)/4.0f);
+
+            {
+                std::array<float, 4> xs {x_l, x_l, x_r, x_r};
+                std::array<float, 4> ys {-1.0f, 1.0f, -1.0f, 1.0f};
+                std::vector<float> ps;
+                ps.reserve(4 * 5 * sizeof (float));
+                for (std::size_t k = 0; k < 4; ++k) {
+                    // ps.push_back(delaunay.pontos[k][0]/1000.0f);
+                    ps.push_back(xs[k]);
+                    ps.push_back(ys[k]);
+                    ps.push_back(cor_dly.r());
+                    ps.push_back(cor_dly.g());
+                    ps.push_back(cor_dly.b());
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(4 * 5 * sizeof (float)), ps.data());
+            }
+        }
+
+
+        // if (situacao == Situacao::ACABOU) {
+        //     reset();
+        //     return;
+        // }
+        // auto [recursao_atual, expandida] = pilha_recursao.back();
+        // std::cout << "recursao atual: " << std::get<0>(recursao_atual) << ' ' << std::get<1>(recursao_atual) << std::endl;
+        // // auto ultima_recursao = recursao_atual;
+        // if (situacao == Situacao::PRONTO_PARA_COMECAR) {
+        //     situacao = Situacao::INICIANDO_NIVEL_RECURSAO;
+        //     // std::cerr << "quero melhorar isso depois" << std::endl;
+        // } else if (situacao == Situacao::INICIANDO_NIVEL_RECURSAO) {
+        //     auto [i, j] = recursao_atual;
+        //     if (j - i <= 2) {
+        //         pilha_recursao.pop_back();
+        //         if (pilha_recursao.size() != 0) {
+        //             situacao = Situacao::TERMINANDO_NIVEL_RECURSAO;
+        //         } else {
+        //             situacao = Situacao::ACABOU;
+        //         }
+        //     } else if (!expandida) {
+        //         pilha_recursao.back() = { recursao_atual, true };
+        //         std::size_t m = (i + j + 1) / 2;
+        //         pilha_recursao.push_back({ {m, j}, false });
+        //         pilha_recursao.push_back({ {i, m}, false });
+        //         recursao_atual = {i, m};
+        //     } else {
+        //         pilha_recursao.pop_back();
+        //         if (pilha_recursao.size() != 0) {
+        //             situacao = Situacao::TERMINANDO_NIVEL_RECURSAO;
+        //         } else {
+        //             situacao = Situacao::ACABOU;
+        //             return;
+        //         }
+        //         // fazer a combinação (costura)
+        //     }
+        // } else if (situacao == Situacao::TERMINANDO_NIVEL_RECURSAO) {
+        //     situacao = Situacao::INICIANDO_NIVEL_RECURSAO;
+        // }
+
+        // if (ultima_recursao != recursao_atual) {
+        //     ultima_recursao = recursao_atual;
+        //     // atualiza vbo extra para mostrar linhas da recursão atual
+        //     float x_l = static_cast<float>((delaunay.pontos[std::get<0>(recursao_atual)][0]+991.040)/4.0f);
+        //     float x_r = static_cast<float>((delaunay.pontos[std::get<1>(recursao_atual) - 1][0]+991.040)/4.0f);
+
+        //     {
+        //         std::array<float, 4> xs {x_l, x_l, x_r, x_r};
+        //         std::array<float, 4> ys {-1.0f, 1.0f, -1.0f, 1.0f};
+        //         std::vector<float> ps;
+        //         ps.reserve(4 * 5 * sizeof (float));
+        //         for (std::size_t i = 0; i < 4; ++i) {
+        //             // ps.push_back(delaunay.pontos[i][0]/1000.0f);
+        //             ps.push_back(xs[i]);
+        //             ps.push_back(ys[i]);
+        //             ps.push_back(cor_dly.r());
+        //             ps.push_back(cor_dly.g());
+        //             ps.push_back(cor_dly.b());
+        //         }
+        //         glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
+        //         glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(4 * 5 * sizeof (float)), ps.data());
+        //     }
+        // }
+    }
+    void vai_que_e_tua() {
+        switch (situacao) {
+            case Situacao::RESETADO:
+                std::cerr << "nem era pra isso acontecer" << std::endl;
+                break;
+            case Situacao::PRONTO_PARA_COMECAR:
+                // aqui ainda só mostra os pontos né
+                point_program.use();
+                point_program.setFloat("pointRadius", estado.pointSize);
+                
+                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                glBindVertexArray(delaunay.vao);
+                glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+                break;
+            case Situacao::MOSTRANDO_MUDANCAS_BASE:
+            
+                glLineWidth(50.0f);
+                line_program.use();
+                line_program.setFloat("alpha", 0.3f);
+                glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
+                glBindVertexArray(delaunay.extra_vao);
+                glDrawArrays(GL_LINES, 0, 4);
+                line_program.setFloat("alpha", 1.0f);
+                glLineWidth(std::max(estado.pointSize / 2.0f, 1.0f));
+
+                point_program.use();
+                point_program.setFloat("pointRadius", estado.pointSize);
+                
+                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                glBindVertexArray(delaunay.vao);
+                glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+
+                renderiza_pacote();
+                break;
+            // case
+            // case Situacao::INICIANDO_NIVEL_RECURSAO:
+            // case Situacao::TERMINANDO_NIVEL_RECURSAO:
+            case Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO:
+            case Situacao::ACABOU:
+            
+                glLineWidth(50.0f);
+                line_program.use();
+                line_program.setFloat("alpha", 0.3f);
+                glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
+                glBindVertexArray(delaunay.extra_vao);
+                glDrawArrays(GL_LINES, 0, 4);
+                line_program.setFloat("alpha", 1.0f);
+                glLineWidth(std::max(estado.pointSize / 2.0f, 1.0f));
+
+                point_program.use();
+                point_program.setFloat("pointRadius", estado.pointSize);
+                
+                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                glBindVertexArray(delaunay.vao);
+                glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+                break;
+            default:
+                break;
+        }
+    }
+private:
+    enum class Acao {
+        A_DEFINIR,
+        CASO_BASE,
+        EXPANDIR_E_VER_PROXIMO,
+        PROCURAR_TANGENTES,
+    };
+    enum class Situacao {
+        RESETADO,
+        PRONTO_PARA_COMECAR,
+        // INICIANDO_NIVEL_RECURSAO,
+        // TERMINANDO_NIVEL_RECURSAO,
+
+        PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO,
+        MOSTRANDO_MUDANCAS_BASE,
+        ENCONTRAMOS_ERRO,
+        ACABOU,
+    };
+    struct Caderninho {
+        Etapa etapa_do_passo_executado;
+        Reta desenhar_essa;
+        bool desenhar_a_outra;
+        Reta tambem_desenhar_essa;
+        Ponto colorir_esse;
+        Ponto esse_tambem;
+        bool acabou;
+        RetornoAlg resultado_ate_agora;
+    };
+    struct Pacote {
+        friend class DelaunayPassoAPasso;
+
+        Pacote(CoisasDelaunay& in_delaunay) : delaunay {in_delaunay} {}
+        CoisasDelaunay& delaunay;
+        Cor c1;
+        Cor c2;
+        Cor circulo;
+
+        std::vector<std::pair<std::size_t, std::size_t>> pontos;
+        std::vector<std::pair<std::size_t, std::size_t>> linhas;
+        void caso_base(Ponto p1, Cor cor = Cor("#91744d")) {
+            c1 = cor;
+            pontos.clear();
+            linhas.clear();
+
+            pontos.push_back({4, 1});
+            preenche_buffer(4, {{p1, c1}});
+        }
+
+        void caso_base(Ponto p1, Ponto p2, Cor cor = Cor("#91744d")) {
+            c1 = cor;
+            pontos.clear();
+            linhas.clear();
+
+            pontos.push_back({4, 2});
+            linhas.push_back({4, 2});
+            preenche_buffer(4, {{p1, c1}, {p2, c1}});
+        }
+
+        void preenche_buffer(std::size_t start, std::vector<std::pair<Ponto, Cor>> vec) {
+            std::vector<float> ps;
+            ps.reserve(vec.size() * 5 * sizeof (float));
+            for (std::size_t i = 0; i < vec.size(); ++i) {
+                ps.push_back((std::get<0>(vec[i])[0]+991.040)/4.0f);
+                ps.push_back(std::get<0>(vec[i])[1]/1000.0f);
+                ps.push_back(std::get<1>(vec[i]).r());
+                ps.push_back(std::get<1>(vec[i]).g());
+                ps.push_back(std::get<1>(vec[i]).b());
+            }
+            glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
+            glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(start * 5 * sizeof (float)), static_cast<GLintptr>(vec.size() * 5 * sizeof (float)), ps.data());
+        }
+    };
+
+    void renderiza_pacote() {
+        if (pacote.pontos.size() == 0 || pacote.linhas.size() == 0) {
+            return;
+        }
+        glLineWidth(std::max(estado.pointSize / 1.4f, 1.0f));
+        line_program.use();
+        line_program.setFloat("alpha", 0.3f);
+        glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
+        glBindVertexArray(delaunay.extra_vao);
+        for (std::size_t i = 0; i < pacote.linhas.size(); ++i) {
+            glDrawArrays(GL_LINES, std::get<0>(pacote.linhas[i]), std::get<1>(pacote.linhas[i]));
+        }
+        line_program.setFloat("alpha", 1.0f);
+        glLineWidth(std::max(estado.pointSize / 2.0f, 1.0f));
+
+        point_program.use();
+        point_program.setFloat("pointRadius", estado.pointSize);
+        for (std::size_t i = 0; i < pacote.pontos.size(); ++i) {
+            glDrawArrays(GL_POINTS, std::get<0>(pacote.pontos[i]), std::get<1>(pacote.pontos[i]));
+        }
+    }
+    State& estado;
+    CoisasDelaunay& delaunay;
+    const Shader& point_program;
+    const Shader& line_program;
+    const Shader& circle_program;
+
+    Situacao situacao;
+    Situacao proxima_situacao;
+    Caderninho caderninho;
+    Pacote pacote;
+    std::pair<std::size_t, std::size_t> ultima_recursao;
+    std::vector<std::pair<std::pair<std::size_t, std::size_t>, bool>> pilha_recursao;
+
+
+    // void arruma_renderizacao() {
+    //     std::array<Ponto, 6> pontos {};
+    //     std::size_t num = 4;
+    //     pontos[0] = ultimo_retorno.colorir_esse;
+    //     pontos[1] = ultimo_retorno.esse_tambem;
+    //     pontos[2] = ultimo_retorno.desenhar_essa[0];
+    //     pontos[3] = ultimo_retorno.desenhar_essa[1];
+    //     if (ultimo_retorno.desenhar_a_outra) {
+    //         num += 2;
+    //         pontos[4] = ultimo_retorno.tambem_desenhar_essa[0];
+    //         pontos[5] = ultimo_retorno.tambem_desenhar_essa[1];
+    //     }
+    //     quantos = num;
+
+    //     std::array<std::array<float, 3>, 6> cores {};
+    //     if (ultimo_retorno.etapa_do_passo_executado == Etapa::ETAPA_1) {
+    //         // usado como base: #26a6c9
+    //         cores[0] = {27, 181, 224};
+    //         cores[1] = {101, 197, 224};
+    //         cores[2] = {38, 166, 201};
+    //         cores[3] = {38, 166, 201};
+    //         if (ultimo_retorno.desenhar_a_outra) {
+    //             cores[4] = {111, 182, 201};
+    //             cores[5] = {111, 182, 201};
+    //         }
+    //     } else {
+    //         // usado como base: #c9262b
+    //         cores[0] = {230, 32, 39};
+    //         cores[1] = {230, 78, 83};
+    //         cores[2] = {201, 38, 43};
+    //         cores[3] = {201, 38, 43};
+    //         if (ultimo_retorno.desenhar_a_outra) {
+    //             cores[4] = {201, 71, 75};
+    //             cores[5] = {201, 71, 75};
+    //         }
+    //     }
+    //     std::vector<float> ps {};
+    //     ps.reserve(num * 5 * sizeof (float));
+    //     for (std::size_t i = 0; i < num; ++i) {
+    //         ps.push_back(pontos[i][0]);
+    //         ps.push_back(pontos[i][1]);
+    //         ps.push_back(cores[i][0] / 255.0f);
+    //         ps.push_back(cores[i][1] / 255.0f);
+    //         ps.push_back(cores[i][2] / 255.0f);
+    //     }
+    //     glBindBuffer(GL_ARRAY_BUFFER, delpasso_vbo);
+    //     glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
+
+    // }
+    // void renderiza_passo() {
+    //     // isso vem junto, acho
+    //     // glBindBuffer(GL_ARRAY_BUFFER, delpasso_vbo);
+    //     glBindVertexArray(delpasso_vao);
+    //     line_program.use();
+    //     glDrawArrays(GL_LINES, 2, quantos - 2);
+    //     point_program.use();
+    //     glDrawArrays(GL_POINTS, 0, 2);
+    // }
+    // void renderiza_resultado() {
+    //     if (!resultado_arrumado_para_renderizacao) {
+    //         std::array<Ponto, 4> pontos {};
+    //         std::size_t num = 4;
+    //         pontos[0] = resultado_ate_agora.p;
+    //         pontos[1] = resultado_ate_agora.intersecao_encontrada;
+    //         pontos[2] = resultado_ate_agora.r[0];
+    //         pontos[3] = resultado_ate_agora.r[1];
+    //         std::vector<float> ps {};
+    //         ps.reserve(num * 5 * sizeof (float));
+    //         for (std::size_t i = 0; i < num; ++i) {
+    //             ps.push_back(pontos[i][0]);
+    //             ps.push_back(pontos[i][1]);
+    //             ps.push_back(0.149f); // 38
+    //             ps.push_back(0.788f); // 201
+    //             ps.push_back(0.682f); // 174
+    //         }
+    //         glBindBuffer(GL_ARRAY_BUFFER, delpasso_vbo);
+    //         glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
+
+    //         resultado_arrumado_para_renderizacao = true;
+    //     }
+
+    //     glBindBuffer(GL_ARRAY_BUFFER, delpasso_vbo);
+    //     glBindVertexArray(delpasso_vao);
+    //     line_program.use();
+    //     glDrawArrays(GL_LINES, 0, 4);
+    //     point_program.use();
+    //     glDrawArrays(GL_POINTS, 0, 4);
+    // }
+};
+
 
 int main() {
 
@@ -4364,9 +4868,8 @@ int main() {
     std::uniform_real_distribution<> dis_y(-1000.0, 1000.0);
 
     CoisasDelaunay delaunay;
+    DelaunayPassoAPasso passo_delaunay {estado, delaunay, point_program, color_line_program, circle_program};
 
-    Cor base_delaunay {"#2b2831"};
-    Cor cor_dly {"#4d9184"};
     while (!glfwWindowShouldClose(window)) {
         // win.processInput();
         // processar entradas??
@@ -5842,6 +6345,24 @@ int main() {
                                 } else if (op.mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
                                     novos_pontos_aleatorios += 500;
                                 }
+                            } else if (op.button_key == GLFW_KEY_E && !op.mods) {
+                                if (delaunay.pontos.size() != 0) continue;
+                                std::fstream arq("entrada");
+                                if (arq.is_open()) {
+                                    std::size_t size = 0;
+                                    arq >> size;
+                                    delaunay.pontos.reserve(size);
+                                    for (std::size_t i = 0; i < size; ++i) {
+                                        double x = 0;
+                                        double y = 0;
+                                        arq >> x >> y;
+                                        // x = (x + 991.040) * 250;
+                                        delaunay.pontos.push_back({x, y});
+                                    }
+                                    arq.close();
+                                }
+                            } else if (op.button_key == GLFW_KEY_T && op.mods == GLFW_MOD_SHIFT) {
+                                passo_delaunay.prepara_triangulacao();
                             }
                             break;
                         default:
@@ -5928,141 +6449,159 @@ int main() {
                         default:
                             break;
                     }
+                } else if (delaunay.estado == EstadoDelaunay::TRIANGULANDO) {
+                    switch (op.op) {
+                        case Delaunay_Op::CLIQUE:
+                            break;
+                        case Delaunay_Op::TECLA:
+                            if (op.button_key == GLFW_KEY_T && !op.mods) {
+                                passo_delaunay.proximo_passo();
+                            }
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
             if (outra_tela) continue;
 
-            if (novos_pontos_aleatorios > 0) {
-                while (novos_pontos_aleatorios --> 0) {
-                    Ponto p {dis_x(gen), dis_y(gen)};
-                    delaunay.pontos.push_back(p);
-                }
-                // for (std::size_t i = 0; i < delaunay.pontos.size(); ++i) {
-                //     for (std::size_t j = 0; j < delaunay.pontos.size(); ++j) {
-                //         if (i == j) continue;
-                //         if (delaunay.pontos[i] == delaunay.pontos[j]) {
-                //             std::cout << "temos um pontos repetido" << std::endl;
-                //         } else {
-                //             if (delaunay.pontos[i][0] == delaunay.pontos[j][0]) {
-                //                 std::cout << "hmm1" << std::endl;
-                //             }
-                //             if (delaunay.pontos[i][1] == delaunay.pontos[j][1]) {
-                //                 std::cout << "hmm2" << std::endl;
-                //             }
-                //         }
-                //     }
-                // }
-            }
+            if (delaunay.estado != EstadoDelaunay::TRIANGULANDO) {
 
-            if (delaunay.pontos.size() > delaunay.last_size) {
-                if (delaunay.pontos.size() * 5 > CoisasDelaunay::max_floats) {
-                    delaunay.pontos.erase(std::next(delaunay.pontos.begin(), CoisasDelaunay::max_floats / 5), delaunay.pontos.end());
-                    std::cerr << "mais pontos do que devia; extras removidos" << std::endl;
-                }
-                std::size_t diff = delaunay.pontos.size() - delaunay.last_size;
-                std::vector<float> ps {};
-                ps.reserve(diff * 5 * sizeof (float));
-                for (std::size_t i = delaunay.last_size; i < delaunay.pontos.size(); ++i) {
-                    ps.push_back(delaunay.pontos[i][0]/1000.0f);
-                    ps.push_back(delaunay.pontos[i][1]/1000.0f);
-                    ps.push_back(cor_dly.r());
-                    ps.push_back(cor_dly.g());
-                    ps.push_back(cor_dly.b());
-                }
-                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(delaunay.last_size * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
-                delaunay.last_size = delaunay.pontos.size();
-            }
-            
-            if (delaunay.estado == EstadoDelaunay::OK && delaunay.last_gen < delaunay.dcel->gen()) {
-                // recalcula VBO e EBO com coisas da DCEL atualizada
-                auto [verts_r, v_invs] = delaunay.dcel->vec_vertices();
-                auto [edges_r, e_invs] = delaunay.dcel->vec_edges();
-                auto [faces_r, f_invs] = delaunay.dcel->vec_faces();
-
-                auto& verts = verts_r.get();
-                auto& edges = edges_r.get();
-                auto& faces = faces_r.get();
-
-                std::vector<float> ps {};
-                ps.reserve(verts.size() * 5 * sizeof (float));
-                for (std::size_t i = 0; i < verts.size(); ++i) {
-                    auto ponto = verts[i];
-                    if (v_invs.count(i) || !ponto.edge) {
-                        ps.push_back(2.0f);
-                        ps.push_back(2.0f);
-                    } else {
-                        ps.push_back(ponto.xy[0]/1000.0f);
-                        ps.push_back(ponto.xy[1]/1000.0f);
+                if (novos_pontos_aleatorios > 0) {
+                    while (novos_pontos_aleatorios --> 0) {
+                        Ponto p {dis_x(gen), dis_y(gen)};
+                        delaunay.pontos.push_back(p);
                     }
-                    // if (i != vertice_maluco) {
-                    //     ps.push_back(cor_dly.r());
-                    //     ps.push_back(cor_dly.g());
-                    //     ps.push_back(cor_dly.b());
-                    // } else {
-                    //     ps.push_back(1.0f);
-                    //     ps.push_back(0.0f);
-                    //     ps.push_back(0.0f);
+                    // for (std::size_t i = 0; i < delaunay.pontos.size(); ++i) {
+                    //     for (std::size_t j = 0; j < delaunay.pontos.size(); ++j) {
+                    //         if (i == j) continue;
+                    //         if (delaunay.pontos[i] == delaunay.pontos[j]) {
+                    //             std::cout << "temos um pontos repetido" << std::endl;
+                    //         } else {
+                    //             if (delaunay.pontos[i][0] == delaunay.pontos[j][0]) {
+                    //                 std::cout << "hmm1" << std::endl;
+                    //             }
+                    //             if (delaunay.pontos[i][1] == delaunay.pontos[j][1]) {
+                    //                 std::cout << "hmm2" << std::endl;
+                    //             }
+                    //         }
+                    //     }
                     // }
-                    ps.push_back(cor_dly.r());
-                    ps.push_back(cor_dly.g());
-                    ps.push_back(cor_dly.b());
                 }
 
-                std::vector<unsigned> is {};
-                is.reserve((edges.size() / 2) * sizeof (unsigned));
-                for (std::size_t i = 0; i < (edges.size() / 2); ++i) {
-                    if (e_invs.count(2*i)) {
-                        is.push_back(65535);
-                        is.push_back(65535);
-                    } else {
-                        unsigned p1 = static_cast<unsigned>(edges[2*i].origin - &verts[0]);
-                        unsigned p2 = static_cast<unsigned>(edges[2*i + 1].origin - &verts[0]);
-                        is.push_back(p1);
-                        is.push_back(p2);
+                if (delaunay.pontos.size() > delaunay.last_size) {
+                    if (delaunay.pontos.size() * 5 > CoisasDelaunay::max_floats) {
+                        delaunay.pontos.erase(std::next(delaunay.pontos.begin(), CoisasDelaunay::max_floats / 5), delaunay.pontos.end());
+                        std::cerr << "mais pontos do que devia; extras removidos" << std::endl;
                     }
+                    std::size_t diff = delaunay.pontos.size() - delaunay.last_size;
+                    std::vector<float> ps {};
+                    ps.reserve(diff * 5 * sizeof (float));
+                    for (std::size_t i = delaunay.last_size; i < delaunay.pontos.size(); ++i) {
+                        // ps.push_back(delaunay.pontos[i][0]/1000.0f);
+                        ps.push_back((delaunay.pontos[i][0]+991.040)/4.0f);
+                        ps.push_back(delaunay.pontos[i][1]/1000.0f);
+                        ps.push_back(cor_dly.r());
+                        ps.push_back(cor_dly.g());
+                        ps.push_back(cor_dly.b());
+                    }
+                    glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                    glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(delaunay.last_size * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
+                    delaunay.last_size = delaunay.pontos.size();
                 }
 
-                glBindVertexArray(delaunay.vao);
-                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * sizeof (float)), ps.data());
-                
-                // atualiza arestas a serem desenhadas:
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
-                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
-                
-                std::vector<unsigned> fs {};
-                fs.reserve(faces.size() * 3 * sizeof (unsigned));
-                for (std::size_t i = 1; i < faces.size(); ++i) {
-                    if (f_invs.count(i)) {
-                        fs.push_back(65535);
-                        fs.push_back(65535);
-                        fs.push_back(65535);
-                    } else {
-                        auto vs = delaunay.dcel->indices_dos_vertices_de_uma_face(i);
-                        if (vs.size() != 3) {
-                            std::cerr << "aviso: vai dar errado" << std::endl;
+                if (delaunay.estado == EstadoDelaunay::OK && delaunay.last_gen < delaunay.dcel->gen()) {
+                    // recalcula VBO e EBO com coisas da DCEL atualizada
+                    auto [verts_r, v_invs] = delaunay.dcel->vec_vertices();
+                    auto [edges_r, e_invs] = delaunay.dcel->vec_edges();
+                    auto [faces_r, f_invs] = delaunay.dcel->vec_faces();
+
+                    auto& verts = verts_r.get();
+                    auto& edges = edges_r.get();
+                    auto& faces = faces_r.get();
+
+                    std::vector<float> ps {};
+                    ps.reserve(verts.size() * 5 * sizeof (float));
+                    for (std::size_t i = 0; i < verts.size(); ++i) {
+                        auto ponto = verts[i];
+                        if (v_invs.count(i) || !ponto.edge) {
+                            ps.push_back(2.0f);
+                            ps.push_back(2.0f);
+                        } else {
+                            ps.push_back((ponto.xy[0]+991.040)/4.0f);
+                            // ps.push_back(ponto.xy[0]/1000.0f);
+                            ps.push_back(ponto.xy[1]/1000.0f);
                         }
-                        for (auto v : vs) {
-                            unsigned p = static_cast<unsigned>(v);
-                            fs.push_back(p);
+                        // if (i != vertice_maluco) {
+                        //     ps.push_back(cor_dly.r());
+                        //     ps.push_back(cor_dly.g());
+                        //     ps.push_back(cor_dly.b());
+                        // } else {
+                        //     ps.push_back(1.0f);
+                        //     ps.push_back(0.0f);
+                        //     ps.push_back(0.0f);
+                        // }
+                        ps.push_back(cor_dly.r());
+                        ps.push_back(cor_dly.g());
+                        ps.push_back(cor_dly.b());
+                    }
+
+                    std::vector<unsigned> is {};
+                    is.reserve((edges.size() / 2) * sizeof (unsigned));
+                    for (std::size_t i = 0; i < (edges.size() / 2); ++i) {
+                        if (e_invs.count(2*i)) {
+                            is.push_back(65535);
+                            is.push_back(65535);
+                        } else {
+                            unsigned p1 = static_cast<unsigned>(edges[2*i].origin - &verts[0]);
+                            unsigned p2 = static_cast<unsigned>(edges[2*i + 1].origin - &verts[0]);
+                            is.push_back(p1);
+                            is.push_back(p2);
                         }
                     }
+
+                    glBindVertexArray(delaunay.vao);
+                    glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                    glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * sizeof (float)), ps.data());
+                    
+                    // atualiza arestas a serem desenhadas:
+                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
+                    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
+                    
+                    std::vector<unsigned> fs {};
+                    fs.reserve(faces.size() * 3 * sizeof (unsigned));
+                    for (std::size_t i = 1; i < faces.size(); ++i) {
+                        if (f_invs.count(i)) {
+                            fs.push_back(65535);
+                            fs.push_back(65535);
+                            fs.push_back(65535);
+                        } else {
+                            auto vs = delaunay.dcel->indices_dos_vertices_de_uma_face(i);
+                            if (vs.size() != 3) {
+                                std::cerr << "aviso: vai dar errado" << std::endl;
+                            }
+                            for (auto v : vs) {
+                                unsigned p = static_cast<unsigned>(v);
+                                fs.push_back(p);
+                            }
+                        }
+                    }
+
+                    // atualiza triângulos a serem desenhadas:
+                    glBindVertexArray(delaunay.faces_vao);
+                    glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
+                    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(fs.size() * sizeof (unsigned)), fs.data());
+
+                    // atualiza contagem de arestas e vértices
+                    delaunay.edge_count = edges.size() / 2;
+                    delaunay.last_size = verts.size();
+                    delaunay.triangle_count = faces.size() - 1;
+                    std::cout << "triangulos: " << delaunay.triangle_count << std::endl;
+
+                    delaunay.last_gen = delaunay.dcel->gen();
                 }
 
-                // atualiza triângulos a serem desenhadas:
-                glBindVertexArray(delaunay.faces_vao);
-                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
-                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(fs.size() * sizeof (unsigned)), fs.data());
-
-                // atualiza contagem de arestas e vértices
-                delaunay.edge_count = edges.size() / 2;
-                delaunay.last_size = verts.size();
-                delaunay.triangle_count = faces.size() - 1;
-                std::cout << "triangulos: " << delaunay.triangle_count << std::endl;
-
-                delaunay.last_gen = delaunay.dcel->gen();
             }
 
 
@@ -6223,8 +6762,10 @@ int main() {
                         glDrawArrays(GL_POINTS, 0, 1);
                     }
                 }
+            } else if (delaunay.estado == EstadoDelaunay::TRIANGULANDO) {
+                passo_delaunay.vai_que_e_tua();
             }
-                
+            
         }
         //////////////////////////////////////////
 
