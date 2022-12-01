@@ -18,10 +18,12 @@
 // #include <GLFW/glfw3.h>
 #include "shader.hpp"
 #include "Window.hpp"
-#include "stb_img.hpp"
 #include "texture.hpp"
 #include "drawing.hpp"
 #include "renderer.hpp"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wgnu-anonymous-struct"
@@ -444,6 +446,11 @@ public:
         r_ = 0;
         g_ = 0;
         b_ = 0;
+    }
+    Cor(unsigned char r, unsigned char g, unsigned char b) {
+        r_ = r;
+        g_ = g;
+        b_ = b;
     }
     float r() const { return r_/255.f; }
     float g() const { return g_/255.f; }
@@ -1825,6 +1832,21 @@ public:
         return static_cast<std::size_t>(found_face - faces.data());
     }
 
+    // tenta descobrir se o ponto 'p' está sobre alguma aresta
+    std::pair<bool, std::size_t> em_alguma_aresta(Ponto p) {
+        for (std::size_t i = 0; i < edges.size(); i += 2) {
+            if (edges_invalidas.count(i)) {
+                continue;
+            }
+            auto& p2 = edges[i].origin->xy;
+            auto& p3 = edges[i+1].origin->xy;
+            if (area_orientada(p, p2, p3) == 0.0 && dist(p, p2) + dist(p, p3) <= dist(p2, p3)) {
+                return {true, i};
+            }
+        }
+        return {false, 0};
+    }
+
     std::pair<std::reference_wrapper<const std::vector<Vertex>>, const std::unordered_set<std::size_t>> vec_vertices() {
         return std::make_pair(std::cref(vertices), vertices_invalidas);
     }
@@ -2347,6 +2369,7 @@ enum class Tela {
     ATIVIDADE,
     DCEL_TESTE,
     DELAUNAY,
+    TRABALHO,
 };
 
 enum class Dcel_Data {
@@ -2388,25 +2411,30 @@ struct Dcel_Teste_State {
     std::deque<Dcel_Ops> operacoes;
 };
 
-enum class Delaunay_Op {
+enum class General_Op {
     CLIQUE,
     TECLA,
 };
 
-struct Delaunay_Msg {
+struct General_Msg {
     Ponto p;
     int button_key;
     int mods;
-    Delaunay_Op op;
+    General_Op op;
 };
 
 struct Delaunay_State {
-    std::deque<Delaunay_Msg> eventos;
+    std::deque<General_Msg> eventos;
+};
+
+struct Trabalho_State {
+    std::deque<General_Msg> eventos;
 };
 
 struct State {
     Dcel_Teste_State estado_dcel_teste;
     Delaunay_State estado_delaunay;
+    Trabalho_State estado_trabalho;
 
     std::size_t novos_pontos_aleatorios;
     std::vector<Ponto> cliques;
@@ -2788,7 +2816,12 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
         if (action != GLFW_RELEASE) return;
         auto& estad = estado.estado_delaunay;
         Ponto clicado = ponto_xy();
-        estad.eventos.push_back({clicado, button, mods, Delaunay_Op::CLIQUE});
+        estad.eventos.push_back({clicado, button, mods, General_Op::CLIQUE});
+    } else if (estado.tela == Tela::TRABALHO) {
+        if (action != GLFW_RELEASE) return;
+        auto& estad = estado.estado_trabalho;
+        Ponto clicado = ponto_xy();
+        estad.eventos.push_back({clicado, button, mods, General_Op::CLIQUE});
     }
 }
 
@@ -2833,6 +2866,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             case GLFW_KEY_6:
                 if (!mods) estado.tela = Tela::DELAUNAY;
                 break;
+            case GLFW_KEY_7:
+                if (!mods) estado.tela = Tela::TRABALHO;
+                break;
             case GLFW_KEY_R:
                 if (estado.tela == Tela::ORIGINAL) {
                     if (!mods) {
@@ -2843,7 +2879,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                         estado.novos_pontos_aleatorios += 25;
                     }
                 } else if (estado.tela == Tela::DELAUNAY) {
-                    estado.estado_delaunay.eventos.push_back({{}, key, mods, Delaunay_Op::TECLA});
+                    estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
+                } else if (estado.tela == Tela::TRABALHO) {
+                    estado.estado_trabalho.eventos.push_back({{}, key, mods, General_Op::TECLA});
                 }
                 break;
             case GLFW_KEY_T:
@@ -2852,7 +2890,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                         estado.estado_dcel_teste.estado = Dcel_Data::DELETANDO_VERTICE;
                     }
                 } else if (estado.tela == Tela::DELAUNAY) {
-                    estado.estado_delaunay.eventos.push_back({{}, key, mods, Delaunay_Op::TECLA});
+                    estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
+                } else if (estado.tela == Tela::TRABALHO) {
+                    estado.estado_trabalho.eventos.push_back({{}, key, mods, General_Op::TECLA});
                 }
                 break;
             case GLFW_KEY_A:
@@ -2861,7 +2901,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                         estado.estado_dcel_teste.estado = Dcel_Data::ADICIONANDO_ARESTA;
                     }
                 } else if (estado.tela == Tela::DELAUNAY) {
-                    estado.estado_delaunay.eventos.push_back({{}, key, mods, Delaunay_Op::TECLA});
+                    estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
                 }
                 break;
             case GLFW_KEY_C:
@@ -2870,20 +2910,20 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                         estado.estado_dcel_teste.estado = Dcel_Data::DELETANDO_ARESTA;
                     }
                 } else if (estado.tela == Tela::DELAUNAY) {
-                    estado.estado_delaunay.eventos.push_back({{}, key, mods, Delaunay_Op::TECLA});
+                    estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
                 }
                 break;
             case GLFW_KEY_S:
                 if (estado.tela != Tela::DELAUNAY) {
                     return;
                 }
-                estado.estado_delaunay.eventos.push_back({{}, key, mods, Delaunay_Op::TECLA});
+                estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
                 break;
             case GLFW_KEY_E:
                 if (estado.tela != Tela::DELAUNAY) {
                     return;
                 }
-                estado.estado_delaunay.eventos.push_back({{}, key, mods, Delaunay_Op::TECLA});
+                estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
                 break;
             case GLFW_KEY_O:
                 if (estado.tela != Tela::DCEL_TESTE || mods) {
@@ -2914,7 +2954,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                 estado.novos_pontos_aleatorios += 25;
             }
         } else if (estado.tela == Tela::DELAUNAY) {
-            estado.estado_delaunay.eventos.push_back({{}, key, mods, Delaunay_Op::TECLA});
+            estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
+        } else if (estado.tela == Tela::TRABALHO) {
+            estado.estado_trabalho.eventos.push_back({{}, key, mods, General_Op::TECLA});
         }
     }
 }
@@ -4049,8 +4091,201 @@ public:
     static const std::size_t max_floats = 512*1024;
 };
 
+
+enum class EstadoTrabalho {
+    OK,
+};
+
+enum class EntradaTrabalho {
+    NORMAL,
+};
+
+// std::size_t vertice_maluco = 0;
+
+struct CoisasTrabalho {
+    CoisasTrabalho(std::string imagem) : x{0}, y{0}, n{0} {
+        glGenBuffers(1, &extra_vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, extra_vbo);
+        glBufferData(GL_ARRAY_BUFFER, 128*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+        
+        glGenVertexArrays(1, &extra_vao);
+        glBindVertexArray(extra_vao);
+        
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+        glEnableVertexAttribArray(1);
+
+
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, max_floats*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+        
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+        
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+        glEnableVertexAttribArray(1);
+        
+        glGenBuffers(1, &ebo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, max_floats*sizeof (unsigned), nullptr, GL_DYNAMIC_DRAW);
+
+        glBindVertexArray(0);
+
+        estado = EstadoTrabalho::OK;
+        estado_entrada = EntradaTrabalho::NORMAL;
+        last_size = 0;
+        edge_count = 0;
+        last_gen = 0;
+
+        image_data = stbi_load(imagem.c_str(), &x, &y, &n, 0);
+        if (!image_data) {
+            std::cerr << "nao carregou imagem \"" << imagem << "\"" << std::endl;
+            std::exit(1);
+        }
+        if (n != 3 || x != y) {
+            std::cout << "que estranho " << x << ' ' << y << ' ' << n << std::endl;
+        }
+        inicia();
+    }
+    ~CoisasTrabalho() {
+        stbi_image_free(image_data);
+
+    }
+
+    void reset(std::string imagem) {
+        // reseta tudo menos vbo e outros
+        stbi_image_free(image_data);
+        estado = EstadoTrabalho::OK;
+        estado_entrada = EntradaTrabalho::NORMAL;
+        last_size = 0;
+        edge_count = 0;
+        last_gen = 0;
+        dcel.reset();
+        
+        image_data = stbi_load(imagem.c_str(), &x, &y, &n, 0);
+        if (!image_data) {
+            std::cerr << "nao carregou imagem \"" << imagem << "\"" << std::endl;
+            std::exit(1);
+        }
+        inicia();
+    }
+
+    Cor encontra_cor(Ponto p) {
+        double p_x = std::floor(((p[0] + 1.0) / 2.0) * x);
+        std::size_t i_x = std::min(x, static_cast<std::size_t>(p_x));
+        
+        double p_y = std::floor(((p[0] + 1.0) / 2.0) * y);
+        std::size_t i_y = std::min(y, static_cast<std::size_t>(p_y));
+        std::cout << "foi buscada a cor do pixel " << i_x << ' ' << i_y << std::endl;
+
+        unsigned char r = image_data[i_y * y * n + i_x * n + 0];
+        unsigned char g = image_data[i_y * y * n + i_x * n + 1];
+        unsigned char b = image_data[i_y * y * n + i_x * n + 2];
+
+        return Cor(r, g, b);
+    }
+
+    bool adiciona_ponto(Ponto p) {
+        double p_x = std::floor(((p[0] + 1.0) / 2.0) * x);
+        std::size_t i_x = std::min(x, static_cast<std::size_t>(p_x));
+        
+        double p_y = std::floor(((p[0] + 1.0) / 2.0) * y);
+        std::size_t i_y = std::min(y, static_cast<std::size_t>(p_y));
+        std::cout << "foi adicionado o pixel " << i_x << ' ' << i_y << std::endl;
+
+        double new_x = (((static_cast<double>(i_x)) / x) * 2.0) - 1.0 + (1.0 / x);
+        double new_y = (((static_cast<double>(i_y)) / y) * 2.0) - 1.0 + (1.0 / y);
+
+        double lim_inf = (((0) / x) * 2.0) - 1.0 + (1.0 / x);
+        double lim_sup = (((x-1) / x) * 2.0) - 1.0 + (1.0 / x);
+        if (new_x < lim_inf || new_x > lim_sup || new_y < lim_inf || new_y > lim_sup) {
+            std::cout << "nao entendi " << new_x << ' ' << new_y << std::endl;
+            return false;
+        }
+        Ponto new_p = {new_x, new_y};
+
+        auto [em_alguma_aresta, aresta] = dcel.em_alguma_aresta(new_p);
+        if (em_alguma_aresta) {
+            // ignorar esse caso por enquanto
+            return false;
+        }
+        std::size_t f = dcel.qual_face(new_p);
+
+        auto [verts_r, v_invs] = trabalho.dcel->vec_vertices();
+        auto [edges_r, e_invs] = trabalho.dcel->vec_edges();
+        auto [faces_r, e_invs] = trabalho.dcel->vec_faces();
+
+        auto& verts = verts_r.get();
+        auto& edges = edges_r.get();
+        auto& faces = faces_r.get();
+
+        auto start = faces[f].edge;
+        auto e = start;
+        do {
+            e = e->next;
+            if (left(e->origin->xy, e->twin->origin->xy, new_p)) break;
+        } while (e != start);
+
+        auto e_bottom = e;
+        auto e_right = e_bottom->next;
+        auto e_top = e_right->next;
+        auto e_left = e_top->next;
+        if (e_left->next != e_bottom) {
+            std::cout << "algo deu errado" << std::endl;
+        }
+        
+        // encontra interseções
+
+    }
+private:
+    void inicia() {
+        double lim_inf = (((0) / x) * 2.0) - 1.0 + (1.0 / x);
+        double lim_sup = (((x-1) / x) * 2.0) - 1.0 + (1.0 / x);
+
+        // double lim_inf = -1.0 + (1.0 / x);
+        // double lim_sup =  1.0 - (1.0 / x);
+        dcel = std::make_unique<DCEL>({
+            {lim_inf, lim_inf},
+            {lim_sup, lim_inf},
+            {lim_sup, lim_sup},
+            {lim_inf, lim_sup}
+        });
+
+    }
+
+public:
+    int x;
+    int y;
+    int n;
+    unsigned char* image_data;
+
+    unsigned vbo;
+    unsigned vao;
+    unsigned ebo;
+    unsigned faces_vao;
+    unsigned faces_ebo;
+    unsigned extra_vbo;
+    unsigned extra_vao;
+
+    std::size_t last_size;
+    std::size_t edge_count;
+    std::size_t last_gen;
+    EstadoTrabalho estado;
+    EntradaTrabalho estado_entrada;
+    std::unique_ptr<DCEL> dcel;
+
+    static const std::size_t max_floats = 512*1024;
+};
+
+
 const Cor base_delaunay {"#2b2831"};
 const Cor cor_dly {"#4d9184"};
+const Cor base_trabalho {"#30272b"};
+const Cor cor_trabalho {"#87914d"};
 
 class DelaunayPassoAPasso {
 public:
@@ -5200,6 +5435,7 @@ int main() {
     std::uniform_real_distribution<> dis_y(-1000.0, 1000.0);
 
     CoisasDelaunay delaunay;
+    CoisasTrabalho trabalho {"teste0.bmp"};
     DelaunayPassoAPasso passo_delaunay {estado, delaunay, point_program, color_line_program, circle_program};
 
     while (!glfwWindowShouldClose(window)) {
@@ -6656,13 +6892,13 @@ int main() {
                 estado.estado_delaunay.eventos.pop_front();
                 if (delaunay.estado == EstadoDelaunay::INICIANDO) {
                     switch (op.op) {
-                        case Delaunay_Op::CLIQUE:
+                        case General_Op::CLIQUE:
                             if (op.button_key == GLFW_MOUSE_BUTTON_LEFT && !op.mods) {
                                 // adiciona ponto
                                 delaunay.pontos.push_back(op.p);
                             }
                             break;
-                        case Delaunay_Op::TECLA:
+                        case General_Op::TECLA:
                             if (op.button_key == GLFW_KEY_T && !op.mods) {
                                 // transforma em triangulação
                                 delaunay.triangulacao_inicial();
@@ -6702,7 +6938,7 @@ int main() {
                     }
                 } else if (delaunay.estado == EstadoDelaunay::OK) {
                     switch (op.op) {
-                        case Delaunay_Op::CLIQUE:
+                        case General_Op::CLIQUE:
                             if (delaunay.estado_entrada == EntradaDelaunay::TROCANDO_ARESTA) {
                                 if (op.button_key == GLFW_MOUSE_BUTTON_LEFT && !op.mods) {
                                     double menor_d = std::numeric_limits<double>::infinity();
@@ -6749,7 +6985,7 @@ int main() {
                                 }
                             }
                             break;
-                        case Delaunay_Op::TECLA:
+                        case General_Op::TECLA:
                             if (op.button_key == GLFW_KEY_C && !op.mods) {
                                 delaunay.mostrando_circulo = !delaunay.mostrando_circulo;
                             } else if (op.button_key == GLFW_KEY_S && !op.mods) {
@@ -6783,9 +7019,9 @@ int main() {
                     }
                 } else if (delaunay.estado == EstadoDelaunay::TRIANGULANDO) {
                     switch (op.op) {
-                        case Delaunay_Op::CLIQUE:
+                        case General_Op::CLIQUE:
                             break;
-                        case Delaunay_Op::TECLA:
+                        case General_Op::TECLA:
                             if (op.button_key == GLFW_KEY_T && !op.mods) {
                                 passo_delaunay.proximo_passo();
                             }
@@ -7099,6 +7335,108 @@ int main() {
                 passo_delaunay.vai_que_e_tua();
             }
             
+        } else if (estado.tela == Tela::TRABALHO) {
+            glClearColor(base_trabalho.r(), base_trabalho.g(), base_trabalho.b(), 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            std::size_t novos_pontos_aleatorios = 0;
+
+            while (estado.estado_trabalho.eventos.size() > 0) {
+                auto op = estado.estado_trabalho.eventos.front();
+                estado.estado_trabalho.eventos.pop_front();
+                if (trabalho.estado == EstadoDelaunay::OK) {
+                    switch (op.op) {
+                        case General_Op::CLIQUE:
+                            break;
+                        case General_Op::TECLA:
+                            if (op.button_key == GLFW_KEY_T && !op.mods) {
+                                // adiciona ponto por critério
+                            } else if (op.button_key == GLFW_KEY_R) {
+                                // adiciona pontos aleatórios
+                                if (!op.mods) {
+                                    ++novos_pontos_aleatorios;
+                                } else if (op.mods == GLFW_MOD_SHIFT) {
+                                    novos_pontos_aleatorios += 10;
+                                } else if (op.mods == GLFW_MOD_CONTROL) {
+                                    novos_pontos_aleatorios += 25;
+                                } else if (op.mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
+                                    novos_pontos_aleatorios += 500;
+                                }
+                            } else if (op.button_key == GLFW_KEY_T && op.mods == GLFW_MOD_SHIFT) {
+                                // reinicia
+                                trabalho.reset("teste0.bmp");
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            
+            if (novos_pontos_aleatorios > 0) {
+                while (novos_pontos_aleatorios --> 0) {
+                    Ponto p {dis_x(gen), dis_y(gen)};
+                    bool repetido = trabalho.adiciona_ponto(p);
+                    while ()
+                }
+            }
+
+            if (trabalho.last_gen < trabalho.dcel->gen()) {
+                // recalcula VBO e EBO com coisas da DCEL atualizada
+                auto [verts_r, v_invs] = trabalho.dcel->vec_vertices();
+                auto [edges_r, e_invs] = trabalho.dcel->vec_edges();
+
+                auto& verts = verts_r.get();
+                auto& edges = edges_r.get();
+
+
+                std::vector<float> ps {};
+                ps.reserve(verts.size() * 5 * sizeof (float));
+                for (std::size_t i = 0; i < verts.size(); ++i) {
+                    auto ponto = verts[i];
+                    auto cor_ponto = trabalho.encontra_cor(ponto);
+                    if (v_invs.count(i)) {
+                        ps.push_back(2.0f);
+                        ps.push_back(2.0f);
+                    } else {
+                        ps.push_back(ponto.xy[0]);
+                        ps.push_back(ponto.xy[1]);
+                    }
+                    ps.push_back(cor_ponto.r());
+                    ps.push_back(cor_ponto.g());
+                    ps.push_back(cor_ponto.b());
+                }
+
+                std::vector<unsigned> is {};
+                is.reserve((edges.size() / 2) * sizeof (unsigned));
+                for (std::size_t i = 0; i < (edges.size() / 2); ++i) {
+                    if (e_invs.count(2*i)) {
+                        is.push_back(65535);
+                        is.push_back(65535);
+                    } else {
+                        unsigned p1 = static_cast<unsigned>(edges[2*i].origin - &verts[0]);
+                        unsigned p2 = static_cast<unsigned>(edges[2*i + 1].origin - &verts[0]);
+                        is.push_back(p1);
+                        is.push_back(p2);
+                    }
+                }
+
+                glBindVertexArray(trabalho.vao);
+                glBindBuffer(GL_ARRAY_BUFFER, trabalho.vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * sizeof (float)), ps.data());
+                
+                // atualiza arestas a serem desenhadas:
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, trabalho.ebo);
+                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
+                
+                // atualiza contagem de arestas e vértices
+                trabalho.edge_count = edges.size() / 2;
+                trabalho.last_size = verts.size();
+
+                trabalho.last_gen = trabalho.dcel->gen();
+            }
+
+
         }
         //////////////////////////////////////////
 
