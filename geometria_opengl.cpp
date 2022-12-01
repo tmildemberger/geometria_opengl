@@ -4150,9 +4150,12 @@ public:
                 } else if (!expandida) {
                     acao = Acao::EXPANDIR_E_VER_PROXIMO;
                 } else {
-                    acao = Acao::PROCURAR_TANGENTES;
+                    acao = Acao::COMECAR_A_PROCURAR_TANGENTES;
                 }
                 }
+                break;
+            case Situacao::PROCURANDO_TANGENTES:
+                acao = Acao::PROCURAR_TANGENTES;
                 break;
             default:
                 break;
@@ -4189,10 +4192,180 @@ public:
                 }
                 break;
 
+            case Acao::COMECAR_A_PROCURAR_TANGENTES:{
+                situacao = Situacao::MOSTRANDO_POSSIVEL_TANGENTE;
+                proxima_situacao = Situacao::PROCURANDO_TANGENTES;
+
+                // etapa de combinação
+                std::size_t m = (i + j + 1) / 2;
+                std::size_t b_l_i = m - 1; // o mais da direita do lado esquerdo
+                std::size_t b_r_i = m;     // o mais da esquerda do lado direito
+
+                bool descendo_esquerda = true;
+                bool naodeu_esquerda = false;
+                bool naodeu_direita = false;
+                DCEL::Vertex* v_l = &delaunay.dcel->vertices[b_l_i];
+                DCEL::Vertex* v_r = &delaunay.dcel->vertices[b_r_i];
+                DCEL::Vertex* v_prox_l = nullptr;
+                DCEL::Edge* v_prox_l_edge = nullptr;
+                DCEL::Vertex* v_prox_r = nullptr;
+                DCEL::Edge* v_prox_r_edge = nullptr;
+
+                pacote.possivel_tangente(v_l->xy, v_r->xy);
+
+                if (v_l->edge) {
+                    DCEL::Edge* e = v_l->edge;
+                    DCEL::Edge* start = e;
+                    do {
+                        if (e->face == delaunay.dcel->faces.data() && e->twin->origin->xy[1] < v_l->xy[1]) {
+                            v_prox_l_edge = e;
+                            v_prox_l = e->twin->origin;
+                            break;
+                        }
+                        e = e->prev->twin;
+                    } while (e->origin == v_l && e != start);
+                    if (!v_prox_l) {
+                        do {
+                            if (e->face == delaunay.dcel->faces.data()) {
+                                v_prox_l_edge = e;
+                                v_prox_l = e->twin->origin;
+                                break;
+                            }
+                            e = e->prev->twin;
+                        } while (e->origin == v_l && e != start);
+                    }
+                } if (!v_prox_l) {
+                    std::cerr << "o erro foi detectado" << std::endl;
+                    proxima_situacao = Situacao::ENCONTRAMOS_ERRO;
+                    break;
+                }
+                if (v_r->edge) {
+                    DCEL::Edge* e = v_r->edge;
+                    DCEL::Edge* start = e;
+                    do {
+                        if (e->face == delaunay.dcel->faces.data() && e->prev->origin->xy[1] < v_r->xy[1]) {
+                            v_prox_r_edge = e;
+                            v_prox_r = e->prev->origin;
+                            break;
+                        }
+                        e = e->prev->twin;
+                    } while (e->origin == v_r && e != start);
+                    if (!v_prox_r) {
+                        do {
+                            if (e->face == delaunay.dcel->faces.data()) {
+                                v_prox_r_edge = e;
+                                v_prox_r = e->prev->origin;
+                                break;
+                            }
+                            e = e->prev->twin;
+                        } while (e->origin == v_r && e != start);
+                    }
+                }
+
+                caderninho.comeca_tangente(
+                    descendo_esquerda,
+                    naodeu_esquerda,
+                    naodeu_direita,
+                    v_l,
+                    v_r,
+                    v_prox_l,
+                    v_prox_l_edge,
+                    v_prox_r,
+                    v_prox_r_edge
+                );
+                }
+                break;
+            
+            case Acao::PROCURAR_TANGENTES:{
+                situacao = Situacao::MOSTRANDO_POSSIVEL_TANGENTE;
+                proxima_situacao = Situacao::PROCURANDO_TANGENTES;
+                bool encontrou = true;
+
+                if (caderninho.v_prox_l && caderninho.v_prox_r) {
+                    while (!(caderninho.naodeu_esquerda && caderninho.naodeu_direita)) {
+                        // std::cout << static_cast<std::size_t>(caderninho.v_l - delaunay.dcel->vertices.data()) << ' ' << static_cast<std::size_t>(caderninho.v_prox_l - dcel->vertices.data()) << ' ' << static_cast<std::size_t>(caderninho.v_r - dcel->vertices.data()) << ' ' << static_cast<std::size_t>(caderninho.v_prox_r - dcel->vertices.data()) << std::endl;
+                        if (caderninho.descendo_esquerda) {
+                            if (left(caderninho.v_r->xy, caderninho.v_l->xy, caderninho.v_prox_l->xy)) {
+                                // dá pra descer do lado esquerdo
+                                caderninho.v_prox_l_edge = caderninho.v_prox_l_edge->next;
+                                caderninho.v_l = caderninho.v_prox_l_edge->origin;
+                                caderninho.v_prox_l = caderninho.v_prox_l_edge->twin->origin;
+                                caderninho.naodeu_esquerda = false;
+                                caderninho.naodeu_direita = false;
+                                pacote.possivel_tangente(caderninho.v_l->xy, caderninho.v_r->xy);
+                                encontrou = false;
+                                break;
+                            }
+                            caderninho.descendo_esquerda = false;
+                            caderninho.naodeu_esquerda = true;
+                        } else {
+                            if (left(caderninho.v_prox_r->xy, caderninho.v_r->xy, caderninho.v_l->xy)) {
+                                // dá pra descer do lado direito
+                                caderninho.v_prox_r_edge = caderninho.v_prox_r_edge->prev;
+                                caderninho.v_r = caderninho.v_prox_r_edge->origin;
+                                caderninho.v_prox_r = caderninho.v_prox_r_edge->prev->origin;
+                                caderninho.naodeu_esquerda = false;
+                                caderninho.naodeu_direita = false;
+                                pacote.possivel_tangente(caderninho.v_l->xy, caderninho.v_r->xy);
+                                encontrou = false;
+                                break;
+                            }
+                            caderninho.descendo_esquerda = true;
+                            caderninho.naodeu_direita = true;
+                        }
+                    } if (encontrou) {
+                        // achamos a tangente???????????
+                        // supostamente sim
+                        {
+
+                            caderninho.v_prox_l_edge = caderninho.v_prox_l_edge->prev;
+                            caderninho.v_prox_l = caderninho.v_prox_l_edge->origin;
+                            if (caderninho.v_prox_r_edge) {
+                                // caderninho.v_prox_r_edge = caderninho.v_prox_r_edge->next;
+                                caderninho.v_prox_r = caderninho.v_prox_r_edge->twin->origin;
+                            }
+                            proxima_situacao = Situacao::COSTURANDO;
+
+                        }
+                    }
+                } else if (!caderninho.v_prox_r && caderninho.v_prox_l) {
+                    if (left(caderninho.v_r->xy, caderninho.v_l->xy, caderninho.v_prox_l->xy)) {
+                        // dá pra descer do lado esquerdo
+                        caderninho.v_prox_l_edge = caderninho.v_prox_l_edge->next;
+                        caderninho.v_l = caderninho.v_prox_l_edge->origin;
+                        caderninho.v_prox_l = caderninho.v_prox_l_edge->twin->origin;
+                        pacote.possivel_tangente(caderninho.v_l->xy, caderninho.v_r->xy);
+                        encontrou = false;
+                    } else {
+                        
+                        // aqui o mesmo
+                        {
+
+                            caderninho.v_prox_l_edge = caderninho.v_prox_l_edge->prev;
+                            caderninho.v_prox_l = caderninho.v_prox_l_edge->origin;
+                            if (caderninho.v_prox_r_edge) {
+                                // caderninho.v_prox_r_edge = caderninho.v_prox_r_edge->next;
+                                caderninho.v_prox_r = caderninho.v_prox_r_edge->twin->origin;
+                            }
+                            proxima_situacao = Situacao::COSTURANDO;
+
+                        }
+                    }
+                } else {
+                    std::cerr << "deu errado?" << std::endl;
+                    proxima_situacao = Situacao::ENCONTRAMOS_ERRO;
+                    break;
+                }
+
+                }
+                break;
+
             case Acao::A_DEFINIR:
             default:
                 break;
         }
+
+        atualiza_buffers_dcel();
 
         {
             // atualiza vbo extra para mostrar linhas da recursão atual
@@ -4304,20 +4477,37 @@ public:
                 glBindVertexArray(delaunay.extra_vao);
                 glDrawArrays(GL_LINES, 0, 4);
                 line_program.setFloat("alpha", 1.0f);
-                glLineWidth(std::max(estado.pointSize / 2.0f, 1.0f));
+                glLineWidth(std::max(estado.pointSize / 6.0f, 1.0f));
 
-                point_program.use();
-                point_program.setFloat("pointRadius", estado.pointSize);
+                // point_program.use();
+                // point_program.setFloat("pointRadius", estado.pointSize);
                 
-                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                glBindVertexArray(delaunay.vao);
-                glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+                // glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                // glBindVertexArray(delaunay.vao);
+                // glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+                mostra_dcel();
 
-                renderiza_pacote();
+                renderiza_pacote(1.0f);
                 break;
             // case
             // case Situacao::INICIANDO_NIVEL_RECURSAO:
             // case Situacao::TERMINANDO_NIVEL_RECURSAO:
+            case Situacao::MOSTRANDO_POSSIVEL_TANGENTE:
+                
+                glLineWidth(50.0f);
+                line_program.use();
+                line_program.setFloat("alpha", 0.3f);
+                glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
+                glBindVertexArray(delaunay.extra_vao);
+                glDrawArrays(GL_LINES, 0, 4);
+                line_program.setFloat("alpha", 1.0f);
+                glLineWidth(std::max(estado.pointSize / 6.0f, 1.0f));
+
+                mostra_dcel();
+
+                renderiza_pacote(0.3f);
+
+                break;
             case Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO:
             case Situacao::ACABOU:
             
@@ -4328,14 +4518,16 @@ public:
                 glBindVertexArray(delaunay.extra_vao);
                 glDrawArrays(GL_LINES, 0, 4);
                 line_program.setFloat("alpha", 1.0f);
-                glLineWidth(std::max(estado.pointSize / 2.0f, 1.0f));
+                glLineWidth(std::max(estado.pointSize / 6.0f, 1.0f));
 
-                point_program.use();
-                point_program.setFloat("pointRadius", estado.pointSize);
+                // point_program.use();
+                // point_program.setFloat("pointRadius", estado.pointSize);
                 
-                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                glBindVertexArray(delaunay.vao);
-                glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+                // glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                // glBindVertexArray(delaunay.vao);
+                // glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+                mostra_dcel();
+
                 break;
             default:
                 break;
@@ -4346,6 +4538,7 @@ private:
         A_DEFINIR,
         CASO_BASE,
         EXPANDIR_E_VER_PROXIMO,
+        COMECAR_A_PROCURAR_TANGENTES,
         PROCURAR_TANGENTES,
     };
     enum class Situacao {
@@ -4356,18 +4549,43 @@ private:
 
         PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO,
         MOSTRANDO_MUDANCAS_BASE,
+        MOSTRANDO_POSSIVEL_TANGENTE,
+        PROCURANDO_TANGENTES,
+        COSTURANDO,
         ENCONTRAMOS_ERRO,
         ACABOU,
     };
     struct Caderninho {
-        Etapa etapa_do_passo_executado;
-        Reta desenhar_essa;
-        bool desenhar_a_outra;
-        Reta tambem_desenhar_essa;
-        Ponto colorir_esse;
-        Ponto esse_tambem;
-        bool acabou;
-        RetornoAlg resultado_ate_agora;
+        bool descendo_esquerda;
+        bool naodeu_esquerda;
+        bool naodeu_direita;
+        DCEL::Vertex* v_l;
+        DCEL::Vertex* v_r;
+        DCEL::Vertex* v_prox_l;
+        DCEL::Edge* v_prox_l_edge;
+        DCEL::Vertex* v_prox_r;
+        DCEL::Edge* v_prox_r_edge;
+
+        void comeca_tangente(
+            bool descendo_esquerda_arg,
+            bool naodeu_esquerda_arg,
+            bool naodeu_direita_arg,
+            DCEL::Vertex* v_l_arg,
+            DCEL::Vertex* v_r_arg,
+            DCEL::Vertex* v_prox_l_arg,
+            DCEL::Edge* v_prox_l_edge_arg,
+            DCEL::Vertex* v_prox_r_arg,
+            DCEL::Edge* v_prox_r_edge_arg) {
+            descendo_esquerda = descendo_esquerda_arg;
+            naodeu_esquerda = naodeu_esquerda_arg;
+            naodeu_direita = naodeu_direita_arg;
+            v_l = v_l_arg;
+            v_r = v_r_arg;
+            v_prox_l = v_prox_l_arg;
+            v_prox_l_edge = v_prox_l_edge_arg;
+            v_prox_r = v_prox_r_arg;
+            v_prox_r_edge = v_prox_r_edge_arg;
+        }
     };
     struct Pacote {
         friend class DelaunayPassoAPasso;
@@ -4399,6 +4617,16 @@ private:
             preenche_buffer(4, {{p1, c1}, {p2, c1}});
         }
 
+        void possivel_tangente(Ponto p_l, Ponto p_r, Cor cor = Cor("#5f4d91")) {
+            c1 = cor;
+            pontos.clear();
+            linhas.clear();
+
+            pontos.push_back({4, 2});
+            linhas.push_back({4, 2});
+            preenche_buffer(4, {{p_l, c1}, {p_r, c1}});
+        }
+
         void preenche_buffer(std::size_t start, std::vector<std::pair<Ponto, Cor>> vec) {
             std::vector<float> ps;
             ps.reserve(vec.size() * 5 * sizeof (float));
@@ -4414,20 +4642,20 @@ private:
         }
     };
 
-    void renderiza_pacote() {
+    void renderiza_pacote(float line_alpha) {
         if (pacote.pontos.size() == 0 || pacote.linhas.size() == 0) {
             return;
         }
-        glLineWidth(std::max(estado.pointSize / 1.4f, 1.0f));
+        glLineWidth(std::max(estado.pointSize / 4.0f, 1.0f));
         line_program.use();
-        line_program.setFloat("alpha", 0.3f);
+        line_program.setFloat("alpha", line_alpha);
         glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
         glBindVertexArray(delaunay.extra_vao);
         for (std::size_t i = 0; i < pacote.linhas.size(); ++i) {
             glDrawArrays(GL_LINES, std::get<0>(pacote.linhas[i]), std::get<1>(pacote.linhas[i]));
         }
         line_program.setFloat("alpha", 1.0f);
-        glLineWidth(std::max(estado.pointSize / 2.0f, 1.0f));
+        glLineWidth(std::max(estado.pointSize / 6.0f, 1.0f));
 
         point_program.use();
         point_program.setFloat("pointRadius", estado.pointSize);
@@ -4435,6 +4663,110 @@ private:
             glDrawArrays(GL_POINTS, std::get<0>(pacote.pontos[i]), std::get<1>(pacote.pontos[i]));
         }
     }
+
+    void mostra_dcel() {
+        glBindVertexArray(delaunay.faces_vao);
+        glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
+        
+        line_program.use();
+        line_program.setFloat("alpha", 0.2f);
+        glDrawElements(GL_TRIANGLES, delaunay.triangle_count*3, GL_UNSIGNED_INT, nullptr);
+
+        glBindVertexArray(delaunay.vao);
+        glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
+
+        line_program.use();
+        line_program.setFloat("alpha", 1.0f);
+        glDrawElements(GL_LINES, delaunay.edge_count*2, GL_UNSIGNED_INT, nullptr);
+
+        point_program.use();
+        point_program.setFloat("pointRadius", estado.pointSize);
+        
+        glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+    }
+
+    void atualiza_buffers_dcel() {
+        // recalcula VBO e EBO com coisas da DCEL atualizada
+        auto& verts = delaunay.dcel->vertices;
+        auto& v_invs = delaunay.dcel->vertices_invalidas;
+        auto& edges = delaunay.dcel->edges;
+        auto& e_invs = delaunay.dcel->edges_invalidas;
+        auto& faces = delaunay.dcel->faces;
+        auto& f_invs = delaunay.dcel->faces_invalidas;
+
+        std::vector<float> ps {};
+        ps.reserve(verts.size() * 5 * sizeof (float));
+        for (std::size_t i = 0; i < verts.size(); ++i) {
+            auto ponto = verts[i];
+            if (v_invs.count(i)) {
+                ps.push_back(2.0f);
+                ps.push_back(2.0f);
+            } else {
+                ps.push_back((ponto.xy[0]+991.040)/4.0f);
+                ps.push_back(ponto.xy[1]/1000.0f);
+            }
+            ps.push_back(cor_dly.r());
+            ps.push_back(cor_dly.g());
+            ps.push_back(cor_dly.b());
+        }
+
+        std::vector<unsigned> is {};
+        is.reserve((edges.size() / 2) * sizeof (unsigned));
+        for (std::size_t i = 0; i < (edges.size() / 2); ++i) {
+            if (e_invs.count(2*i)) {
+                is.push_back(65535);
+                is.push_back(65535);
+            } else {
+                unsigned p1 = static_cast<unsigned>(edges[2*i].origin - &verts[0]);
+                unsigned p2 = static_cast<unsigned>(edges[2*i + 1].origin - &verts[0]);
+                is.push_back(p1);
+                is.push_back(p2);
+            }
+        }
+
+        glBindVertexArray(delaunay.vao);
+        glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * sizeof (float)), ps.data());
+        
+        // atualiza arestas a serem desenhadas:
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
+        
+        std::vector<unsigned> fs {};
+        fs.reserve(faces.size() * 3 * sizeof (unsigned));
+        for (std::size_t i = 1; i < faces.size(); ++i) {
+            if (f_invs.count(i)) {
+                fs.push_back(65535);
+                fs.push_back(65535);
+                fs.push_back(65535);
+            } else {
+                auto vs = delaunay.dcel->indices_dos_vertices_de_uma_face(i);
+                if (vs.size() != 3) {
+                    fs.push_back(65535);
+                    fs.push_back(65535);
+                    fs.push_back(65535);
+                }
+                for (auto v : vs) {
+                    unsigned p = static_cast<unsigned>(v);
+                    fs.push_back(p);
+                }
+            }
+        }
+
+        // atualiza triângulos a serem desenhadas:
+        glBindVertexArray(delaunay.faces_vao);
+        glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(fs.size() * sizeof (unsigned)), fs.data());
+
+        // atualiza contagem de arestas e vértices
+        delaunay.edge_count = edges.size() / 2;
+        delaunay.last_size = verts.size();
+        delaunay.triangle_count = faces.size() - 1;
+    }
+
     State& estado;
     CoisasDelaunay& delaunay;
     const Shader& point_program;
@@ -6508,6 +6840,7 @@ int main() {
                     glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
                     glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(delaunay.last_size * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
                     delaunay.last_size = delaunay.pontos.size();
+                    
                 }
 
                 if (delaunay.estado == EstadoDelaunay::OK && delaunay.last_gen < delaunay.dcel->gen()) {
