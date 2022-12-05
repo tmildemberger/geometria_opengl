@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <deque>
 #include <algorithm>
+#include <memory>
 #include <random>
 #include <cstdlib>
 #include <cmath>
@@ -18,12 +19,19 @@
 // #include <GLFW/glfw3.h>
 #include "shader.hpp"
 #include "Window.hpp"
-#include "texture.hpp"
-#include "drawing.hpp"
-#include "renderer.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-overflow"
+#pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#pragma GCC diagnostic ignored "-Wcast-align"
+#pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
 #include "stb_image.h"
+#pragma GCC diagnostic pop
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wgnu-anonymous-struct"
@@ -1899,6 +1907,8 @@ private:
 
     friend class CoisasDelaunay;
     friend class DelaunayPassoAPasso;
+
+    friend class CoisasTrabalho;
 
     struct EnganaCompilador {
         explicit EnganaCompilador() = default;
@@ -4133,12 +4143,25 @@ struct CoisasTrabalho {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, max_floats*sizeof (unsigned), nullptr, GL_DYNAMIC_DRAW);
 
+        glGenVertexArrays(1, &faces_vao);
+        glBindVertexArray(faces_vao);
+        
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+        glEnableVertexAttribArray(1);
+        
+        glGenBuffers(1, &faces_ebo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, faces_ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, max_floats*sizeof (unsigned), nullptr, GL_DYNAMIC_DRAW);
+
         glBindVertexArray(0);
 
         estado = EstadoTrabalho::OK;
         estado_entrada = EntradaTrabalho::NORMAL;
         last_size = 0;
         edge_count = 0;
+        triangle_count = 0;
         last_gen = 0;
 
         image_data = stbi_load(imagem.c_str(), &x, &y, &n, 0);
@@ -4163,6 +4186,7 @@ struct CoisasTrabalho {
         estado_entrada = EntradaTrabalho::NORMAL;
         last_size = 0;
         edge_count = 0;
+        triangle_count = 0;
         last_gen = 0;
         dcel.reset();
         
@@ -4176,10 +4200,11 @@ struct CoisasTrabalho {
 
     Cor encontra_cor(Ponto p) {
         double p_x = std::floor(((p[0] + 1.0) / 2.0) * x);
-        std::size_t i_x = std::min(x, static_cast<std::size_t>(p_x));
+        int i_x = std::min(x, static_cast<int>(p_x));
         
-        double p_y = std::floor(((p[0] + 1.0) / 2.0) * y);
-        std::size_t i_y = std::min(y, static_cast<std::size_t>(p_y));
+        double p_y = std::floor(((p[1] + 1.0) / 2.0) * y);
+        int i_y = std::min(y, static_cast<int>(p_y));
+        std::cout << p[0] << ' ' << p[1] << " -- " << p_x << ' ' << p_y << std::endl;
         std::cout << "foi buscada a cor do pixel " << i_x << ' ' << i_y << std::endl;
 
         unsigned char r = image_data[i_y * y * n + i_x * n + 0];
@@ -4191,68 +4216,87 @@ struct CoisasTrabalho {
 
     bool adiciona_ponto(Ponto p) {
         double p_x = std::floor(((p[0] + 1.0) / 2.0) * x);
-        std::size_t i_x = std::min(x, static_cast<std::size_t>(p_x));
+        int i_x = std::min(x, static_cast<int>(p_x));
         
-        double p_y = std::floor(((p[0] + 1.0) / 2.0) * y);
-        std::size_t i_y = std::min(y, static_cast<std::size_t>(p_y));
+        double p_y = std::floor(((p[1] + 1.0) / 2.0) * y);
+        int i_y = std::min(y, static_cast<int>(p_y));
         std::cout << "foi adicionado o pixel " << i_x << ' ' << i_y << std::endl;
 
         double new_x = (((static_cast<double>(i_x)) / x) * 2.0) - 1.0 + (1.0 / x);
         double new_y = (((static_cast<double>(i_y)) / y) * 2.0) - 1.0 + (1.0 / y);
 
         double lim_inf = (((0) / x) * 2.0) - 1.0 + (1.0 / x);
-        double lim_sup = (((x-1) / x) * 2.0) - 1.0 + (1.0 / x);
+        double lim_sup = ((static_cast<double>(x-1) / x) * 2.0) - 1.0 + (1.0 / x);
         if (new_x < lim_inf || new_x > lim_sup || new_y < lim_inf || new_y > lim_sup) {
             std::cout << "nao entendi " << new_x << ' ' << new_y << std::endl;
             return false;
         }
         Ponto new_p = {new_x, new_y};
 
-        auto [em_alguma_aresta, aresta] = dcel.em_alguma_aresta(new_p);
+        dcel->reserva_espacos(4, 8, 5);
+        auto [em_alguma_aresta, aresta] = dcel->em_alguma_aresta(new_p);
         if (em_alguma_aresta) {
             // ignorar esse caso por enquanto
             return false;
         }
-        std::size_t f = dcel.qual_face(new_p);
+        std::size_t f = dcel->qual_face(new_p);
 
-        auto [verts_r, v_invs] = trabalho.dcel->vec_vertices();
-        auto [edges_r, e_invs] = trabalho.dcel->vec_edges();
-        auto [faces_r, e_invs] = trabalho.dcel->vec_faces();
-
-        auto& verts = verts_r.get();
-        auto& edges = edges_r.get();
-        auto& faces = faces_r.get();
-
-        auto start = faces[f].edge;
+        std::array<bool, 4> ok = {true, true, true, true};
+        std::array<DCEL::Edge*, 4> es = {nullptr, nullptr, nullptr, nullptr};
+        std::array<Ponto, 4> ds = {
+            Ponto{0, -3.0},
+            Ponto{3.0, 0},
+            Ponto{0, 3.0},
+            Ponto{-3.0, 0}
+        };
+        auto start = dcel->faces[f].edge;
         auto e = start;
+        Ponto p2 = {new_x - 1.0, new_y};
         do {
+            for (std::size_t i = 0; i < 4; ++i) {
+                auto inter = intersecao_com_left(new_p, {new_x + ds[i][0], new_y + ds[i][1]}, e->origin->xy, e->twin->origin->xy);
+                if (inter == Intersecao::PROPRIA) {
+                    es[i] = e;
+                    break;
+                } else if (inter == Intersecao::IMPROPRIA) {
+                    es[i] = e;
+                    ok[i] = false;
+                }
+            }
             e = e->next;
-            if (left(e->origin->xy, e->twin->origin->xy, new_p)) break;
         } while (e != start);
 
-        auto e_bottom = e;
-        auto e_right = e_bottom->next;
-        auto e_top = e_right->next;
-        auto e_left = e_top->next;
-        if (e_left->next != e_bottom) {
-            std::cout << "algo deu errado" << std::endl;
+        for (std::size_t i = 0; i < 4; ++i) {
+            if (ok[i]) {
+                auto [s, t] = intersecao(new_p, {new_x + ds[i][0], new_y + ds[i][1]}, es[i]->origin->xy, es[i]->twin->origin->xy);
+                dcel->inclui_vertice_em_aresta(static_cast<std::size_t>(es[i] - dcel->edges.data()), t);
+            } else {
+                std::cout << "deve dar errado, arrumar depois" << std::endl;
+            }
         }
-        
-        // encontra interseções
 
+        dcel->inclui_aresta(dcel->vertices.size() - 4, dcel->vertices.size() - 2);
+        double t = dist(new_p, dcel->vertices[dcel->vertices.size() - 4].xy) / 
+                   dist(dcel->vertices[dcel->vertices.size() - 4].xy, dcel->vertices[dcel->vertices.size() - 2].xy);
+        dcel->inclui_vertice_em_aresta(dcel->edges.size() - 1, t);
+
+        dcel->inclui_aresta(dcel->vertices.size() - 4, dcel->vertices.size() - 1);
+        dcel->inclui_aresta(dcel->vertices.size() - 2, dcel->vertices.size() - 1);
+        return true;
     }
 private:
     void inicia() {
         double lim_inf = (((0) / x) * 2.0) - 1.0 + (1.0 / x);
-        double lim_sup = (((x-1) / x) * 2.0) - 1.0 + (1.0 / x);
+        double lim_sup = ((static_cast<double>(x-1) / x) * 2.0) - 1.0 + (1.0 / x);
 
         // double lim_inf = -1.0 + (1.0 / x);
         // double lim_sup =  1.0 - (1.0 / x);
-        dcel = std::make_unique<DCEL>({
+        dcel = std::make_unique<DCEL>(std::vector<Ponto>{
             {lim_inf, lim_inf},
             {lim_sup, lim_inf},
             {lim_sup, lim_sup},
-            {lim_inf, lim_sup}
+            {lim_inf, lim_sup},
+            {lim_inf, lim_inf}
         });
 
     }
@@ -4274,6 +4318,7 @@ public:
     std::size_t last_size;
     std::size_t edge_count;
     std::size_t last_gen;
+    std::size_t triangle_count;
     EstadoTrabalho estado;
     EntradaTrabalho estado_entrada;
     std::unique_ptr<DCEL> dcel;
@@ -5196,8 +5241,6 @@ int main() {
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetKeyCallback(window, key_callback);
 
-    Renderer renderer;
-
     /*
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -5220,10 +5263,12 @@ int main() {
     Shader color_line_program {"shaders/color_line_vertex.glsl", "shaders/color_line_fragment.glsl"};
 
     Shader circle_program {"shaders/color_line_vertex.glsl", "shaders/circle_fragment.glsl", "shaders/halfcircles_geometry.glsl"};
+    Shader quad_program {"shaders/color_line_vertex.glsl", "shaders/quad_fragment.glsl", "shaders/quad_geometry.glsl"};
     
     color_line_program.setFloat("alpha", 1.0f);
     point_program.setFloat("alpha", 1.0f);
     circle_program.setFloat("alpha", 0.8f);
+    quad_program.setFloat("alpha", 1.0f);
     /*
     BufferLayout layout;
     layout.push<float>(3);
@@ -5433,6 +5478,9 @@ int main() {
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis_x(-1000.0, 1000.0);
     std::uniform_real_distribution<> dis_y(-1000.0, 1000.0);
+
+    std::uniform_real_distribution<> ok_x(-1.0, 1.0);
+    std::uniform_real_distribution<> ok_y(-1.0, 1.0);
 
     CoisasDelaunay delaunay;
     CoisasTrabalho trabalho {"teste0.bmp"};
@@ -7344,7 +7392,7 @@ int main() {
             while (estado.estado_trabalho.eventos.size() > 0) {
                 auto op = estado.estado_trabalho.eventos.front();
                 estado.estado_trabalho.eventos.pop_front();
-                if (trabalho.estado == EstadoDelaunay::OK) {
+                if (trabalho.estado == EstadoTrabalho::OK) {
                     switch (op.op) {
                         case General_Op::CLIQUE:
                             break;
@@ -7375,9 +7423,12 @@ int main() {
             
             if (novos_pontos_aleatorios > 0) {
                 while (novos_pontos_aleatorios --> 0) {
-                    Ponto p {dis_x(gen), dis_y(gen)};
-                    bool repetido = trabalho.adiciona_ponto(p);
-                    while ()
+                    Ponto p {ok_x(gen), ok_y(gen)};
+                    bool foi = trabalho.adiciona_ponto(p);
+                    while (!foi) {
+                        p = {ok_x(gen), ok_y(gen)};
+                        foi = trabalho.adiciona_ponto(p);
+                    }
                 }
             }
 
@@ -7385,16 +7436,17 @@ int main() {
                 // recalcula VBO e EBO com coisas da DCEL atualizada
                 auto [verts_r, v_invs] = trabalho.dcel->vec_vertices();
                 auto [edges_r, e_invs] = trabalho.dcel->vec_edges();
+                auto [faces_r, f_invs] = trabalho.dcel->vec_faces();
 
                 auto& verts = verts_r.get();
                 auto& edges = edges_r.get();
-
+                auto& faces = faces_r.get();
 
                 std::vector<float> ps {};
                 ps.reserve(verts.size() * 5 * sizeof (float));
                 for (std::size_t i = 0; i < verts.size(); ++i) {
                     auto ponto = verts[i];
-                    auto cor_ponto = trabalho.encontra_cor(ponto);
+                    auto cor_ponto = trabalho.encontra_cor(ponto.xy);
                     if (v_invs.count(i)) {
                         ps.push_back(2.0f);
                         ps.push_back(2.0f);
@@ -7429,6 +7481,91 @@ int main() {
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, trabalho.ebo);
                 glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
                 
+                trabalho.triangle_count = 0;
+                std::vector<unsigned> fs {};
+                fs.reserve(verts.size() * 16 * sizeof (unsigned));
+                for (std::size_t i = 1; i < faces.size(); ++i) {
+                    if (f_invs.count(i)) {
+                        // acho que não precisa nada
+                    } else {
+                        // auto vs = trabalho.dcel->indices_dos_vertices_de_uma_face(i);
+                        auto start = faces[i].edge;
+                        auto e = start;
+                        while (!left(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy)) {
+                            e = e->next;
+                        }
+                        auto left = e->prev;
+                        auto right = e->next;
+                        bool primeira_parte = true;
+                        while (area_orientada(left->origin->xy, right->origin->xy, right->twin->origin->xy) != 0.0) {
+                            // emite triângulo
+                            ++trabalho.triangle_count;
+                            unsigned p1 = static_cast<unsigned>(left->origin - verts.data());
+                            unsigned p2 = static_cast<unsigned>(left->twin->origin - verts.data());
+                            unsigned p3 = static_cast<unsigned>(right->origin - verts.data());
+
+                            fs.push_back(p1);
+                            fs.push_back(p2);
+                            fs.push_back(p3);
+
+                            left = left->prev;
+
+                        }
+                        if (left->prev == right) {
+                            // emite último triângulo
+                            ++trabalho.triangle_count;
+                            unsigned p1 = static_cast<unsigned>(left->origin - verts.data());
+                            unsigned p2 = static_cast<unsigned>(left->twin->origin - verts.data());
+                            unsigned p3 = static_cast<unsigned>(right->origin - verts.data());
+
+                            fs.push_back(p1);
+                            fs.push_back(p2);
+                            fs.push_back(p3);
+                        } else {
+                            left = left->next;
+                            right = right->next;
+                            while (right != left) {
+                                // emite triângulo
+                                ++trabalho.triangle_count;
+                                unsigned p1 = static_cast<unsigned>(right->prev->origin - verts.data());
+                                unsigned p2 = static_cast<unsigned>(right->origin - verts.data());
+                                unsigned p3 = static_cast<unsigned>(left->origin - verts.data());
+
+                                fs.push_back(p1);
+                                fs.push_back(p2);
+                                fs.push_back(p3);
+
+                                right = right->next;
+                            }
+                        }
+                        // while (true) {
+                        //     if (direita_fixa) {
+                        //         if (left == right)
+                        //         if (area_orientada(left->origin->xy, right->origin->xy, right->twin->origin->xy) == 0.0) {
+                        //             direita_fixa = false;
+                        //         } else {
+                        //             // emite triângulo
+                        //             unsigned p1 = static_cast<unsigned>(left->origin - verts.data());
+                        //             unsigned p2 = static_cast<unsigned>(left->twin->origin - verts.data());
+                        //             unsigned p3 = static_cast<unsigned>(right->origin - verts.data());
+
+                        //             fs.push_back(p1);
+                        //             fs.push_back(p2);
+                        //             fs.push_back(p3);
+
+                        //             left = left->prev;
+                        //         }
+                        //     }
+                        // }
+                    }
+                }
+
+                // atualiza triângulos a serem desenhadas:
+                glBindVertexArray(trabalho.faces_vao);
+                glBindBuffer(GL_ARRAY_BUFFER, trabalho.vbo);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, trabalho.faces_ebo);
+                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(fs.size() * sizeof (unsigned)), fs.data());
+
                 // atualiza contagem de arestas e vértices
                 trabalho.edge_count = edges.size() / 2;
                 trabalho.last_size = verts.size();
@@ -7436,6 +7573,13 @@ int main() {
                 trabalho.last_gen = trabalho.dcel->gen();
             }
 
+            glBindVertexArray(trabalho.faces_vao);
+            glBindBuffer(GL_ARRAY_BUFFER, trabalho.vbo);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, trabalho.faces_ebo);
+            
+            color_line_program.use();
+            color_line_program.setFloat("alpha", 1.0f);
+            glDrawElements(GL_TRIANGLES, trabalho.triangle_count*3, GL_UNSIGNED_INT, nullptr);
 
         }
         //////////////////////////////////////////
