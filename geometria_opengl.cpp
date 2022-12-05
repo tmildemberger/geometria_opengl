@@ -96,96 +96,96 @@ double dist(Ponto p1, Ponto p2) {
 // }
 
 // ângulo entre p1p2 e p1p3
-double angulo_interno(Ponto p1, Ponto p2, Ponto p3) {
-    double angulo_p2 = std::atan2(p2[1] - p1[1], p2[0] - p1[0]);
-    double angulo_p3 = std::atan2(p3[1] - p1[1], p3[0] - p1[0]);
-    double angulo = angulo_p2 - angulo_p3;
-    if (angulo < 0.) {
-        angulo += 2 * 3.14159265358979323846;
-    }
-    return angulo;
-}
+// double angulo_interno(Ponto p1, Ponto p2, Ponto p3) {
+//     double angulo_p2 = std::atan2(p2[1] - p1[1], p2[0] - p1[0]);
+//     double angulo_p3 = std::atan2(p3[1] - p1[1], p3[0] - p1[0]);
+//     double angulo = angulo_p2 - angulo_p3;
+//     if (angulo < 0.) {
+//         angulo += 2 * 3.14159265358979323846;
+//     }
+//     return angulo;
+// }
 
-std::vector<Ponto> fecho_convexo(std::vector<Ponto> pontos) {
-    // recebe 'pontos' como cópia mesmo, já que teremos que mudar a ordem dele
-    std::vector<Ponto> fecho;
-    std::size_t n = pontos.size();
-    fecho.reserve(n);
+// std::vector<Ponto> fecho_convexo(std::vector<Ponto> pontos) {
+//     // recebe 'pontos' como cópia mesmo, já que teremos que mudar a ordem dele
+//     std::vector<Ponto> fecho;
+//     std::size_t n = pontos.size();
+//     fecho.reserve(n);
 
-    std::sort(pontos.begin(), pontos.end(), [](Ponto p1, Ponto p2) {
-        // ordena pela coordenada x, do maior até o menor
-        return p1[0] > p2[0];
-    });
+//     std::sort(pontos.begin(), pontos.end(), [](Ponto p1, Ponto p2) {
+//         // ordena pela coordenada x, do maior até o menor
+//         return p1[0] > p2[0];
+//     });
     
-    // std::cout << "terminada ordenação, veja:" << std::endl;
-    // for (std::size_t i = 0; i < pontos.size(); ++i) {
-    //     std::cout << pontos[i][0] << ' ' << pontos[i][1] << std::endl;
-    // }
-    // std::cout << "----- Começo do calculo do fecho superior" << std::endl;
+//     // std::cout << "terminada ordenação, veja:" << std::endl;
+//     // for (std::size_t i = 0; i < pontos.size(); ++i) {
+//     //     std::cout << pontos[i][0] << ' ' << pontos[i][1] << std::endl;
+//     // }
+//     // std::cout << "----- Começo do calculo do fecho superior" << std::endl;
 
-    // adiciona os dois pontos mais da esquerda para o fecho
-    fecho.push_back(pontos[pontos.size() - 1]);
-    fecho.push_back(pontos[pontos.size() - 2]);
+//     // adiciona os dois pontos mais da esquerda para o fecho
+//     fecho.push_back(pontos[pontos.size() - 1]);
+//     fecho.push_back(pontos[pontos.size() - 2]);
     
-    for (std::size_t i = pontos.size() - 2; i > 0; --i) {
-        std::size_t j = fecho.size();
-        while (j >= 2 && !left(pontos[i-1], fecho[j-1], fecho[j-2])) {
-            --j;
-            fecho.pop_back();
-        }
-        fecho.push_back(pontos[i-1]);
-    }
+//     for (std::size_t i = pontos.size() - 2; i > 0; --i) {
+//         std::size_t j = fecho.size();
+//         while (j >= 2 && !left(pontos[i-1], fecho[j-1], fecho[j-2])) {
+//             --j;
+//             fecho.pop_back();
+//         }
+//         fecho.push_back(pontos[i-1]);
+//     }
 
-    // std::cout << "fim do calculo do fecho superior, veja:" << std::endl;
-    // for (std::size_t i = 0; i < fecho.size(); ++i) {
-    //     std::cout << fecho[i][0] << ' ' << fecho[i][1] << std::endl;
-    // }
-    // std::cout << "-----começo do calculo do resto" << std::endl;
+//     // std::cout << "fim do calculo do fecho superior, veja:" << std::endl;
+//     // for (std::size_t i = 0; i < fecho.size(); ++i) {
+//     //     std::cout << fecho[i][0] << ' ' << fecho[i][1] << std::endl;
+//     // }
+//     // std::cout << "-----começo do calculo do resto" << std::endl;
 
 
-    std::vector<Ponto> fecho_inferior;
-    fecho_inferior.reserve(n);
+//     std::vector<Ponto> fecho_inferior;
+//     fecho_inferior.reserve(n);
 
-    // adiciona os dois pontos mais da direita para o fecho
-    fecho_inferior.push_back(pontos[0]);
-    fecho_inferior.push_back(pontos[1]);
+//     // adiciona os dois pontos mais da direita para o fecho
+//     fecho_inferior.push_back(pontos[0]);
+//     fecho_inferior.push_back(pontos[1]);
 
-    for (std::size_t i = 2; i < n; ++i) {
-        std::size_t j = fecho_inferior.size();
-        while (j >= 2 && !left(pontos[i], fecho_inferior[j-1], fecho_inferior[j-2])) {
-            --j;
-            fecho_inferior.pop_back();
-        }
-        fecho_inferior.push_back(pontos[i]);
-    }
+//     for (std::size_t i = 2; i < n; ++i) {
+//         std::size_t j = fecho_inferior.size();
+//         while (j >= 2 && !left(pontos[i], fecho_inferior[j-1], fecho_inferior[j-2])) {
+//             --j;
+//             fecho_inferior.pop_back();
+//         }
+//         fecho_inferior.push_back(pontos[i]);
+//     }
 
-    // retira o último do fecho superior já que ele é o mesmo do início do
-    // fecho inferior
-    fecho.pop_back();
+//     // retira o último do fecho superior já que ele é o mesmo do início do
+//     // fecho inferior
+//     fecho.pop_back();
 
-    fecho.insert(
-        fecho.end(),
-        std::make_move_iterator(fecho_inferior.begin()),
-        std::make_move_iterator(fecho_inferior.end())
-    );
+//     fecho.insert(
+//         fecho.end(),
+//         std::make_move_iterator(fecho_inferior.begin()),
+//         std::make_move_iterator(fecho_inferior.end())
+//     );
 
-    // retira o último do fecho já que ele é o mesmo do início
-    fecho.pop_back();
+//     // retira o último do fecho já que ele é o mesmo do início
+//     fecho.pop_back();
 
-    // vira ao contrário já que ele está na ordem horária por algum motivo
-    std::reverse(fecho.begin(), fecho.end());
+//     // vira ao contrário já que ele está na ordem horária por algum motivo
+//     std::reverse(fecho.begin(), fecho.end());
 
-    return fecho;
-}
+//     return fecho;
+// }
 
 using Reta = std::array<Ponto, 2>;
 
-struct RetornoAlg {
-    Ponto p;
-    Reta r;
-    double distancia;
-    Ponto intersecao_encontrada;
-};
+// struct RetornoAlg {
+//     Ponto p;
+//     Reta r;
+//     double distancia;
+//     Ponto intersecao_encontrada;
+// };
 
 double sombra_reta_ponto(Ponto p, Reta r);
 
@@ -199,246 +199,246 @@ double sombra_reta_ponto(Ponto p, Reta r) {
     return c;
 }
 
-std::array<double, 2> vetor_reta_ponto(Ponto p, Reta r);
-double dist(Ponto p, Reta r);
-RetornoAlg algoritmo(std::vector<Ponto> poligono);
+// std::array<double, 2> vetor_reta_ponto(Ponto p, Reta r);
+// double dist(Ponto p, Reta r);
+// RetornoAlg algoritmo(std::vector<Ponto> poligono);
 
-std::array<double, 2> vetor_reta_ponto(Ponto p, Reta r) {
-    double x3_x1 = p[0] - r[0][0];
-    double x2_x1 = r[1][0] - r[0][0];
-    double y3_y1 = p[1] - r[0][1];
-    double y2_y1 = r[1][1] - r[0][1];
-    // double produto_escalar = x2_x1*x3_x1 + y2_y1*y3_y1;
-    // double tamanho_ao_quadrado = x2_x1*x2_x1 + y2_y1*y2_y1;
-    // double c = (produto_escalar) / (tamanho_ao_quadrado);
-    double c = (x2_x1*x3_x1 + y2_y1*y3_y1) / (x2_x1*x2_x1 + y2_y1*y2_y1);
-    double dist_x = x3_x1 - x2_x1*c;
-    double dist_y = y3_y1 - y2_y1*c;
-    // double dist_x = p[0] - x2_x1*c - r[0][0];
-    // double dist_y = p[1] - y2_y1*c - r[0][1];
-    return {dist_x, dist_y};
-}
+// std::array<double, 2> vetor_reta_ponto(Ponto p, Reta r) {
+//     double x3_x1 = p[0] - r[0][0];
+//     double x2_x1 = r[1][0] - r[0][0];
+//     double y3_y1 = p[1] - r[0][1];
+//     double y2_y1 = r[1][1] - r[0][1];
+//     // double produto_escalar = x2_x1*x3_x1 + y2_y1*y3_y1;
+//     // double tamanho_ao_quadrado = x2_x1*x2_x1 + y2_y1*y2_y1;
+//     // double c = (produto_escalar) / (tamanho_ao_quadrado);
+//     double c = (x2_x1*x3_x1 + y2_y1*y3_y1) / (x2_x1*x2_x1 + y2_y1*y2_y1);
+//     double dist_x = x3_x1 - x2_x1*c;
+//     double dist_y = y3_y1 - y2_y1*c;
+//     // double dist_x = p[0] - x2_x1*c - r[0][0];
+//     // double dist_y = p[1] - y2_y1*c - r[0][1];
+//     return {dist_x, dist_y};
+// }
 
-double dist(Ponto p, Reta r) {
-    auto [dist_x, dist_y] = vetor_reta_ponto(p, r);
-    return std::sqrt( dist_x*dist_x + dist_y*dist_y );
-}
+// double dist(Ponto p, Reta r) {
+//     auto [dist_x, dist_y] = vetor_reta_ponto(p, r);
+//     return std::sqrt( dist_x*dist_x + dist_y*dist_y );
+// }
 
-RetornoAlg algoritmo(std::vector<Ponto> poligono) {
-    std::vector<Ponto> fecho = fecho_convexo(poligono);
+// RetornoAlg algoritmo(std::vector<Ponto> poligono) {
+//     std::vector<Ponto> fecho = fecho_convexo(poligono);
     
-    // n é o número de pontos no fecho convexo
-    std::size_t n = fecho.size();
-    std::vector<double> angulos(n, 0.);
+//     // n é o número de pontos no fecho convexo
+//     std::size_t n = fecho.size();
+//     std::vector<double> angulos(n, 0.);
 
-    // adiciona manualmente primeiro e último ângulo
-    // angulos[0] = angulo_interno(fecho[n-1], fecho[0], fecho[1]);
-    // angulos[n-1] = angulo_interno(fecho[n-2], fecho[n-1], fecho[0]);
-    angulos[0] = angulo_interno(fecho[0], fecho[n-1], fecho[1]);
-    angulos[n-1] = angulo_interno(fecho[n-1], fecho[n-2], fecho[0]);
+//     // adiciona manualmente primeiro e último ângulo
+//     // angulos[0] = angulo_interno(fecho[n-1], fecho[0], fecho[1]);
+//     // angulos[n-1] = angulo_interno(fecho[n-2], fecho[n-1], fecho[0]);
+//     angulos[0] = angulo_interno(fecho[0], fecho[n-1], fecho[1]);
+//     angulos[n-1] = angulo_interno(fecho[n-1], fecho[n-2], fecho[0]);
 
-    for (std::size_t i = 1; i < n-1; ++i) {
-        angulos[i] = angulo_interno(fecho[i], fecho[i-1], fecho[i+1]);
-    }
+//     for (std::size_t i = 1; i < n-1; ++i) {
+//         angulos[i] = angulo_interno(fecho[i], fecho[i-1], fecho[i+1]);
+//     }
 
-    // pensar como ir somando os ângulos para poder descobrir
-    // o somatório entre quaisquer pontos com uma só subtração
-    std::vector<double> angulos_acumulados(n+1, 0.);
+//     // pensar como ir somando os ângulos para poder descobrir
+//     // o somatório entre quaisquer pontos com uma só subtração
+//     std::vector<double> angulos_acumulados(n+1, 0.);
 
-    for (std::size_t i = 1; i <= n; ++i) {
-        angulos_acumulados[i] = angulos_acumulados[i-1] + angulos[i-1];
-    }
+//     for (std::size_t i = 1; i <= n; ++i) {
+//         angulos_acumulados[i] = angulos_acumulados[i-1] + angulos[i-1];
+//     }
 
-    for (std::size_t i = 0; i < n; ++i) {
-        std::cout << angulos[i] << ' ';
-    }
-    std::cout << std::endl;
+//     for (std::size_t i = 0; i < n; ++i) {
+//         std::cout << angulos[i] << ' ';
+//     }
+//     std::cout << std::endl;
 
-    for (std::size_t i = 0; i <= n; ++i) {
-        std::cout << angulos_acumulados[i] << ' ';
-    }
-    std::cout << std::endl;
+//     for (std::size_t i = 0; i <= n; ++i) {
+//         std::cout << angulos_acumulados[i] << ' ';
+//     }
+//     std::cout << std::endl;
 
-    Ponto menor_ponto {};
-    Reta menor_reta {};
-    double menor_distancia { std::numeric_limits<double>::max() };
-    // agora para cada ponto, encontrar o ponto/linha oposto
-    double metade = (3.14159265358979323846 * (n - 2)) / 2;
-    for (std::size_t i = 0; i < n; ++i) {
-        bool debug = false;
-        if (i == 0) debug = true;
-        else debug = false;
-        // busca binária:
-        std::size_t l = 0;
-        std::size_t r = n;
-        Reta encontrada {};
-        Ponto a {};
-        std::size_t indice_a {};
-        while (l <= r) {
-            std::size_t m = (l + r) / 2;
-            std::size_t atual = i;
-            std::size_t meio = (i+m >= n) ? (i+m-n) : (i+m);
-            std::size_t prox = (i+m+1 >= n) ? (i+m+1-n) : (i+m+1);
-            double phi_meio_atual = 0.;
-            if (meio > atual) {
-                phi_meio_atual = angulos_acumulados[meio] - angulos_acumulados[atual+1];
-            } else {
-                // meio <= atual
-                phi_meio_atual = angulos_acumulados[n] + angulos_acumulados[meio] - angulos_acumulados[atual+1];
-            }
-            double phi_prox_atual = phi_meio_atual + angulos[meio] + angulos[atual] / 2.;
-            if (debug) {
-                std::cout << atual << ' ' << meio << ' ' << phi_meio_atual << ' ' << phi_prox_atual << ' ' << metade << std::endl;
-            }
-            if (phi_prox_atual >= metade) {
-                if (phi_meio_atual < metade) {
-                    // encontrado
-                    // encontrada = std::array<Ponto, 2>{fecho[meio], fecho[prox]};
-                    a = fecho[meio];
-                    indice_a = meio;
-                    break;
-                } else {
-                    r = m - 1;
-                }
-            } else {
-                l = m + 1;
-            }
-        }
-        // supostamente 'a' é o ponto oposto
-        std::size_t indice_a_prox = (indice_a + 1 >= n) ? (indice_a + 1 - n) : (indice_a + 1);
-        std::size_t indice_a_prev = (indice_a == 0) ? (n - 1) : (indice_a - 1);
-        Reta r1 {fecho[indice_a], fecho[indice_a_prox]};
-        Reta r2 {fecho[indice_a], fecho[indice_a_prev]};
+//     Ponto menor_ponto {};
+//     Reta menor_reta {};
+//     double menor_distancia { std::numeric_limits<double>::max() };
+//     // agora para cada ponto, encontrar o ponto/linha oposto
+//     double metade = (3.14159265358979323846 * (n - 2)) / 2;
+//     for (std::size_t i = 0; i < n; ++i) {
+//         bool debug = false;
+//         if (i == 0) debug = true;
+//         else debug = false;
+//         // busca binária:
+//         std::size_t l = 0;
+//         std::size_t r = n;
+//         Reta encontrada {};
+//         Ponto a {};
+//         std::size_t indice_a {};
+//         while (l <= r) {
+//             std::size_t m = (l + r) / 2;
+//             std::size_t atual = i;
+//             std::size_t meio = (i+m >= n) ? (i+m-n) : (i+m);
+//             std::size_t prox = (i+m+1 >= n) ? (i+m+1-n) : (i+m+1);
+//             double phi_meio_atual = 0.;
+//             if (meio > atual) {
+//                 phi_meio_atual = angulos_acumulados[meio] - angulos_acumulados[atual+1];
+//             } else {
+//                 // meio <= atual
+//                 phi_meio_atual = angulos_acumulados[n] + angulos_acumulados[meio] - angulos_acumulados[atual+1];
+//             }
+//             double phi_prox_atual = phi_meio_atual + angulos[meio] + angulos[atual] / 2.;
+//             if (debug) {
+//                 std::cout << atual << ' ' << meio << ' ' << phi_meio_atual << ' ' << phi_prox_atual << ' ' << metade << std::endl;
+//             }
+//             if (phi_prox_atual >= metade) {
+//                 if (phi_meio_atual < metade) {
+//                     // encontrado
+//                     // encontrada = std::array<Ponto, 2>{fecho[meio], fecho[prox]};
+//                     a = fecho[meio];
+//                     indice_a = meio;
+//                     break;
+//                 } else {
+//                     r = m - 1;
+//                 }
+//             } else {
+//                 l = m + 1;
+//             }
+//         }
+//         // supostamente 'a' é o ponto oposto
+//         std::size_t indice_a_prox = (indice_a + 1 >= n) ? (indice_a + 1 - n) : (indice_a + 1);
+//         std::size_t indice_a_prev = (indice_a == 0) ? (n - 1) : (indice_a - 1);
+//         Reta r1 {fecho[indice_a], fecho[indice_a_prox]};
+//         Reta r2 {fecho[indice_a], fecho[indice_a_prev]};
         
-        std::size_t prox = (i+1 >= n) ? (i+1-n) : (i+1);
-        // std::size_t prev = (i == 0) ? (n-1) : (i-1);
-        double dx = fecho[prox][0] - fecho[i][0];
-        double dy = fecho[prox][1] - fecho[i][1];
-        double rotacao = angulos[i] / 2.;
-        double new_dx = dx * std::cos(rotacao) - dy * std::sin(rotacao);
-        double new_dy = dx * std::sin(rotacao) + dy * std::cos(rotacao);
-        Ponto p_bissetriz {fecho[i][0] + new_dx, fecho[i][1] + new_dy};
-        if (debug) {
-            std::cout << "bissetriz: " << p_bissetriz[0] << ' ' << p_bissetriz[1] << std::endl;
-        }
+//         std::size_t prox = (i+1 >= n) ? (i+1-n) : (i+1);
+//         // std::size_t prev = (i == 0) ? (n-1) : (i-1);
+//         double dx = fecho[prox][0] - fecho[i][0];
+//         double dy = fecho[prox][1] - fecho[i][1];
+//         double rotacao = angulos[i] / 2.;
+//         double new_dx = dx * std::cos(rotacao) - dy * std::sin(rotacao);
+//         double new_dy = dx * std::sin(rotacao) + dy * std::cos(rotacao);
+//         Ponto p_bissetriz {fecho[i][0] + new_dx, fecho[i][1] + new_dy};
+//         if (debug) {
+//             std::cout << "bissetriz: " << p_bissetriz[0] << ' ' << p_bissetriz[1] << std::endl;
+//         }
         
-        double distancia { std::numeric_limits<double>::max() };
-        if (left(fecho[i], p_bissetriz, r1[0]) != left(fecho[i], p_bissetriz, r1[1])) {
-            distancia = dist(fecho[i], r1);
-            encontrada = r1;
-            if (debug) {
-                std::cout << "ala: " << std::endl;
-                std::cout << fecho[i][0] << ' ' << fecho[i][1] << std::endl;
-                std::cout << p_bissetriz[0] << ' ' << p_bissetriz[1] << std::endl;
-                std::cout << r1[0][0] << ' ' << r1[0][1] << std::endl;
-                std::cout << r1[1][0] << ' ' << r1[1][1] << std::endl;
-                std::cout << left(fecho[i], p_bissetriz, r1[0]) << ' ' << left(fecho[i], p_bissetriz, r1[1]) << std::endl;
-                std::cout << distancia << std::endl;
-            }
-        } else if (left(fecho[i], p_bissetriz, r2[0]) != left(fecho[i], p_bissetriz, r2[1])) {
-            distancia = dist(fecho[i], r2);
-            encontrada = r2;
-            if (debug) {
-                std::cout << "ala2: " << std::endl;
-                std::cout << fecho[i][0] << ' ' << fecho[i][1] << std::endl;
-                std::cout << p_bissetriz[0] << ' ' << p_bissetriz[1] << std::endl;
-                std::cout << r1[0][0] << ' ' << r1[0][1] << std::endl;
-                std::cout << r1[1][0] << ' ' << r1[1][1] << std::endl;
-                std::cout << left(fecho[i], p_bissetriz, r1[0]) << ' ' << left(fecho[i], p_bissetriz, r1[1]) << std::endl;
-                std::cout << distancia << std::endl;
-            }
-        } else {
-            std::cout << "estranho: " << i << std::endl;
-        }
-        double dist2 {};
-        {
-            std::size_t indice_prox = (i + 1 >= n) ? (i + 1 - n) : (i + 1);
-            std::size_t indice_prev = (i == 0) ? (n - 1) : (i - 1);
-            Reta r1_a {fecho[i], fecho[indice_prox]};
-            Reta r2_a {fecho[i], fecho[indice_prev]};
+//         double distancia { std::numeric_limits<double>::max() };
+//         if (left(fecho[i], p_bissetriz, r1[0]) != left(fecho[i], p_bissetriz, r1[1])) {
+//             distancia = dist(fecho[i], r1);
+//             encontrada = r1;
+//             if (debug) {
+//                 std::cout << "ala: " << std::endl;
+//                 std::cout << fecho[i][0] << ' ' << fecho[i][1] << std::endl;
+//                 std::cout << p_bissetriz[0] << ' ' << p_bissetriz[1] << std::endl;
+//                 std::cout << r1[0][0] << ' ' << r1[0][1] << std::endl;
+//                 std::cout << r1[1][0] << ' ' << r1[1][1] << std::endl;
+//                 std::cout << left(fecho[i], p_bissetriz, r1[0]) << ' ' << left(fecho[i], p_bissetriz, r1[1]) << std::endl;
+//                 std::cout << distancia << std::endl;
+//             }
+//         } else if (left(fecho[i], p_bissetriz, r2[0]) != left(fecho[i], p_bissetriz, r2[1])) {
+//             distancia = dist(fecho[i], r2);
+//             encontrada = r2;
+//             if (debug) {
+//                 std::cout << "ala2: " << std::endl;
+//                 std::cout << fecho[i][0] << ' ' << fecho[i][1] << std::endl;
+//                 std::cout << p_bissetriz[0] << ' ' << p_bissetriz[1] << std::endl;
+//                 std::cout << r1[0][0] << ' ' << r1[0][1] << std::endl;
+//                 std::cout << r1[1][0] << ' ' << r1[1][1] << std::endl;
+//                 std::cout << left(fecho[i], p_bissetriz, r1[0]) << ' ' << left(fecho[i], p_bissetriz, r1[1]) << std::endl;
+//                 std::cout << distancia << std::endl;
+//             }
+//         } else {
+//             std::cout << "estranho: " << i << std::endl;
+//         }
+//         double dist2 {};
+//         {
+//             std::size_t indice_prox = (i + 1 >= n) ? (i + 1 - n) : (i + 1);
+//             std::size_t indice_prev = (i == 0) ? (n - 1) : (i - 1);
+//             Reta r1_a {fecho[i], fecho[indice_prox]};
+//             Reta r2_a {fecho[i], fecho[indice_prev]};
             
-            // usar indice_a_prox
-            // std::size_t prox = (i+1 >= n) ? (i+1-n) : (i+1);
-            // std::size_t prev = (i == 0) ? (n-1) : (i-1);
-            double dx_a = fecho[indice_a_prox][0] - fecho[indice_a][0];
-            double dy_a = fecho[indice_a_prox][1] - fecho[indice_a][1];
-            double rotacao_a = angulos[indice_a] / 2.;
-            double new_dx_a = dx_a * std::cos(rotacao_a) - dy_a * std::sin(rotacao_a);
-            double new_dy_a = dx_a * std::sin(rotacao_a) + dy_a * std::cos(rotacao_a);
-            Ponto p_a_bissetriz {fecho[indice_a][0] + new_dx_a, fecho[indice_a][1] + new_dy_a};
-            if (debug) {
-                std::cout << "bissetriz_a: " << p_a_bissetriz[0] << ' ' << p_a_bissetriz[1] << std::endl;
-            }
-            if (left(fecho[indice_a], p_a_bissetriz, r1_a[0]) != left(fecho[indice_a], p_a_bissetriz, r1_a[1])) {
-                dist2 = dist(fecho[indice_a], r1_a);
-                if (debug) {
-                    std::cout << "aaaa: " << std::endl;
-                    std::cout << fecho[indice_a][0] << ' ' << fecho[indice_a][1] << std::endl;
-                    std::cout << p_a_bissetriz[0] << ' ' << p_a_bissetriz[1] << std::endl;
-                    std::cout << r1_a[0][0] << ' ' << r1_a[0][1] << std::endl;
-                    std::cout << r1_a[1][0] << ' ' << r1_a[1][1] << std::endl;
-                    std::cout << left(fecho[indice_a], p_a_bissetriz, r1_a[0]) << ' ' << left(fecho[indice_a], p_a_bissetriz, r1_a[1]) << std::endl;
-                    std::cout << dist2 << std::endl;
-                }
-            } else if (left(fecho[indice_a], p_a_bissetriz, r2_a[0]) != left(fecho[indice_a], p_a_bissetriz, r2_a[1])) {
-                dist2 = dist(fecho[indice_a], r2_a);
-                if (debug) {
-                    std::cout << "aaaaaaaaaaaa: " << std::endl;
-                    std::cout << fecho[indice_a][0] << ' ' << fecho[indice_a][1] << std::endl;
-                    std::cout << p_a_bissetriz[0] << ' ' << p_a_bissetriz[1] << std::endl;
-                    std::cout << r2_a[0][0] << ' ' << r2_a[0][1] << std::endl;
-                    std::cout << r2_a[1][0] << ' ' << r2_a[1][1] << std::endl;
-                    std::cout << left(fecho[indice_a], p_a_bissetriz, r2_a[0]) << ' ' << left(fecho[indice_a], p_a_bissetriz, r2_a[1]) << std::endl;
-                    std::cout << dist2 << std::endl;
-                }
-            } else {
-                std::cout << "hmm: " << i << ' ' << indice_a << std::endl;
-                if (debug) {
-                    std::cout << "qqqqqqqqqqqqqqqq: " << std::endl;
-                    std::cout << fecho[indice_a][0] << ' ' << fecho[indice_a][1] << std::endl;
-                    std::cout << p_a_bissetriz[0] << ' ' << p_a_bissetriz[1] << std::endl;
-                    std::cout << r1_a[0][0] << ' ' << r1_a[0][1] << std::endl;
-                    std::cout << r1_a[1][0] << ' ' << r1_a[1][1] << std::endl;
-                    std::cout << r2_a[0][0] << ' ' << r2_a[0][1] << std::endl;
-                    std::cout << r2_a[1][0] << ' ' << r2_a[1][1] << std::endl;
-                    std::cout << left(fecho[indice_a], p_a_bissetriz, r1_a[0]) << ' ' << left(fecho[indice_a], p_a_bissetriz, r1_a[1]) << std::endl;
-                    std::cout << left(fecho[indice_a], p_a_bissetriz, r2_a[0]) << ' ' << left(fecho[indice_a], p_a_bissetriz, r2_a[1]) << std::endl;
-                    std::cout << dist2 << std::endl;
-                }
-            }
-        }
-        if (distancia >= dist2 && distancia < menor_distancia) {
-            menor_distancia = distancia;
-            menor_ponto = fecho[i];
-            menor_reta = encontrada;
-        }
-    }
+//             // usar indice_a_prox
+//             // std::size_t prox = (i+1 >= n) ? (i+1-n) : (i+1);
+//             // std::size_t prev = (i == 0) ? (n-1) : (i-1);
+//             double dx_a = fecho[indice_a_prox][0] - fecho[indice_a][0];
+//             double dy_a = fecho[indice_a_prox][1] - fecho[indice_a][1];
+//             double rotacao_a = angulos[indice_a] / 2.;
+//             double new_dx_a = dx_a * std::cos(rotacao_a) - dy_a * std::sin(rotacao_a);
+//             double new_dy_a = dx_a * std::sin(rotacao_a) + dy_a * std::cos(rotacao_a);
+//             Ponto p_a_bissetriz {fecho[indice_a][0] + new_dx_a, fecho[indice_a][1] + new_dy_a};
+//             if (debug) {
+//                 std::cout << "bissetriz_a: " << p_a_bissetriz[0] << ' ' << p_a_bissetriz[1] << std::endl;
+//             }
+//             if (left(fecho[indice_a], p_a_bissetriz, r1_a[0]) != left(fecho[indice_a], p_a_bissetriz, r1_a[1])) {
+//                 dist2 = dist(fecho[indice_a], r1_a);
+//                 if (debug) {
+//                     std::cout << "aaaa: " << std::endl;
+//                     std::cout << fecho[indice_a][0] << ' ' << fecho[indice_a][1] << std::endl;
+//                     std::cout << p_a_bissetriz[0] << ' ' << p_a_bissetriz[1] << std::endl;
+//                     std::cout << r1_a[0][0] << ' ' << r1_a[0][1] << std::endl;
+//                     std::cout << r1_a[1][0] << ' ' << r1_a[1][1] << std::endl;
+//                     std::cout << left(fecho[indice_a], p_a_bissetriz, r1_a[0]) << ' ' << left(fecho[indice_a], p_a_bissetriz, r1_a[1]) << std::endl;
+//                     std::cout << dist2 << std::endl;
+//                 }
+//             } else if (left(fecho[indice_a], p_a_bissetriz, r2_a[0]) != left(fecho[indice_a], p_a_bissetriz, r2_a[1])) {
+//                 dist2 = dist(fecho[indice_a], r2_a);
+//                 if (debug) {
+//                     std::cout << "aaaaaaaaaaaa: " << std::endl;
+//                     std::cout << fecho[indice_a][0] << ' ' << fecho[indice_a][1] << std::endl;
+//                     std::cout << p_a_bissetriz[0] << ' ' << p_a_bissetriz[1] << std::endl;
+//                     std::cout << r2_a[0][0] << ' ' << r2_a[0][1] << std::endl;
+//                     std::cout << r2_a[1][0] << ' ' << r2_a[1][1] << std::endl;
+//                     std::cout << left(fecho[indice_a], p_a_bissetriz, r2_a[0]) << ' ' << left(fecho[indice_a], p_a_bissetriz, r2_a[1]) << std::endl;
+//                     std::cout << dist2 << std::endl;
+//                 }
+//             } else {
+//                 std::cout << "hmm: " << i << ' ' << indice_a << std::endl;
+//                 if (debug) {
+//                     std::cout << "qqqqqqqqqqqqqqqq: " << std::endl;
+//                     std::cout << fecho[indice_a][0] << ' ' << fecho[indice_a][1] << std::endl;
+//                     std::cout << p_a_bissetriz[0] << ' ' << p_a_bissetriz[1] << std::endl;
+//                     std::cout << r1_a[0][0] << ' ' << r1_a[0][1] << std::endl;
+//                     std::cout << r1_a[1][0] << ' ' << r1_a[1][1] << std::endl;
+//                     std::cout << r2_a[0][0] << ' ' << r2_a[0][1] << std::endl;
+//                     std::cout << r2_a[1][0] << ' ' << r2_a[1][1] << std::endl;
+//                     std::cout << left(fecho[indice_a], p_a_bissetriz, r1_a[0]) << ' ' << left(fecho[indice_a], p_a_bissetriz, r1_a[1]) << std::endl;
+//                     std::cout << left(fecho[indice_a], p_a_bissetriz, r2_a[0]) << ' ' << left(fecho[indice_a], p_a_bissetriz, r2_a[1]) << std::endl;
+//                     std::cout << dist2 << std::endl;
+//                 }
+//             }
+//         }
+//         if (distancia >= dist2 && distancia < menor_distancia) {
+//             menor_distancia = distancia;
+//             menor_ponto = fecho[i];
+//             menor_reta = encontrada;
+//         }
+//     }
 
-    return RetornoAlg {menor_ponto, menor_reta, menor_distancia, {}};
-}
+//     return RetornoAlg {menor_ponto, menor_reta, menor_distancia, {}};
+// }
 
-double area_poligono(std::vector<Ponto> poligono);
+// double area_poligono(std::vector<Ponto> poligono);
 
-double area_poligono(std::vector<Ponto> poligono) {
-    std::size_t n = poligono.size();
-    double area {};
-    for (std::size_t i = 1; i < n - 1; ++i) {
-        area += area_orientada(poligono[0], poligono[i], poligono[i + 1]);
-    }
-    // todas as áreas calculadas eram a do paralelogramo ao invés do triângulo
-    // a divisão por 2 foi deixada para o final
-    return area / 2.;
-}
+// double area_poligono(std::vector<Ponto> poligono) {
+//     std::size_t n = poligono.size();
+//     double area {};
+//     for (std::size_t i = 1; i < n - 1; ++i) {
+//         area += area_orientada(poligono[0], poligono[i], poligono[i + 1]);
+//     }
+//     // todas as áreas calculadas eram a do paralelogramo ao invés do triângulo
+//     // a divisão por 2 foi deixada para o final
+//     return area / 2.;
+// }
 
 void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param);
 
 void mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
 
-enum class DentroFora {
-    DESCONHECIDO,
-    FORA,
-    DENTRO,
-};
+// enum class DentroFora {
+//     DESCONHECIDO,
+//     FORA,
+//     DENTRO,
+// };
 
 class Cor {
 public:
@@ -469,28 +469,28 @@ private:
     unsigned long b_;
 };
 
-std::tuple<double,double> intersecao(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
+// std::tuple<double,double> intersecao(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
 
-// calcula 's' e 't' com as equações paramétricas das retas
-std::tuple<double,double> intersecao(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
-    double x4_x3 = p4[0] - p3[0];
-    double x3_x1 = p3[0] - p1[0];
-    double x2_x1 = p2[0] - p1[0];
-    double y4_y3 = p4[1] - p3[1];
-    double y3_y1 = p3[1] - p1[1];
-    double y2_y1 = p2[1] - p1[1];
-    double det = x4_x3 * y2_y1 - x2_x1 * y4_y3;
-    double s = (x4_x3 * y3_y1 - x3_x1 * y4_y3) / det;
-    double t = (x2_x1 * y3_y1 - x3_x1 * y2_y1) / det;
-    // if (std::abs(p1[0]) < 0.1 && std::abs(p1[1]) < 0.1) {
-    //     std::cout << p1[0] << ' ' << p1[1] << std::endl;
-    //     std::cout << p2[0] << ' ' << p2[1] << std::endl;
-    //     std::cout << p3[0] << ' ' << p3[1] << std::endl;
-    //     std::cout << p4[0] << ' ' << p4[1] << std::endl;
-    //     std::cout << s << ' ' << t << std::endl;
-    // }
-    return std::make_tuple(s, t);
-}
+// // calcula 's' e 't' com as equações paramétricas das retas
+// std::tuple<double,double> intersecao(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
+//     double x4_x3 = p4[0] - p3[0];
+//     double x3_x1 = p3[0] - p1[0];
+//     double x2_x1 = p2[0] - p1[0];
+//     double y4_y3 = p4[1] - p3[1];
+//     double y3_y1 = p3[1] - p1[1];
+//     double y2_y1 = p2[1] - p1[1];
+//     double det = x4_x3 * y2_y1 - x2_x1 * y4_y3;
+//     double s = (x4_x3 * y3_y1 - x3_x1 * y4_y3) / det;
+//     double t = (x2_x1 * y3_y1 - x3_x1 * y2_y1) / det;
+//     // if (std::abs(p1[0]) < 0.1 && std::abs(p1[1]) < 0.1) {
+//     //     std::cout << p1[0] << ' ' << p1[1] << std::endl;
+//     //     std::cout << p2[0] << ' ' << p2[1] << std::endl;
+//     //     std::cout << p3[0] << ' ' << p3[1] << std::endl;
+//     //     std::cout << p4[0] << ' ' << p4[1] << std::endl;
+//     //     std::cout << s << ' ' << t << std::endl;
+//     // }
+//     return std::make_tuple(s, t);
+// }
 
 enum class Intersecao {
     PROPRIA,
@@ -498,7 +498,7 @@ enum class Intersecao {
     NAO,
 };
 
-Intersecao intersecao_semireta_segmento(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
+// Intersecao intersecao_semireta_segmento(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
 
 // Intersecao intersecao_semireta_segmento(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
 //     if (std::abs(p1[0]) < 0.1 && std::abs(p1[1]) < 0.1) {
@@ -517,16 +517,16 @@ Intersecao intersecao_semireta_segmento(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
 //     return Intersecao::NAO;
 // }
 // checa se há interseção entre a semireta p1p2 e o segmento p3p4
-Intersecao intersecao_semireta_segmento(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
-    auto [s, t] = intersecao(p1, p2, p3, p4);
-    if (s > 0 && t > 0 && t < 1) {
-        return Intersecao::PROPRIA;
-    } else if (s >= 0 && t >= 0 && t <= 1) {
-        return Intersecao::IMPROPRIA;
-    } else {
-        return Intersecao::NAO;
-    }
-}
+// Intersecao intersecao_semireta_segmento(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
+//     auto [s, t] = intersecao(p1, p2, p3, p4);
+//     if (s > 0 && t > 0 && t < 1) {
+//         return Intersecao::PROPRIA;
+//     } else if (s >= 0 && t >= 0 && t <= 1) {
+//         return Intersecao::IMPROPRIA;
+//     } else {
+//         return Intersecao::NAO;
+//     }
+// }
 
 Intersecao intersecao_com_left(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
 
@@ -550,78 +550,78 @@ Intersecao intersecao_com_left(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
     }
 }
 
-Ponto ponto_intersecao(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
+// Ponto ponto_intersecao(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
 
-Ponto ponto_intersecao(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
-    auto [s, t] = intersecao(p1, p2, p3, p4);
-    return {p3[0] * (1. - t) + p4[0] * t, p3[1] * (1. - t) + p4[1] * t};
-}
+// Ponto ponto_intersecao(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
+//     auto [s, t] = intersecao(p1, p2, p3, p4);
+//     return {p3[0] * (1. - t) + p4[0] * t, p3[1] * (1. - t) + p4[1] * t};
+// }
 
-bool point_in_polygon(Ponto ponto, std::vector<Ponto> poligono);
+// bool point_in_polygon(Ponto ponto, std::vector<Ponto> poligono);
 
-// recebe um polígono sem o último ponto repetido (fecha automático)
-bool point_in_polygon(Ponto ponto, std::vector<Ponto> poligono) {
-    Ponto auxiliar {ponto[0] + 1.0, ponto[1]};
-    std::size_t n = poligono.size();
-    if (poligono[0] != poligono.back()) {
-        poligono.push_back(poligono[0]);
-    } else {
-        --n;
-    }
-    std::size_t count = 0;
-    for (std::size_t i = 0; i < n; ++i) {
-        if (poligono[i][0] < ponto[0] && poligono[i+1][0] < ponto[0]) {
-            continue;
-        }
-        Intersecao tipo = intersecao_semireta_segmento(
-            ponto, auxiliar, poligono[i], poligono[i+1]
-        );
-        if (tipo == Intersecao::PROPRIA) {
-            ++count;
-        } else if (tipo == Intersecao::IMPROPRIA) {
-            std::cout << "será" << std::endl;
-            if (poligono[i][1] > ponto[1]) ++count;
-            if (poligono[i+1][1] > ponto[1]) ++count;
-        }
-    }
-    // std::cout << count << std::endl;
-    if (count % 2 == 1) {
-        // ímpar => dentro
-        return true;
-    } else {
-        return false;
-    }
-}
+// // recebe um polígono sem o último ponto repetido (fecha automático)
+// bool point_in_polygon(Ponto ponto, std::vector<Ponto> poligono) {
+//     Ponto auxiliar {ponto[0] + 1.0, ponto[1]};
+//     std::size_t n = poligono.size();
+//     if (poligono[0] != poligono.back()) {
+//         poligono.push_back(poligono[0]);
+//     } else {
+//         --n;
+//     }
+//     std::size_t count = 0;
+//     for (std::size_t i = 0; i < n; ++i) {
+//         if (poligono[i][0] < ponto[0] && poligono[i+1][0] < ponto[0]) {
+//             continue;
+//         }
+//         Intersecao tipo = intersecao_semireta_segmento(
+//             ponto, auxiliar, poligono[i], poligono[i+1]
+//         );
+//         if (tipo == Intersecao::PROPRIA) {
+//             ++count;
+//         } else if (tipo == Intersecao::IMPROPRIA) {
+//             std::cout << "será" << std::endl;
+//             if (poligono[i][1] > ponto[1]) ++count;
+//             if (poligono[i+1][1] > ponto[1]) ++count;
+//         }
+//     }
+//     // std::cout << count << std::endl;
+//     if (count % 2 == 1) {
+//         // ímpar => dentro
+//         return true;
+//     } else {
+//         return false;
+//     }
+// }
 
-double produto_vetorial(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
+// double produto_vetorial(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
 
-double produto_vetorial(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
-    double v1_x = p2[0] - p1[0];
-    double v1_y = p2[1] - p1[1];
-    double v2_x = p4[0] - p3[0];
-    double v2_y = p4[1] - p3[1];
-    return v1_x * v2_y - v1_y * v2_x;
-}
+// double produto_vetorial(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
+//     double v1_x = p2[0] - p1[0];
+//     double v1_y = p2[1] - p1[1];
+//     double v2_x = p4[0] - p3[0];
+//     double v2_y = p4[1] - p3[1];
+//     return v1_x * v2_y - v1_y * v2_x;
+// }
 
-double produto_escalar(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
+// double produto_escalar(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
 
-double produto_escalar(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
-    double v1_x = p2[0] - p1[0];
-    double v1_y = p2[1] - p1[1];
-    double v2_x = p4[0] - p3[0];
-    double v2_y = p4[1] - p3[1];
-    return v1_x * v2_x + v1_y * v2_y;
-}
+// double produto_escalar(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
+//     double v1_x = p2[0] - p1[0];
+//     double v1_y = p2[1] - p1[1];
+//     double v2_x = p4[0] - p3[0];
+//     double v2_y = p4[1] - p3[1];
+//     return v1_x * v2_x + v1_y * v2_y;
+// }
 
-double produto_escalar_com_ortogonal(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
+// double produto_escalar_com_ortogonal(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
 
-double produto_escalar_com_ortogonal(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
-    double v1_x = p2[0] - p1[0];
-    double v1_y = p2[1] - p1[1];
-    double v2_x = p4[1] - p3[1]; // y e x trocados
-    double v2_y = p3[0] - p4[0]; // y é x invertido
-    return v1_x * v2_x + v1_y * v2_y;
-}
+// double produto_escalar_com_ortogonal(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
+//     double v1_x = p2[0] - p1[0];
+//     double v1_y = p2[1] - p1[1];
+//     double v2_x = p4[1] - p3[1]; // y e x trocados
+//     double v2_y = p3[0] - p4[0]; // y é x invertido
+//     return v1_x * v2_x + v1_y * v2_y;
+// }
 
 double distancia_ponto_reta_com_area(Ponto p1, Ponto p2, Ponto p);
 
@@ -649,79 +649,79 @@ double distancia_ponto_segmento(Ponto p1, Ponto p2, Ponto p) {
     return altura;
 }
 
-DentroFora convexidade_do_vertice(std::vector<Ponto> poligono, std::size_t i);
+// DentroFora convexidade_do_vertice(std::vector<Ponto> poligono, std::size_t i);
 
-DentroFora convexidade_do_vertice(std::vector<Ponto> poligono, std::size_t i) {
-    auto& p = poligono;
-    std::size_t prev = (i == 0) ? (p.size()-1) : (i-1);
-    std::size_t prox = (i+1 >= p.size()) ? (0) : (i+1);
-    auto& p1 = p[prev];
-    auto& p2 = p[i];
-    auto& p3 = p[prox];
-    DentroFora nova_cor {};
-    if (area_orientada(p1, p2, p3) >= 0.) {
-        nova_cor = DentroFora::DENTRO;
-    } else {
-        nova_cor = DentroFora::FORA;
-    }
-    return nova_cor;
-}
+// DentroFora convexidade_do_vertice(std::vector<Ponto> poligono, std::size_t i) {
+//     auto& p = poligono;
+//     std::size_t prev = (i == 0) ? (p.size()-1) : (i-1);
+//     std::size_t prox = (i+1 >= p.size()) ? (0) : (i+1);
+//     auto& p1 = p[prev];
+//     auto& p2 = p[i];
+//     auto& p3 = p[prox];
+//     DentroFora nova_cor {};
+//     if (area_orientada(p1, p2, p3) >= 0.) {
+//         nova_cor = DentroFora::DENTRO;
+//     } else {
+//         nova_cor = DentroFora::FORA;
+//     }
+//     return nova_cor;
+// }
 
-bool in_cone_convexo(Ponto p_i, Ponto p_j, Ponto p_i_menos, Ponto p_i_mais);
+// bool in_cone_convexo(Ponto p_i, Ponto p_j, Ponto p_i_menos, Ponto p_i_mais);
 
-bool in_cone_convexo(Ponto p_i, Ponto p_j, Ponto p_i_menos, Ponto p_i_mais) {
-    return left(p_i, p_j, p_i_menos) && left(p_j, p_i, p_i_mais);
-}
+// bool in_cone_convexo(Ponto p_i, Ponto p_j, Ponto p_i_menos, Ponto p_i_mais) {
+//     return left(p_i, p_j, p_i_menos) && left(p_j, p_i, p_i_mais);
+// }
 
-bool in_cone_reflexo(Ponto p_i, Ponto p_j, Ponto p_i_menos, Ponto p_i_mais);
+// bool in_cone_reflexo(Ponto p_i, Ponto p_j, Ponto p_i_menos, Ponto p_i_mais);
 
-bool in_cone_reflexo(Ponto p_i, Ponto p_j, Ponto p_i_menos, Ponto p_i_mais) {
-    return left(p_i_menos, p_i, p_j) || left(p_i, p_i_mais, p_j);
-}
+// bool in_cone_reflexo(Ponto p_i, Ponto p_j, Ponto p_i_menos, Ponto p_i_mais) {
+//     return left(p_i_menos, p_i, p_j) || left(p_i, p_i_mais, p_j);
+// }
 
-bool diagonal(const std::vector<Ponto>& poligono, std::size_t i, std::size_t j);
+// bool diagonal(const std::vector<Ponto>& poligono, std::size_t i, std::size_t j);
 
-bool diagonal(const std::vector<Ponto>& poligono, std::size_t i, std::size_t j) {
-    auto& p = poligono;
-    std::size_t prev = (i == 0) ? (p.size()-1) : (i-1);
-    std::size_t prox = (i+1 >= p.size()) ? (0) : (i+1);
+// bool diagonal(const std::vector<Ponto>& poligono, std::size_t i, std::size_t j) {
+//     auto& p = poligono;
+//     std::size_t prev = (i == 0) ? (p.size()-1) : (i-1);
+//     std::size_t prox = (i+1 >= p.size()) ? (0) : (i+1);
 
-    if (convexidade_do_vertice(p, i) == DentroFora::DENTRO) {
-        // isso significa convexo (por enquanto)
-        if (!in_cone_convexo(p[i], p[j], p[prev], p[prox])) {
-            return false;
-        }
-    } else {
-        if (!in_cone_reflexo(p[i], p[j], p[prev], p[prox])) {
-            return false;
-        }
-    }
+//     if (convexidade_do_vertice(p, i) == DentroFora::DENTRO) {
+//         // isso significa convexo (por enquanto)
+//         if (!in_cone_convexo(p[i], p[j], p[prev], p[prox])) {
+//             return false;
+//         }
+//     } else {
+//         if (!in_cone_reflexo(p[i], p[j], p[prev], p[prox])) {
+//             return false;
+//         }
+//     }
 
-    for (std::size_t k = 0; k < p.size(); ++k) {
-        auto k_prox = (k+1 >= p.size()) ? (0) : k+1;
-        if (k == i || k == j || k_prox == i || k_prox == j) {
-            continue;
-        }
-        if (intersecao_com_left(p[i], p[j], p[k], p[k_prox]) != Intersecao::NAO) {
-            return false;
-        }
-    }
-    return true;
-}
+//     for (std::size_t k = 0; k < p.size(); ++k) {
+//         auto k_prox = (k+1 >= p.size()) ? (0) : k+1;
+//         if (k == i || k == j || k_prox == i || k_prox == j) {
+//             continue;
+//         }
+//         if (intersecao_com_left(p[i], p[j], p[k], p[k_prox]) != Intersecao::NAO) {
+//             return false;
+//         }
+//     }
+//     return true;
+// }
 
-bool orelha(const std::vector<Ponto>& poligono, std::size_t i);
+// bool orelha(const std::vector<Ponto>& poligono, std::size_t i);
 
-bool orelha(const std::vector<Ponto>& poligono, std::size_t i) {
-    auto& p = poligono;
-    std::size_t prev = (i == 0) ? (p.size()-1) : (i-1);
-    std::size_t prox = (i+1 >= p.size()) ? (0) : (i+1);
-    if (convexidade_do_vertice(p, i) == DentroFora::DENTRO) {
-        // isso significa convexo (por enquanto)
-        return diagonal(poligono, prev, prox);
-    } else {
-        return false;
-    }
-}
+// bool orelha(const std::vector<Ponto>& poligono, std::size_t i) {
+//     auto& p = poligono;
+//     std::size_t prev = (i == 0) ? (p.size()-1) : (i-1);
+//     std::size_t prox = (i+1 >= p.size()) ? (0) : (i+1);
+//     if (convexidade_do_vertice(p, i) == DentroFora::DENTRO) {
+//         // isso significa convexo (por enquanto)
+//         return diagonal(poligono, prev, prox);
+//     } else {
+//         return false;
+//     }
+// }
 
 bool orientado_antihorario(const std::vector<Ponto>& poligono);
 
@@ -755,49 +755,49 @@ bool orientado_antihorario(const std::vector<Ponto>& poligono) {
     return curvas_a_esquerda > 0;
 }
 
-bool abaixo(Ponto p, Ponto q);
+// bool abaixo(Ponto p, Ponto q);
 
-// retorna true se 'p' está abaixo de 'q'
-bool abaixo(Ponto p, Ponto q) {
-    return (p[1] < q[1]) || (p[1] == q[1] && p[0] > q[0]);
-}
+// // retorna true se 'p' está abaixo de 'q'
+// bool abaixo(Ponto p, Ponto q) {
+//     return (p[1] < q[1]) || (p[1] == q[1] && p[0] > q[0]);
+// }
 
-enum class Categoria {
-    START,
-    SPLIT,
-    MERGE,
-    END,
-    REGULAR
-};
+// enum class Categoria {
+//     START,
+//     SPLIT,
+//     MERGE,
+//     END,
+//     REGULAR
+// };
 
-Categoria categoriza_ponto(std::vector<Ponto> poligono, std::size_t indice_ponto);
+// Categoria categoriza_ponto(std::vector<Ponto> poligono, std::size_t indice_ponto);
 
-// categoriza o ponto nas categorias acima, usando as funções acima
-Categoria categoriza_ponto(std::vector<Ponto> poligono, std::size_t indice_ponto) {
-    // isso fica mais feio mas evita usar o resto da divisão (que não é otimizado nem com -O3)
-    std::size_t next = (indice_ponto + 1 >= poligono.size()) ? 0 : indice_ponto + 1;
-    std::size_t prev = (indice_ponto == 0) ? poligono.size() - 1 : indice_ponto - 1;
+// // categoriza o ponto nas categorias acima, usando as funções acima
+// Categoria categoriza_ponto(std::vector<Ponto> poligono, std::size_t indice_ponto) {
+//     // isso fica mais feio mas evita usar o resto da divisão (que não é otimizado nem com -O3)
+//     std::size_t next = (indice_ponto + 1 >= poligono.size()) ? 0 : indice_ponto + 1;
+//     std::size_t prev = (indice_ponto == 0) ? poligono.size() - 1 : indice_ponto - 1;
 
-    bool anterior_abaixo = abaixo(poligono[prev], poligono[indice_ponto]);
-    bool proximo_abaixo = abaixo(poligono[next], poligono[indice_ponto]);
+//     bool anterior_abaixo = abaixo(poligono[prev], poligono[indice_ponto]);
+//     bool proximo_abaixo = abaixo(poligono[next], poligono[indice_ponto]);
 
-    double angulo = angulo_interno(poligono[indice_ponto], poligono[prev], poligono[next]);
+//     double angulo = angulo_interno(poligono[indice_ponto], poligono[prev], poligono[next]);
 
-    if (anterior_abaixo && proximo_abaixo) {
-        if (angulo < 3.14159265358979323846) {
-            return Categoria::START;
-        } else {
-            return Categoria::SPLIT;
-        }
-    } else if (!anterior_abaixo && !proximo_abaixo) {
-        if (angulo < 3.14159265358979323846) {
-            return Categoria::END;
-        } else {
-            return Categoria::MERGE;
-        }
-    }
-    return Categoria::REGULAR;
-}
+//     if (anterior_abaixo && proximo_abaixo) {
+//         if (angulo < 3.14159265358979323846) {
+//             return Categoria::START;
+//         } else {
+//             return Categoria::SPLIT;
+//         }
+//     } else if (!anterior_abaixo && !proximo_abaixo) {
+//         if (angulo < 3.14159265358979323846) {
+//             return Categoria::END;
+//         } else {
+//             return Categoria::MERGE;
+//         }
+//     }
+//     return Categoria::REGULAR;
+// }
 
 double in_circle(Ponto a, Ponto b, Ponto c, Ponto d);
 
@@ -829,7 +829,7 @@ double in_circle(Ponto a, Ponto b, Ponto c, Ponto d) {
 }
 
 
-using PoligonoComFuros = std::vector<std::vector<Ponto>>;
+// using PoligonoComFuros = std::vector<std::vector<Ponto>>;
 
 // PoligonoComFuros preparacao(const PoligonoComFuros& poly);
 
@@ -850,377 +850,377 @@ using PoligonoComFuros = std::vector<std::vector<Ponto>>;
 //     }
 // };
 
-template<typename T>
-struct Par {
-    T a;
-    T b;
-    T operator[](std::size_t i) { if (i == 0) return a; else return b; }
-};
+// template<typename T>
+// struct Par {
+//     T a;
+//     T b;
+//     T operator[](std::size_t i) { if (i == 0) return a; else return b; }
+// };
 
-std::vector<PoligonoComFuros> op_booleana_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2, bool calcular_intersecao = true);
+// std::vector<PoligonoComFuros> op_booleana_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2, bool calcular_intersecao = true);
 
-std::vector<PoligonoComFuros> op_booleana_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2, bool calcular_intersecao) {
-    // considerando que cada componente já tem o primeiro e último ponto iguais
-    // para poder iterar por todas as arestas dentro do loop
+// std::vector<PoligonoComFuros> op_booleana_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2, bool calcular_intersecao) {
+//     // considerando que cada componente já tem o primeiro e último ponto iguais
+//     // para poder iterar por todas as arestas dentro do loop
 
-    // considerando que cada poligono é composto por um vetor de sequências de pontos,
-    // onde a primeira é a única sequência anti-horária, e as seguintes são os buracos,
-    // que devem estar inteiramente dentro do primeiro
-    // bool compare(const std::tuple<std::size_t, std::size_t, bool, double>& a, const std::tuple<std::size_t, std::size_t, bool, double>& b) {
-    //     return std::get<3>(a) < std::get<3>(b);
-    // }
+//     // considerando que cada poligono é composto por um vetor de sequências de pontos,
+//     // onde a primeira é a única sequência anti-horária, e as seguintes são os buracos,
+//     // que devem estar inteiramente dentro do primeiro
+//     // bool compare(const std::tuple<std::size_t, std::size_t, bool, double>& a, const std::tuple<std::size_t, std::size_t, bool, double>& b) {
+//     //     return std::get<3>(a) < std::get<3>(b);
+//     // }
 
-    std::vector<std::multimap<std::size_t, std::tuple<std::size_t, std::size_t, double, double, Ponto>>> idas(poly1.size());
-    std::vector<std::multimap<std::size_t, std::tuple<std::size_t, std::size_t, double, double, Ponto>>> voltas(poly2.size());
-    // std::vector<std::size_t> num_intersecoes;
-    std::size_t num_intersecoes_geral = 0;
+//     std::vector<std::multimap<std::size_t, std::tuple<std::size_t, std::size_t, double, double, Ponto>>> idas(poly1.size());
+//     std::vector<std::multimap<std::size_t, std::tuple<std::size_t, std::size_t, double, double, Ponto>>> voltas(poly2.size());
+//     // std::vector<std::size_t> num_intersecoes;
+//     std::size_t num_intersecoes_geral = 0;
 
-    // // std::vector<std::vector<std::pair<Ponto, double>>> intersecoes;
-    // // std::map<std::pair<std::size_t, std::size_t>, std::vector<std::tuple<Ponto, double, std::size_t, std::size_t, std::size_t>>> intersecoes;
+//     // // std::vector<std::vector<std::pair<Ponto, double>>> intersecoes;
+//     // // std::map<std::pair<std::size_t, std::size_t>, std::vector<std::tuple<Ponto, double, std::size_t, std::size_t, std::size_t>>> intersecoes;
 
-    for (std::size_t p1_idx = 0; p1_idx < poly1.size(); ++p1_idx) {
-        auto& comp1 = poly1[p1_idx];
-        for (std::size_t i = 0; i < comp1.size() - 1; ++i) {
+//     for (std::size_t p1_idx = 0; p1_idx < poly1.size(); ++p1_idx) {
+//         auto& comp1 = poly1[p1_idx];
+//         for (std::size_t i = 0; i < comp1.size() - 1; ++i) {
             
-            for (std::size_t p2_idx = 0; p2_idx < poly2.size(); ++p2_idx) {
-                auto& comp2 = poly2[p2_idx];
+//             for (std::size_t p2_idx = 0; p2_idx < poly2.size(); ++p2_idx) {
+//                 auto& comp2 = poly2[p2_idx];
 
-                for (std::size_t j = 0; j < comp2.size() - 1; ++j) {
-                    Ponto& p1 = comp1[i];
-                    Ponto& p2 = comp1[i+1];
-                    Ponto& p3 = comp2[j];
-                    Ponto& p4 = comp2[j+1];
-                    // std::cout << i << ' ' << comp1.size() << std::endl;
-                    // std::cout << j << ' ' << comp2.size() << std::endl;
-                    auto [s, t] = intersecao(p1, p2, p3, p4);
-                    // std::cout << p1[0] << ' ' << p1[1] << " - " << p2[0] << ' ' << p2[1] << std::endl;
-                    // std::cout << p3[0] << ' ' << p3[1] << " - " << p4[0] << ' ' << p4[1] << std::endl;
-                    // std::cout << s << ' ' << t << std::endl;
-                    if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
-                        Ponto inter {p3[0] * (1. - t) + p4[0] * t, p3[1] * (1. - t) + p4[1] * t};
-                        bool entrando = produto_escalar_com_ortogonal(p1, p2, p3, p4) < 0;
-                        if (calcular_intersecao) {
-                            if (entrando) {
-                                voltas[p2_idx].insert({j, {p1_idx, i, t, s, inter}});
-                                std::cout << "voltas " << p2_idx << ' ' << j << ' ' << p1_idx << ' ' << i << ' ' << t << ' ' << s << ' ' << inter[0] << ' ' << inter[1] << std::endl;
-                            } else {
-                                idas[p1_idx].insert({i, {p2_idx, j, s, t, inter}});
-                                std::cout << "idas " << p1_idx << ' ' << i << ' ' << p2_idx << ' ' << j << ' ' << s << ' ' << t << ' ' << inter[0] << ' ' << inter[1] << std::endl;
-                            }
-                        } else {
-                            if (entrando) {
-                                idas[p1_idx].insert({i, {p2_idx, j, s, t, inter}});
-                                std::cout << "idas " << p1_idx << ' ' << i << ' ' << p2_idx << ' ' << j << ' ' << s << ' ' << t << ' ' << inter[0] << ' ' << inter[1] << std::endl;
-                            } else {
-                                voltas[p2_idx].insert({j, {p1_idx, i, t, s, inter}});
-                                std::cout << "voltas " << p2_idx << ' ' << j << ' ' << p1_idx << ' ' << i << ' ' << t << ' ' << s << ' ' << inter[0] << ' ' << inter[1] << std::endl;
-                            }
-                        }
-                        ++num_intersecoes_geral;
-                    }
-                }
-            }
-        }
-    }
-    // std::cout << num_intersecoes_geral;
+//                 for (std::size_t j = 0; j < comp2.size() - 1; ++j) {
+//                     Ponto& p1 = comp1[i];
+//                     Ponto& p2 = comp1[i+1];
+//                     Ponto& p3 = comp2[j];
+//                     Ponto& p4 = comp2[j+1];
+//                     // std::cout << i << ' ' << comp1.size() << std::endl;
+//                     // std::cout << j << ' ' << comp2.size() << std::endl;
+//                     auto [s, t] = intersecao(p1, p2, p3, p4);
+//                     // std::cout << p1[0] << ' ' << p1[1] << " - " << p2[0] << ' ' << p2[1] << std::endl;
+//                     // std::cout << p3[0] << ' ' << p3[1] << " - " << p4[0] << ' ' << p4[1] << std::endl;
+//                     // std::cout << s << ' ' << t << std::endl;
+//                     if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
+//                         Ponto inter {p3[0] * (1. - t) + p4[0] * t, p3[1] * (1. - t) + p4[1] * t};
+//                         bool entrando = produto_escalar_com_ortogonal(p1, p2, p3, p4) < 0;
+//                         if (calcular_intersecao) {
+//                             if (entrando) {
+//                                 voltas[p2_idx].insert({j, {p1_idx, i, t, s, inter}});
+//                                 std::cout << "voltas " << p2_idx << ' ' << j << ' ' << p1_idx << ' ' << i << ' ' << t << ' ' << s << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+//                             } else {
+//                                 idas[p1_idx].insert({i, {p2_idx, j, s, t, inter}});
+//                                 std::cout << "idas " << p1_idx << ' ' << i << ' ' << p2_idx << ' ' << j << ' ' << s << ' ' << t << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+//                             }
+//                         } else {
+//                             if (entrando) {
+//                                 idas[p1_idx].insert({i, {p2_idx, j, s, t, inter}});
+//                                 std::cout << "idas " << p1_idx << ' ' << i << ' ' << p2_idx << ' ' << j << ' ' << s << ' ' << t << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+//                             } else {
+//                                 voltas[p2_idx].insert({j, {p1_idx, i, t, s, inter}});
+//                                 std::cout << "voltas " << p2_idx << ' ' << j << ' ' << p1_idx << ' ' << i << ' ' << t << ' ' << s << ' ' << inter[0] << ' ' << inter[1] << std::endl;
+//                             }
+//                         }
+//                         ++num_intersecoes_geral;
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//     // std::cout << num_intersecoes_geral;
     
-    Par<PoligonoComFuros&> polys {poly1, poly2};
-    Par<std::vector<std::multimap<std::size_t, std::tuple<std::size_t, std::size_t, double, double, Ponto>>>&> inters {idas, voltas};
-    /*
-    for (auto aa : inters[0][0]) {
-        // bool x = decltype(aa)::nothing;
+//     Par<PoligonoComFuros&> polys {poly1, poly2};
+//     Par<std::vector<std::multimap<std::size_t, std::tuple<std::size_t, std::size_t, double, double, Ponto>>>&> inters {idas, voltas};
+//     /*
+//     for (auto aa : inters[0][0]) {
+//         // bool x = decltype(aa)::nothing;
         
-        auto& [nao, val] = aa;
-        auto& [px_idx, ix, pos_orig, pos_novo, p_inter] = val;
-        std::cout << "idas 0 " << nao << ' ' << px_idx << ' ' << ix << ' ' << ' ' << pos_orig << ' ' << pos_novo << ' ' << p_inter[0] << ' ' << p_inter[1] << std::endl;
-    }
-    auto aa = inters[1][0].equal_range(0);
-    for (auto i = aa.first; i != aa.second; ++i) {
-        // bool x = decltype(*i)::nothing;
+//         auto& [nao, val] = aa;
+//         auto& [px_idx, ix, pos_orig, pos_novo, p_inter] = val;
+//         std::cout << "idas 0 " << nao << ' ' << px_idx << ' ' << ix << ' ' << ' ' << pos_orig << ' ' << pos_novo << ' ' << p_inter[0] << ' ' << p_inter[1] << std::endl;
+//     }
+//     auto aa = inters[1][0].equal_range(0);
+//     for (auto i = aa.first; i != aa.second; ++i) {
+//         // bool x = decltype(*i)::nothing;
         
-        auto& [nao, val] = *i;
-        auto& [px_idx, ix, pos_orig, pos_novo, p_inter] = val;
-        std::cout << "voltas 0 " << nao << ' '<< px_idx << ' ' << ix << ' ' << ' ' << pos_orig << ' ' << pos_novo << ' ' << p_inter[0] << ' ' << p_inter[1] << std::endl;
-    }
-    return {};*/
-    if (num_intersecoes_geral == 0) {
-        std::size_t um = 0;
-        std::size_t dois = 1;
-        if (point_in_polygon(poly2[0][0], poly1[0])) {
-            // nada
-            ;
-        } else if (point_in_polygon(poly1[0][0], poly2[0])) {
-            // fazer o mesmo que acima mas trocado
-            um = 1;
-            dois = 0;
-        } else {
-            // nesse caso, nenhum está dentro de nenhum, e a interseção é nula;
-            // ainda não sei o que retornar nesse caso;
-            return {};
-        }
+//         auto& [nao, val] = *i;
+//         auto& [px_idx, ix, pos_orig, pos_novo, p_inter] = val;
+//         std::cout << "voltas 0 " << nao << ' '<< px_idx << ' ' << ix << ' ' << ' ' << pos_orig << ' ' << pos_novo << ' ' << p_inter[0] << ' ' << p_inter[1] << std::endl;
+//     }
+//     return {};*/
+//     if (num_intersecoes_geral == 0) {
+//         std::size_t um = 0;
+//         std::size_t dois = 1;
+//         if (point_in_polygon(poly2[0][0], poly1[0])) {
+//             // nada
+//             ;
+//         } else if (point_in_polygon(poly1[0][0], poly2[0])) {
+//             // fazer o mesmo que acima mas trocado
+//             um = 1;
+//             dois = 0;
+//         } else {
+//             // nesse caso, nenhum está dentro de nenhum, e a interseção é nula;
+//             // ainda não sei o que retornar nesse caso;
+//             return {};
+//         }
         
-        // poly2 (polys[dois]) estando dentro de poly1 (polys[um])
-        bool dentro_de_algum_buraco = false;
-        for (std::size_t i = 1; i < polys[um].size(); ++i) {
-            if (point_in_polygon(polys[dois][0][0], polys[um][i])) {
-                dentro_de_algum_buraco = true;
-                break;
-            }
-        }
-        if (dentro_de_algum_buraco) {
-            // não há interseção
-            return {};
-        }
-        // começa com parte externa e furos de poly2
-        PoligonoComFuros retorno = polys[dois];
-        std::set<std::size_t, std::greater<std::size_t>> remover;
+//         // poly2 (polys[dois]) estando dentro de poly1 (polys[um])
+//         bool dentro_de_algum_buraco = false;
+//         for (std::size_t i = 1; i < polys[um].size(); ++i) {
+//             if (point_in_polygon(polys[dois][0][0], polys[um][i])) {
+//                 dentro_de_algum_buraco = true;
+//                 break;
+//             }
+//         }
+//         if (dentro_de_algum_buraco) {
+//             // não há interseção
+//             return {};
+//         }
+//         // começa com parte externa e furos de poly2
+//         PoligonoComFuros retorno = polys[dois];
+//         std::set<std::size_t, std::greater<std::size_t>> remover;
         
-        // adiciona furos de poly1 dentro de poly2 para o retorno
-        // quando não estiverem dentro de um furo de poly2, e se algum
-        // furo de poly2 estiver dentro de um furo de poly1, marca para
-        // remover esse furo de poly2
-        for (std::size_t i = 1; i < polys[um].size(); ++i) {
-            if (point_in_polygon(polys[um][i][0], polys[dois][0])) {
-                bool adicionar = true;
-                for (std::size_t j = 1; j < polys[dois].size(); ++j) {
-                    if (point_in_polygon(polys[um][i][0], polys[dois][j])) {
-                        // não adicionar
-                        adicionar = false;
-                        break;
-                    }
-                    if (point_in_polygon(polys[dois][j][0], polys[um][i])) {
-                        // o furo 'j' está dentro de um furo de poly1
-                        remover.insert(j);
-                    }
-                }
-                if (adicionar) {
-                    retorno.push_back(polys[um][i]);
-                }
-            }
-        }
-        // remover os que foram marcados
-        for (auto indice : remover) {
-            // já está na ordem do maior para o menor índice
-            // isso funciona mesmo se for preciso excluir todos os últimos
-            std::swap(retorno[indice], retorno[retorno.size()-1]);
-            retorno.pop_back();
-        }
-        return {retorno};
-    }
-    // std::cout << num_intersecoes_geral << std::endl;
+//         // adiciona furos de poly1 dentro de poly2 para o retorno
+//         // quando não estiverem dentro de um furo de poly2, e se algum
+//         // furo de poly2 estiver dentro de um furo de poly1, marca para
+//         // remover esse furo de poly2
+//         for (std::size_t i = 1; i < polys[um].size(); ++i) {
+//             if (point_in_polygon(polys[um][i][0], polys[dois][0])) {
+//                 bool adicionar = true;
+//                 for (std::size_t j = 1; j < polys[dois].size(); ++j) {
+//                     if (point_in_polygon(polys[um][i][0], polys[dois][j])) {
+//                         // não adicionar
+//                         adicionar = false;
+//                         break;
+//                     }
+//                     if (point_in_polygon(polys[dois][j][0], polys[um][i])) {
+//                         // o furo 'j' está dentro de um furo de poly1
+//                         remover.insert(j);
+//                     }
+//                 }
+//                 if (adicionar) {
+//                     retorno.push_back(polys[um][i]);
+//                 }
+//             }
+//         }
+//         // remover os que foram marcados
+//         for (auto indice : remover) {
+//             // já está na ordem do maior para o menor índice
+//             // isso funciona mesmo se for preciso excluir todos os últimos
+//             std::swap(retorno[indice], retorno[retorno.size()-1]);
+//             retorno.pop_back();
+//         }
+//         return {retorno};
+//     }
+//     // std::cout << num_intersecoes_geral << std::endl;
     
-    // para testar isso, começamos do índice 1, pois só precisamos
-    // da informação para os furos
-    std::set<std::size_t> sem_intersecoes_poly1;
-    std::set<std::size_t> sem_intersecoes_poly2;
-    for (std::size_t p1_idx = 1; p1_idx < poly1.size(); ++p1_idx) {
-        if (idas[p1_idx].size() == 0) {
-            sem_intersecoes_poly1.insert(p1_idx);
-        }
-    }
-    for (std::size_t p2_idx = 1; p2_idx < poly2.size(); ++p2_idx) {
-        if (voltas[p2_idx].size() == 0) {
-            sem_intersecoes_poly2.insert(p2_idx);
-        }
-    }
-    // depois disso, já não tem problema remover as interseções dos multimaps
-    // à medida em que forem sendo percorridas
+//     // para testar isso, começamos do índice 1, pois só precisamos
+//     // da informação para os furos
+//     std::set<std::size_t> sem_intersecoes_poly1;
+//     std::set<std::size_t> sem_intersecoes_poly2;
+//     for (std::size_t p1_idx = 1; p1_idx < poly1.size(); ++p1_idx) {
+//         if (idas[p1_idx].size() == 0) {
+//             sem_intersecoes_poly1.insert(p1_idx);
+//         }
+//     }
+//     for (std::size_t p2_idx = 1; p2_idx < poly2.size(); ++p2_idx) {
+//         if (voltas[p2_idx].size() == 0) {
+//             sem_intersecoes_poly2.insert(p2_idx);
+//         }
+//     }
+//     // depois disso, já não tem problema remover as interseções dos multimaps
+//     // à medida em que forem sendo percorridas
     
-    // começa a percorrer
-    std::size_t intersecoes_percorridas {0};
+//     // começa a percorrer
+//     std::size_t intersecoes_percorridas {0};
     
-    std::vector<PoligonoComFuros> retorno;
-    std::vector<std::vector<Ponto>> externos;
-    std::vector<std::vector<Ponto>> furos;
+//     std::vector<PoligonoComFuros> retorno;
+//     std::vector<std::vector<Ponto>> externos;
+//     std::vector<std::vector<Ponto>> furos;
     
-    // auto pr = [](const std::vector<Ponto>& c) {
-    //     std::cout << "{";
-    //     for (auto p : c) {
-    //         std::cout << " (" << p[0] << ", " << p[1] << ")";
-    //     }
-    //     std::cout << " }" << std::endl;
-    // };
+//     // auto pr = [](const std::vector<Ponto>& c) {
+//     //     std::cout << "{";
+//     //     for (auto p : c) {
+//     //         std::cout << " (" << p[0] << ", " << p[1] << ")";
+//     //     }
+//     //     std::cout << " }" << std::endl;
+//     // };
     
-    // todos os caminhos começam em uma interseção
-    for (std::size_t poly_sel = 0; poly_sel <= 1; ++poly_sel) {
-        for (std::size_t idx_comeco = 0; idx_comeco < polys[poly_sel].size(); ++idx_comeco) {
-            while (inters[poly_sel][idx_comeco].size() > 0) {
-                std::size_t sel = (poly_sel + 1) % 2;
-                auto& [nao, val] = *(inters[poly_sel][idx_comeco].begin());
-                auto& [px_idx, ix, pos_orig, pos_novo, p_inter] = val;
-                // essa é uma interseção de saída, ao contrário do planejado na aula;
-                // mas funciona igual, e do jeito que eu já estou fazendo fica mais fácil
+//     // todos os caminhos começam em uma interseção
+//     for (std::size_t poly_sel = 0; poly_sel <= 1; ++poly_sel) {
+//         for (std::size_t idx_comeco = 0; idx_comeco < polys[poly_sel].size(); ++idx_comeco) {
+//             while (inters[poly_sel][idx_comeco].size() > 0) {
+//                 std::size_t sel = (poly_sel + 1) % 2;
+//                 auto& [nao, val] = *(inters[poly_sel][idx_comeco].begin());
+//                 auto& [px_idx, ix, pos_orig, pos_novo, p_inter] = val;
+//                 // essa é uma interseção de saída, ao contrário do planejado na aula;
+//                 // mas funciona igual, e do jeito que eu já estou fazendo fica mais fácil
                 
-                // a interseção inicial de cada caminho não é removida, pra que
-                // seja possível ver quando chegou ao início de novo.
-                // as outras interseções encontradas no caminho são removidas
+//                 // a interseção inicial de cada caminho não é removida, pra que
+//                 // seja possível ver quando chegou ao início de novo.
+//                 // as outras interseções encontradas no caminho são removidas
                 
-                Ponto inicio = p_inter;
-                std::vector<Ponto> caminho;
-                bool passou_por_fora = false;
-                bool passou_por_buraco = false;
-                // talvez isso seja desnecessário
-                // caminho.reserve(poly2.size());
+//                 Ponto inicio = p_inter;
+//                 std::vector<Ponto> caminho;
+//                 bool passou_por_fora = false;
+//                 bool passou_por_buraco = false;
+//                 // talvez isso seja desnecessário
+//                 // caminho.reserve(poly2.size());
                 
-                caminho.push_back(inicio);
-                // pr(caminho);
+//                 caminho.push_back(inicio);
+//                 // pr(caminho);
                 
-                // começa a procurar próximas interseções e próximos pontos
-                do {
-                    if (px_idx == 0) {
-                        passou_por_fora = true;
-                    } else {
-                        passou_por_buraco = true;
-                    }
-                    bool acabou_segmento = true;
-                    // std::cout << sel << ' ' << px_idx << ' ' << ix << std::endl;
-                    auto range_outras = inters[sel][px_idx].equal_range(ix);
-                    std::vector<std::pair<std::tuple<std::size_t, std::size_t, double, double, Ponto>, decltype (range_outras.first)>> ordenar;
-                    for (auto outra = range_outras.first; outra != range_outras.second; ++outra) {
-                        ordenar.push_back(std::make_pair((*outra).second, outra));
-                    }
-                    std::sort(ordenar.begin(), ordenar.end(), [](auto a, auto b) {
-                        return std::get<2>(a.first) < std::get<2>(b.first);
-                    });
-                    std::cout << "bla     :" << ' ' << px_idx << ' ' << ix << ' ' << pos_orig << ' ' << pos_novo << ' ' << caminho.back()[0] << ' ' << caminho.back()[1] << std::endl;
-                    // for (auto outra = range_outras.first; outra != range_outras.second; ++outra) {
-                    //     auto& [px_idx2, ix2, pos_orig2, pos_novo2, p_inter2] = (*outra).second;
-                    for (auto outra : ordenar) {
-                        auto& [px_idx2, ix2, pos_orig2, pos_novo2, p_inter2] = outra.first;
-                        if (px_idx == 0 && ix == 0 && px_idx2 == 1 && ix2 == 0) {
-                            std::cout << "esto aqui" << ' ' << pos_orig << ' ' << pos_novo << std::endl;
-                            std::cout << "     aqui" << ' ' << pos_orig2 << ' ' << pos_novo2 << std::endl;
-                        }
-                        if (pos_orig2 > pos_novo) {
-                            // essa interseção é a próxima;
-                            // remove interseção encontrada
-                            inters[sel][px_idx].erase(outra.second);
+//                 // começa a procurar próximas interseções e próximos pontos
+//                 do {
+//                     if (px_idx == 0) {
+//                         passou_por_fora = true;
+//                     } else {
+//                         passou_por_buraco = true;
+//                     }
+//                     bool acabou_segmento = true;
+//                     // std::cout << sel << ' ' << px_idx << ' ' << ix << std::endl;
+//                     auto range_outras = inters[sel][px_idx].equal_range(ix);
+//                     std::vector<std::pair<std::tuple<std::size_t, std::size_t, double, double, Ponto>, decltype (range_outras.first)>> ordenar;
+//                     for (auto outra = range_outras.first; outra != range_outras.second; ++outra) {
+//                         ordenar.push_back(std::make_pair((*outra).second, outra));
+//                     }
+//                     std::sort(ordenar.begin(), ordenar.end(), [](auto a, auto b) {
+//                         return std::get<2>(a.first) < std::get<2>(b.first);
+//                     });
+//                     std::cout << "bla     :" << ' ' << px_idx << ' ' << ix << ' ' << pos_orig << ' ' << pos_novo << ' ' << caminho.back()[0] << ' ' << caminho.back()[1] << std::endl;
+//                     // for (auto outra = range_outras.first; outra != range_outras.second; ++outra) {
+//                     //     auto& [px_idx2, ix2, pos_orig2, pos_novo2, p_inter2] = (*outra).second;
+//                     for (auto outra : ordenar) {
+//                         auto& [px_idx2, ix2, pos_orig2, pos_novo2, p_inter2] = outra.first;
+//                         if (px_idx == 0 && ix == 0 && px_idx2 == 1 && ix2 == 0) {
+//                             std::cout << "esto aqui" << ' ' << pos_orig << ' ' << pos_novo << std::endl;
+//                             std::cout << "     aqui" << ' ' << pos_orig2 << ' ' << pos_novo2 << std::endl;
+//                         }
+//                         if (pos_orig2 > pos_novo) {
+//                             // essa interseção é a próxima;
+//                             // remove interseção encontrada
+//                             inters[sel][px_idx].erase(outra.second);
                             
-                            // muda pro outro polígono
-                            ++sel;
-                            sel %= 2;
-                            px_idx = px_idx2;
-                            ix = ix2;
-                            pos_orig = pos_orig2;
-                            pos_novo = pos_novo2;
+//                             // muda pro outro polígono
+//                             ++sel;
+//                             sel %= 2;
+//                             px_idx = px_idx2;
+//                             ix = ix2;
+//                             pos_orig = pos_orig2;
+//                             pos_novo = pos_novo2;
                             
-                            // coloca ponto no caminho
-                            caminho.push_back(p_inter2);
+//                             // coloca ponto no caminho
+//                             caminho.push_back(p_inter2);
                             
-                            // como foi encontrada uma interseção, não chegamos ao outro
-                            // ponto do segmento
-                            acabou_segmento = false;
-                            break;
-                        }
-                    }
-                    if (acabou_segmento) {
-                        pos_novo = 0.0;
-                        caminho.push_back(polys[sel][px_idx][ix+1]);
-                        ++ix;
-                        if (ix >= polys[sel][px_idx].size() - 1) {
-                            ix = 0;
-                        }
-                    }
-                    // std::cout << "hmm" << std::endl;
-                // pr(caminho);
-                    // sai desse loop quando chegar de volta ao inicio do caminho
-                } while (caminho.back() != inicio);
+//                             // como foi encontrada uma interseção, não chegamos ao outro
+//                             // ponto do segmento
+//                             acabou_segmento = false;
+//                             break;
+//                         }
+//                     }
+//                     if (acabou_segmento) {
+//                         pos_novo = 0.0;
+//                         caminho.push_back(polys[sel][px_idx][ix+1]);
+//                         ++ix;
+//                         if (ix >= polys[sel][px_idx].size() - 1) {
+//                             ix = 0;
+//                         }
+//                     }
+//                     // std::cout << "hmm" << std::endl;
+//                 // pr(caminho);
+//                     // sai desse loop quando chegar de volta ao inicio do caminho
+//                 } while (caminho.back() != inicio);
                 
-                // std::cout << "mas nao chega aqui?" << std::endl;
+//                 // std::cout << "mas nao chega aqui?" << std::endl;
                 
-                // com o caminho completo, falta saber se é um caminho externo ou um furo
-                if ((passou_por_fora && calcular_intersecao) || (!passou_por_buraco == !calcular_intersecao)) {
-                    // std::cout << "aa" << std::endl;
-                    externos.push_back(caminho);
-                    // pr(externos.back());
-                } else {
-                    furos.push_back(caminho);
-                }
-            }
-        }
-    }
+//                 // com o caminho completo, falta saber se é um caminho externo ou um furo
+//                 if ((passou_por_fora && calcular_intersecao) || (!passou_por_buraco == !calcular_intersecao)) {
+//                     // std::cout << "aa" << std::endl;
+//                     externos.push_back(caminho);
+//                     // pr(externos.back());
+//                 } else {
+//                     furos.push_back(caminho);
+//                 }
+//             }
+//         }
+//     }
     
-    // pr(externos.back());
+//     // pr(externos.back());
     
-    // se não foram encontrados caminhos exteriores, um dos dois está dentro do outro
-    if (externos.size() == 0) {
-        // isso significa que não existem interseções passando por nenhuma das
-        // duas partes externas, e por isso sabemos que uma das duas está dentro
-        // da outra (já que também sabemos que existe pelo menos uma interseção)
+//     // se não foram encontrados caminhos exteriores, um dos dois está dentro do outro
+//     if (externos.size() == 0) {
+//         // isso significa que não existem interseções passando por nenhuma das
+//         // duas partes externas, e por isso sabemos que uma das duas está dentro
+//         // da outra (já que também sabemos que existe pelo menos uma interseção)
         
-        if (point_in_polygon(poly2[0][0], poly1[0])) {
-            externos.push_back(poly2[0]);
-        } else {
-            externos.push_back(poly1[0]);
-        }
-    }
+//         if (point_in_polygon(poly2[0][0], poly1[0])) {
+//             externos.push_back(poly2[0]);
+//         } else {
+//             externos.push_back(poly1[0]);
+//         }
+//     }
     
-    // para cada caminho exterior, haverá um PoligonoComFuros
-    // aqui nós incluímos os furos corretos para completar
-    for (std::size_t i = 0; i < externos.size(); ++i) {
-        retorno.push_back({externos[i]});
+//     // para cada caminho exterior, haverá um PoligonoComFuros
+//     // aqui nós incluímos os furos corretos para completar
+//     for (std::size_t i = 0; i < externos.size(); ++i) {
+//         retorno.push_back({externos[i]});
         
-        // adiciona todos os furos que ficam dentro dessa extremidade
-        for (std::size_t j = 0; j < furos.size(); ++j) {
-            if (point_in_polygon(furos[j][0], externos[i])) {
-                retorno[i].push_back(furos[j]);
-            }
-        }
+//         // adiciona todos os furos que ficam dentro dessa extremidade
+//         for (std::size_t j = 0; j < furos.size(); ++j) {
+//             if (point_in_polygon(furos[j][0], externos[i])) {
+//                 retorno[i].push_back(furos[j]);
+//             }
+//         }
         
-        // número de furos novos, usado abaixo
-        std::size_t num_furos = retorno[i].size() - 1;
+//         // número de furos novos, usado abaixo
+//         std::size_t num_furos = retorno[i].size() - 1;
         
-        // para um dos polígonos, só é necessário testar se os furos não
-        // estão dentro de algum dos novos furos
-        for (auto p1_idx : sem_intersecoes_poly1) {
-            if (point_in_polygon(poly1[p1_idx][0], externos[i])) {
-                bool dentro_de_algum = false;
-                for (std::size_t furos_idx = 1; furos_idx < num_furos + 1; ++furos_idx) {
-                    if (point_in_polygon(poly1[p1_idx][0], retorno[i][furos_idx])) {
-                        dentro_de_algum = true;
-                        break;
-                    }
-                }
-                if (!dentro_de_algum) {
-                    retorno[i].push_back(poly1[p1_idx]);
-                }
-            }
-        }
+//         // para um dos polígonos, só é necessário testar se os furos não
+//         // estão dentro de algum dos novos furos
+//         for (auto p1_idx : sem_intersecoes_poly1) {
+//             if (point_in_polygon(poly1[p1_idx][0], externos[i])) {
+//                 bool dentro_de_algum = false;
+//                 for (std::size_t furos_idx = 1; furos_idx < num_furos + 1; ++furos_idx) {
+//                     if (point_in_polygon(poly1[p1_idx][0], retorno[i][furos_idx])) {
+//                         dentro_de_algum = true;
+//                         break;
+//                     }
+//                 }
+//                 if (!dentro_de_algum) {
+//                     retorno[i].push_back(poly1[p1_idx]);
+//                 }
+//             }
+//         }
         
-        num_furos = retorno[i].size() - 1;
+//         num_furos = retorno[i].size() - 1;
         
-        // para o outro, é preciso testar além disso se algum dos furos já adicionados
-        // não são internos ao furo sendo percorrido
-        std::set<std::size_t, std::greater<std::size_t>> remover;
-        for (auto p2_idx : sem_intersecoes_poly2) {
-            if (point_in_polygon(poly2[p2_idx][0], externos[i])) {
-                bool dentro_de_algum = false;
-                for (std::size_t furos_idx = 1; furos_idx < num_furos + 1; ++furos_idx) {
-                    if (point_in_polygon(poly2[p2_idx][0], retorno[i][furos_idx])) {
-                        dentro_de_algum = true;
-                        break;
-                    }
-                    if (point_in_polygon(retorno[i][furos_idx][0], poly2[p2_idx])) {
-                        remover.insert(furos_idx);
-                    }
-                }
-                if (!dentro_de_algum) {
-                    retorno[i].push_back(poly2[p2_idx]);
-                }
-            }
-        }
+//         // para o outro, é preciso testar além disso se algum dos furos já adicionados
+//         // não são internos ao furo sendo percorrido
+//         std::set<std::size_t, std::greater<std::size_t>> remover;
+//         for (auto p2_idx : sem_intersecoes_poly2) {
+//             if (point_in_polygon(poly2[p2_idx][0], externos[i])) {
+//                 bool dentro_de_algum = false;
+//                 for (std::size_t furos_idx = 1; furos_idx < num_furos + 1; ++furos_idx) {
+//                     if (point_in_polygon(poly2[p2_idx][0], retorno[i][furos_idx])) {
+//                         dentro_de_algum = true;
+//                         break;
+//                     }
+//                     if (point_in_polygon(retorno[i][furos_idx][0], poly2[p2_idx])) {
+//                         remover.insert(furos_idx);
+//                     }
+//                 }
+//                 if (!dentro_de_algum) {
+//                     retorno[i].push_back(poly2[p2_idx]);
+//                 }
+//             }
+//         }
         
-        // por fim, só falta remover os furos que descobrimos que estavam
-        // dentro de outro furo (os índices já estão do maior ao menor)
-        for (auto idx : remover) {
-            // std::cout << idx << std::endl;
-            std::swap(retorno[i][idx], retorno[i][retorno[i].size() - 1]);
-            retorno[i].pop_back();
-        }
-    }
+//         // por fim, só falta remover os furos que descobrimos que estavam
+//         // dentro de outro furo (os índices já estão do maior ao menor)
+//         for (auto idx : remover) {
+//             // std::cout << idx << std::endl;
+//             std::swap(retorno[i][idx], retorno[i][retorno[i].size() - 1]);
+//             retorno[i].pop_back();
+//         }
+//     }
     
-    return retorno;
-}
+//     return retorno;
+// }
 
 /*
 PoligonoComFuros op_booleana_poligonos(PoligonoComFuros poly1, PoligonoComFuros poly2) {
@@ -2373,13 +2373,13 @@ private:
 
 
 enum class Tela {
-    ORIGINAL,
-    OPERACOES_BOOLEANAS,
-    TRIANGULACAO,
-    ATIVIDADE,
+    // ORIGINAL,
+    // OPERACOES_BOOLEANAS,
+    // TRIANGULACAO,
+    // ATIVIDADE,
     DCEL_TESTE,
     DELAUNAY,
-    TRABALHO,
+    // TRABALHO,
 };
 
 enum class Dcel_Data {
@@ -2446,46 +2446,46 @@ struct State {
     Delaunay_State estado_delaunay;
     Trabalho_State estado_trabalho;
 
-    std::size_t novos_pontos_aleatorios;
-    std::vector<Ponto> cliques;
-    std::vector<std::tuple<Ponto,DentroFora>> outros;
+    // std::size_t novos_pontos_aleatorios;
+    // std::vector<Ponto> cliques;
+    // std::vector<std::tuple<Ponto,DentroFora>> outros;
     float pointSize;
-    bool should_recalculate_convex_hull;
-    bool should_recalculate_area;
-    bool should_recalculate_point_in_polygon;
-    bool passo_a_passo_em_andamento;
-    bool proximo_passo;
-    bool passo_a_passo_acabou_de_acabar;
-    bool mostrar_resultado_passo_a_passo;
-    bool mostrando_resultado_passo_a_passo;
-    bool comecar_passo_a_passo;
+    // bool should_recalculate_convex_hull;
+    // bool should_recalculate_area;
+    // bool should_recalculate_point_in_polygon;
+    // bool passo_a_passo_em_andamento;
+    // bool proximo_passo;
+    // bool passo_a_passo_acabou_de_acabar;
+    // bool mostrar_resultado_passo_a_passo;
+    // bool mostrando_resultado_passo_a_passo;
+    // bool comecar_passo_a_passo;
 
     Tela tela;
 
-    // parte da atividade de hoje
-    std::vector<Ponto> entrada;
-    std::vector<Categoria> cores_entrada;
-    bool resetar_pontos;
-    bool recebendo_pontos;
-    bool recalcular_orientacao;
-    bool recalcular_convexidade_dos_vertices;
-    bool recalcular_orelhas;
-    bool recalcular_visivel;
-    bool visivel_pronto;
-    Ponto observador;
+    // // parte da atividade de hoje
+    // std::vector<Ponto> entrada;
+    // std::vector<Categoria> cores_entrada;
+    // bool resetar_pontos;
+    // bool recebendo_pontos;
+    // bool recalcular_orientacao;
+    // bool recalcular_convexidade_dos_vertices;
+    // bool recalcular_orelhas;
+    // bool recalcular_visivel;
+    // bool visivel_pronto;
+    // Ponto observador;
 
-    // parte das operações booleanas
-    std::array<PoligonoComFuros, 2> polys;
-    std::vector<PoligonoComFuros> intersecoes;
-    std::array<bool, 2> mostrando_polys;
-    bool mostrando_intersecoes;
-    std::array<bool, 2> limpar_polys;
-    std::array<bool, 2> limpar_ultimo_polys;
-    bool limpar_intersecoes;
-    bool recalcular_intersecoes;
+    // // parte das operações booleanas
+    // std::array<PoligonoComFuros, 2> polys;
+    // std::vector<PoligonoComFuros> intersecoes;
+    // std::array<bool, 2> mostrando_polys;
+    // bool mostrando_intersecoes;
+    // std::array<bool, 2> limpar_polys;
+    // std::array<bool, 2> limpar_ultimo_polys;
+    // bool limpar_intersecoes;
+    // bool recalcular_intersecoes;
 
-    std::array<bool, 2> recebendo_polys;
-    std::array<std::size_t, 2> polys_prontos;
+    // std::array<bool, 2> recebendo_polys;
+    // std::array<std::size_t, 2> polys_prontos;
 };
 
 void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
@@ -2534,223 +2534,224 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
         estad.poligono_fechado = true;
         estad.estado = Dcel_Data::CRIANDO_DCEL;
     };
-    auto coloca_ponto_poly = [ponto_xy, &estado](std::size_t qual) {
-        Ponto ponto = ponto_xy();
-        std::size_t px_idx = estado.polys_prontos[qual];
-        if (px_idx != 0) {
-            if (!point_in_polygon(ponto, estado.polys[qual][0])) {
-                return;
-            }
-            for (std::size_t i = 1; i < px_idx; ++i) {
-                if (point_in_polygon(ponto, estado.polys[qual][i])) {
-                    return;
-                }
-            }
-        }
-        if (estado.polys[qual][px_idx].size() >= 3) {
-            for (std::size_t i = 0; i < estado.polys[qual][px_idx].size() - 2; ++i) {
-                auto& p = estado.polys[qual][px_idx];
-                if (intersecao_com_left(p[i], p[i+1], p[p.size()-1], ponto) != Intersecao::NAO) {
-                    return;
-                }
-            }
-        }
-        auto& p = estado.polys[qual][px_idx];
-        if (p.size() >= 1) {
-            for (std::size_t j = 0; j < estado.polys_prontos[qual]; ++j) {
-                for (std::size_t i = 0; i < estado.polys[qual][j].size() - 2; ++i) {
-                    auto& q = estado.polys[qual][j];
-                    if (intersecao_com_left(q[i], q[i+1], p[p.size()-1], ponto) != Intersecao::NAO) {
-                        return;
-                    }
-                }
-            }
-        }
-        estado.polys[qual][px_idx].push_back(ponto);
-        estado.recebendo_polys[qual] = true;
-        estado.mostrando_polys[qual] = true;
-    };
-    auto fecha_poligono_poly = [&estado](std::size_t qual) {
-        std::size_t px_idx = estado.polys_prontos[qual];
-        auto& vec = estado.polys[qual][px_idx];
-        if (vec.size() <= 2) {
-            return;
-        }
-        auto& p = estado.polys[qual][px_idx];
-        for (std::size_t j = 0; j <= px_idx; ++j) {
-            auto& q = estado.polys[qual][j];
-            std::size_t start = px_idx == j;
-            std::size_t end = (px_idx == j) + 1;
-            for (std::size_t i = start; i < q.size() - end; ++i) {
-                if (intersecao_com_left(q[i], q[i+1], p[p.size()-1], p[0]) != Intersecao::NAO) {
-                    return;
-                }
-            }
-        }
-        bool orientado_errado = orientado_antihorario(estado.polys[qual][px_idx]);
-        if (px_idx == 0) {
-            orientado_errado = !orientado_errado;
-        }
-        if (orientado_errado) {
-            estado.limpar_ultimo_polys[qual] = true;
-            return;
-        }
-        for (std::size_t j = 1; j < px_idx; ++j) {
-            auto& q = estado.polys[qual][j];
-            if (point_in_polygon(q[0], vec)) {
-                estado.limpar_ultimo_polys[qual] = true;
-                return;
-            }
-        }
-        vec.push_back(vec[0]);
-        ++estado.polys_prontos[qual];
-        // estado.polys[qual].push_back({});
-        estado.recebendo_polys[qual] = false;
-    };
-    if (estado.tela == Tela::ORIGINAL) {
-        if (estado.passo_a_passo_em_andamento || estado.passo_a_passo_acabou_de_acabar || estado.mostrando_resultado_passo_a_passo) {
-            if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
-                if (!estado.passo_a_passo_em_andamento) {
-                    if (estado.passo_a_passo_acabou_de_acabar) {
-                        estado.mostrar_resultado_passo_a_passo = true;
-                        estado.passo_a_passo_acabou_de_acabar = false;
-                    } else if (estado.mostrando_resultado_passo_a_passo) {
-                        estado.mostrar_resultado_passo_a_passo = false;
-                    } else {
-                        std::cout << "isso aqui nunca roda" << std::endl;
-                    }
-                } else {
-                    estado.proximo_passo = true;
-                }
-            }
-            return;
-        }
-        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-            if (!mods) {
-                double xpos {};
-                double ypos {};
-                glfwGetCursorPos(window, &xpos, &ypos);
-                int width {};
-                int height {};
-                glfwGetWindowSize(window, &width, &height);
-                double x {xpos / static_cast<double> (width) * 2. - 1.};
-                double y {1. - ypos / static_cast<double> (height) * 2.};
-                estado.cliques.push_back({x, y});
-            } else if (mods == GLFW_MOD_CONTROL) {
-                double xpos {};
-                double ypos {};
-                glfwGetCursorPos(window, &xpos, &ypos);
-                int width {};
-                int height {};
-                glfwGetWindowSize(window, &width, &height);
-                double x {xpos / static_cast<double> (width) * 2. - 1.};
-                double y {1. - ypos / static_cast<double> (height) * 2.};
-                estado.outros.push_back({{x, y}, DentroFora::DESCONHECIDO});
-            } else if (mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
-                estado.comecar_passo_a_passo = true;
-            } else if (mods == GLFW_MOD_SHIFT) {
-                std::cout << estado.pointSize << std::endl;
-            }
-        } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
-            if (!mods) {
-                estado.should_recalculate_convex_hull = true;
-            } else if (mods == GLFW_MOD_SHIFT) {
-                estado.should_recalculate_area = true;
-            } else if (mods == GLFW_MOD_CONTROL) {
-                estado.should_recalculate_point_in_polygon = true;
-            }
-        }
-    } else if (estado.tela == Tela::OPERACOES_BOOLEANAS) {
-        if (action != GLFW_RELEASE) return;
-        if (button == GLFW_MOUSE_BUTTON_MIDDLE && mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
-            estado.limpar_intersecoes = true;
-        }
-        if (!estado.recebendo_polys[0]) {
-            if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
-                estado.mostrando_polys[0] = !estado.mostrando_polys[0];
-            } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && mods == GLFW_MOD_SHIFT) {
-                estado.limpar_intersecoes = true;
-                estado.limpar_polys[0] = true;
-            }
-        } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_SHIFT) {
-            coloca_ponto_poly(0);
-        } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && mods == GLFW_MOD_SHIFT) {
-            // fecha o polígono
-            fecha_poligono_poly(0);
-        } else if (button == GLFW_MOUSE_BUTTON_RIGHT && mods == GLFW_MOD_SHIFT) {
-            estado.limpar_ultimo_polys[0] = true;
-            estado.recebendo_polys[0] = false;
-        }
-        if (!estado.recebendo_polys[1]) {
-            if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
-                estado.mostrando_polys[1] = !estado.mostrando_polys[1];
-            } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && mods == GLFW_MOD_CONTROL) {
-                estado.limpar_intersecoes = true;
-                estado.limpar_polys[1] = true;
-            }
-        } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_CONTROL) {
-            coloca_ponto_poly(1);
-        } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && mods == GLFW_MOD_CONTROL) {
-            // fecha o polígono
-            fecha_poligono_poly(1);
-        } else if (button == GLFW_MOUSE_BUTTON_RIGHT && mods == GLFW_MOD_CONTROL) {
-            estado.limpar_ultimo_polys[1] = true;
-            estado.recebendo_polys[1] = false;
-        }
-        if (!estado.recebendo_polys[0] && !estado.recebendo_polys[1]) {
-            if (button == GLFW_MOUSE_BUTTON_RIGHT && !mods) {
-                estado.mostrando_intersecoes = !estado.mostrando_intersecoes;
-            } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_SHIFT) {
-                estado.polys[0].push_back({});
-                coloca_ponto_poly(0);
-                if (estado.polys[0].back().size() == 0) {
-                    estado.polys[0].pop_back();
-                }
-            } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_CONTROL) {
-                estado.polys[1].push_back({});
-                coloca_ponto_poly(1);
-                if (estado.polys[1].back().size() == 0) {
-                    estado.polys[1].pop_back();
-                }
-            } else if (button == GLFW_MOUSE_BUTTON_RIGHT && mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
-                estado.recalcular_intersecoes = true;
-            }
-        }
-    } else if (estado.tela == Tela::ATIVIDADE) {
-        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && estado.recebendo_pontos) {
-            if (!mods) {
-                double xpos {};
-                double ypos {};
-                glfwGetCursorPos(window, &xpos, &ypos);
-                int width {};
-                int height {};
-                glfwGetWindowSize(window, &width, &height);
-                double x {xpos / static_cast<double> (width) * 2. - 1.};
-                double y {1. - ypos / static_cast<double> (height) * 2.};
-                estado.entrada.push_back({x, y});
-                estado.cores_entrada.push_back(Categoria::REGULAR);
-            } else if (mods == GLFW_MOD_CONTROL) {
-                estado.recebendo_pontos = false;
-            }
-        } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE && !estado.recebendo_pontos) {
-            if (mods == GLFW_MOD_ALT) {
-                estado.resetar_pontos = true;
-                estado.recebendo_pontos = true;
-            } else if (mods == GLFW_MOD_SHIFT) {
-                estado.recalcular_orientacao = true;
-            } else if (!mods) {
-                estado.recalcular_convexidade_dos_vertices = true;
-            } else if (mods == (GLFW_MOD_ALT | GLFW_MOD_SHIFT)) {
-                estado.recalcular_orelhas = true;
-            } else if (mods == GLFW_MOD_CONTROL) {
-                estado.observador = ponto_xy();
-                estado.visivel_pronto = false;
-                estado.recalcular_visivel = true;
-            } else if (mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
-                estado.visivel_pronto = !estado.visivel_pronto;
-            }
-        }
-    } else if (estado.tela == Tela::DCEL_TESTE) {
+    // auto coloca_ponto_poly = [ponto_xy, &estado](std::size_t qual) {
+    //     Ponto ponto = ponto_xy();
+    //     std::size_t px_idx = estado.polys_prontos[qual];
+    //     if (px_idx != 0) {
+    //         if (!point_in_polygon(ponto, estado.polys[qual][0])) {
+    //             return;
+    //         }
+    //         for (std::size_t i = 1; i < px_idx; ++i) {
+    //             if (point_in_polygon(ponto, estado.polys[qual][i])) {
+    //                 return;
+    //             }
+    //         }
+    //     }
+    //     if (estado.polys[qual][px_idx].size() >= 3) {
+    //         for (std::size_t i = 0; i < estado.polys[qual][px_idx].size() - 2; ++i) {
+    //             auto& p = estado.polys[qual][px_idx];
+    //             if (intersecao_com_left(p[i], p[i+1], p[p.size()-1], ponto) != Intersecao::NAO) {
+    //                 return;
+    //             }
+    //         }
+    //     }
+    //     auto& p = estado.polys[qual][px_idx];
+    //     if (p.size() >= 1) {
+    //         for (std::size_t j = 0; j < estado.polys_prontos[qual]; ++j) {
+    //             for (std::size_t i = 0; i < estado.polys[qual][j].size() - 2; ++i) {
+    //                 auto& q = estado.polys[qual][j];
+    //                 if (intersecao_com_left(q[i], q[i+1], p[p.size()-1], ponto) != Intersecao::NAO) {
+    //                     return;
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     estado.polys[qual][px_idx].push_back(ponto);
+    //     estado.recebendo_polys[qual] = true;
+    //     estado.mostrando_polys[qual] = true;
+    // };
+    // auto fecha_poligono_poly = [&estado](std::size_t qual) {
+    //     std::size_t px_idx = estado.polys_prontos[qual];
+    //     auto& vec = estado.polys[qual][px_idx];
+    //     if (vec.size() <= 2) {
+    //         return;
+    //     }
+    //     auto& p = estado.polys[qual][px_idx];
+    //     for (std::size_t j = 0; j <= px_idx; ++j) {
+    //         auto& q = estado.polys[qual][j];
+    //         std::size_t start = px_idx == j;
+    //         std::size_t end = (px_idx == j) + 1;
+    //         for (std::size_t i = start; i < q.size() - end; ++i) {
+    //             if (intersecao_com_left(q[i], q[i+1], p[p.size()-1], p[0]) != Intersecao::NAO) {
+    //                 return;
+    //             }
+    //         }
+    //     }
+    //     bool orientado_errado = orientado_antihorario(estado.polys[qual][px_idx]);
+    //     if (px_idx == 0) {
+    //         orientado_errado = !orientado_errado;
+    //     }
+    //     if (orientado_errado) {
+    //         estado.limpar_ultimo_polys[qual] = true;
+    //         return;
+    //     }
+    //     for (std::size_t j = 1; j < px_idx; ++j) {
+    //         auto& q = estado.polys[qual][j];
+    //         if (point_in_polygon(q[0], vec)) {
+    //             estado.limpar_ultimo_polys[qual] = true;
+    //             return;
+    //         }
+    //     }
+    //     vec.push_back(vec[0]);
+    //     ++estado.polys_prontos[qual];
+    //     // estado.polys[qual].push_back({});
+    //     estado.recebendo_polys[qual] = false;
+    // };
+    // if (estado.tela == Tela::ORIGINAL) {
+    //     if (estado.passo_a_passo_em_andamento || estado.passo_a_passo_acabou_de_acabar || estado.mostrando_resultado_passo_a_passo) {
+    //         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
+    //             if (!estado.passo_a_passo_em_andamento) {
+    //                 if (estado.passo_a_passo_acabou_de_acabar) {
+    //                     estado.mostrar_resultado_passo_a_passo = true;
+    //                     estado.passo_a_passo_acabou_de_acabar = false;
+    //                 } else if (estado.mostrando_resultado_passo_a_passo) {
+    //                     estado.mostrar_resultado_passo_a_passo = false;
+    //                 } else {
+    //                     std::cout << "isso aqui nunca roda" << std::endl;
+    //                 }
+    //             } else {
+    //                 estado.proximo_passo = true;
+    //             }
+    //         }
+    //         return;
+    //     }
+    //     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+    //         if (!mods) {
+    //             double xpos {};
+    //             double ypos {};
+    //             glfwGetCursorPos(window, &xpos, &ypos);
+    //             int width {};
+    //             int height {};
+    //             glfwGetWindowSize(window, &width, &height);
+    //             double x {xpos / static_cast<double> (width) * 2. - 1.};
+    //             double y {1. - ypos / static_cast<double> (height) * 2.};
+    //             estado.cliques.push_back({x, y});
+    //         } else if (mods == GLFW_MOD_CONTROL) {
+    //             double xpos {};
+    //             double ypos {};
+    //             glfwGetCursorPos(window, &xpos, &ypos);
+    //             int width {};
+    //             int height {};
+    //             glfwGetWindowSize(window, &width, &height);
+    //             double x {xpos / static_cast<double> (width) * 2. - 1.};
+    //             double y {1. - ypos / static_cast<double> (height) * 2.};
+    //             estado.outros.push_back({{x, y}, DentroFora::DESCONHECIDO});
+    //         } else if (mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
+    //             estado.comecar_passo_a_passo = true;
+    //         } else if (mods == GLFW_MOD_SHIFT) {
+    //             std::cout << estado.pointSize << std::endl;
+    //         }
+    //     } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+    //         if (!mods) {
+    //             estado.should_recalculate_convex_hull = true;
+    //         } else if (mods == GLFW_MOD_SHIFT) {
+    //             estado.should_recalculate_area = true;
+    //         } else if (mods == GLFW_MOD_CONTROL) {
+    //             estado.should_recalculate_point_in_polygon = true;
+    //         }
+    //     }
+    // } else if (estado.tela == Tela::OPERACOES_BOOLEANAS) {
+    //     if (action != GLFW_RELEASE) return;
+    //     if (button == GLFW_MOUSE_BUTTON_MIDDLE && mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
+    //         estado.limpar_intersecoes = true;
+    //     }
+    //     if (!estado.recebendo_polys[0]) {
+    //         if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
+    //             estado.mostrando_polys[0] = !estado.mostrando_polys[0];
+    //         } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && mods == GLFW_MOD_SHIFT) {
+    //             estado.limpar_intersecoes = true;
+    //             estado.limpar_polys[0] = true;
+    //         }
+    //     } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_SHIFT) {
+    //         coloca_ponto_poly(0);
+    //     } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && mods == GLFW_MOD_SHIFT) {
+    //         // fecha o polígono
+    //         fecha_poligono_poly(0);
+    //     } else if (button == GLFW_MOUSE_BUTTON_RIGHT && mods == GLFW_MOD_SHIFT) {
+    //         estado.limpar_ultimo_polys[0] = true;
+    //         estado.recebendo_polys[0] = false;
+    //     }
+    //     if (!estado.recebendo_polys[1]) {
+    //         if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
+    //             estado.mostrando_polys[1] = !estado.mostrando_polys[1];
+    //         } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && mods == GLFW_MOD_CONTROL) {
+    //             estado.limpar_intersecoes = true;
+    //             estado.limpar_polys[1] = true;
+    //         }
+    //     } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_CONTROL) {
+    //         coloca_ponto_poly(1);
+    //     } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && mods == GLFW_MOD_CONTROL) {
+    //         // fecha o polígono
+    //         fecha_poligono_poly(1);
+    //     } else if (button == GLFW_MOUSE_BUTTON_RIGHT && mods == GLFW_MOD_CONTROL) {
+    //         estado.limpar_ultimo_polys[1] = true;
+    //         estado.recebendo_polys[1] = false;
+    //     }
+    //     if (!estado.recebendo_polys[0] && !estado.recebendo_polys[1]) {
+    //         if (button == GLFW_MOUSE_BUTTON_RIGHT && !mods) {
+    //             estado.mostrando_intersecoes = !estado.mostrando_intersecoes;
+    //         } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_SHIFT) {
+    //             estado.polys[0].push_back({});
+    //             coloca_ponto_poly(0);
+    //             if (estado.polys[0].back().size() == 0) {
+    //                 estado.polys[0].pop_back();
+    //             }
+    //         } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_CONTROL) {
+    //             estado.polys[1].push_back({});
+    //             coloca_ponto_poly(1);
+    //             if (estado.polys[1].back().size() == 0) {
+    //                 estado.polys[1].pop_back();
+    //             }
+    //         } else if (button == GLFW_MOUSE_BUTTON_RIGHT && mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
+    //             estado.recalcular_intersecoes = true;
+    //         }
+    //     }
+    // } else if (estado.tela == Tela::ATIVIDADE) {
+    //     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && estado.recebendo_pontos) {
+    //         if (!mods) {
+    //             double xpos {};
+    //             double ypos {};
+    //             glfwGetCursorPos(window, &xpos, &ypos);
+    //             int width {};
+    //             int height {};
+    //             glfwGetWindowSize(window, &width, &height);
+    //             double x {xpos / static_cast<double> (width) * 2. - 1.};
+    //             double y {1. - ypos / static_cast<double> (height) * 2.};
+    //             estado.entrada.push_back({x, y});
+    //             estado.cores_entrada.push_back(Categoria::REGULAR);
+    //         } else if (mods == GLFW_MOD_CONTROL) {
+    //             estado.recebendo_pontos = false;
+    //         }
+    //     } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE && !estado.recebendo_pontos) {
+    //         if (mods == GLFW_MOD_ALT) {
+    //             estado.resetar_pontos = true;
+    //             estado.recebendo_pontos = true;
+    //         } else if (mods == GLFW_MOD_SHIFT) {
+    //             estado.recalcular_orientacao = true;
+    //         } else if (!mods) {
+    //             estado.recalcular_convexidade_dos_vertices = true;
+    //         } else if (mods == (GLFW_MOD_ALT | GLFW_MOD_SHIFT)) {
+    //             estado.recalcular_orelhas = true;
+    //         } else if (mods == GLFW_MOD_CONTROL) {
+    //             estado.observador = ponto_xy();
+    //             estado.visivel_pronto = false;
+    //             estado.recalcular_visivel = true;
+    //         } else if (mods == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) {
+    //             estado.visivel_pronto = !estado.visivel_pronto;
+    //         }
+    //     }
+    // } else 
+    if (estado.tela == Tela::DCEL_TESTE) {
         if (action != GLFW_RELEASE) return;
         auto& estad = estado.estado_dcel_teste;
         auto& p = estad.poly;
@@ -2827,12 +2828,13 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
         auto& estad = estado.estado_delaunay;
         Ponto clicado = ponto_xy();
         estad.eventos.push_back({clicado, button, mods, General_Op::CLIQUE});
-    } else if (estado.tela == Tela::TRABALHO) {
-        if (action != GLFW_RELEASE) return;
-        auto& estad = estado.estado_trabalho;
-        Ponto clicado = ponto_xy();
-        estad.eventos.push_back({clicado, button, mods, General_Op::CLIQUE});
     }
+    //  else if (estado.tela == Tela::TRABALHO) {
+    //     if (action != GLFW_RELEASE) return;
+    //     auto& estad = estado.estado_trabalho;
+    //     Ponto clicado = ponto_xy();
+    //     estad.eventos.push_back({clicado, button, mods, General_Op::CLIQUE});
+    // }
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -2858,41 +2860,43 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     State& estado = *(static_cast<State*> (glfwGetWindowUserPointer(window)));
     if (action == GLFW_RELEASE) {
         switch (key) {
-            case GLFW_KEY_1:
-                if (!mods) estado.tela = Tela::ORIGINAL;
-                break;
-            case GLFW_KEY_2:
-                if (!mods) estado.tela = Tela::OPERACOES_BOOLEANAS;
-                break;
-            case GLFW_KEY_3:
-                if (!mods) estado.tela = Tela::TRIANGULACAO;
-                break;
-            case GLFW_KEY_4:
-                if (!mods) estado.tela = Tela::ATIVIDADE;
-                break;
+            // case GLFW_KEY_1:
+            //     if (!mods) estado.tela = Tela::ORIGINAL;
+            //     break;
+            // case GLFW_KEY_2:
+            //     if (!mods) estado.tela = Tela::OPERACOES_BOOLEANAS;
+            //     break;
+            // case GLFW_KEY_3:
+            //     if (!mods) estado.tela = Tela::TRIANGULACAO;
+            //     break;
+            // case GLFW_KEY_4:
+            //     if (!mods) estado.tela = Tela::ATIVIDADE;
+            //     break;
             case GLFW_KEY_5:
                 if (!mods) estado.tela = Tela::DCEL_TESTE;
                 break;
             case GLFW_KEY_6:
                 if (!mods) estado.tela = Tela::DELAUNAY;
                 break;
-            case GLFW_KEY_7:
-                if (!mods) estado.tela = Tela::TRABALHO;
-                break;
+            // case GLFW_KEY_7:
+            //     if (!mods) estado.tela = Tela::TRABALHO;
+            //     break;
             case GLFW_KEY_R:
-                if (estado.tela == Tela::ORIGINAL) {
-                    if (!mods) {
-                        ++estado.novos_pontos_aleatorios;
-                    } else if (mods == GLFW_MOD_SHIFT) {
-                        estado.novos_pontos_aleatorios += 10;
-                    } else if (mods == GLFW_MOD_CONTROL) {
-                        estado.novos_pontos_aleatorios += 25;
-                    }
-                } else if (estado.tela == Tela::DELAUNAY) {
+                // if (estado.tela == Tela::ORIGINAL) {
+                //     if (!mods) {
+                //         ++estado.novos_pontos_aleatorios;
+                //     } else if (mods == GLFW_MOD_SHIFT) {
+                //         estado.novos_pontos_aleatorios += 10;
+                //     } else if (mods == GLFW_MOD_CONTROL) {
+                //         estado.novos_pontos_aleatorios += 25;
+                //     }
+                // } else 
+                if (estado.tela == Tela::DELAUNAY) {
                     estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
-                } else if (estado.tela == Tela::TRABALHO) {
-                    estado.estado_trabalho.eventos.push_back({{}, key, mods, General_Op::TECLA});
                 }
+                //  else if (estado.tela == Tela::TRABALHO) {
+                //     estado.estado_trabalho.eventos.push_back({{}, key, mods, General_Op::TECLA});
+                // }
                 break;
             case GLFW_KEY_T:
                 if (estado.tela == Tela::DCEL_TESTE && !mods) {
@@ -2901,9 +2905,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                     }
                 } else if (estado.tela == Tela::DELAUNAY) {
                     estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
-                } else if (estado.tela == Tela::TRABALHO) {
-                    estado.estado_trabalho.eventos.push_back({{}, key, mods, General_Op::TECLA});
                 }
+                //  else if (estado.tela == Tela::TRABALHO) {
+                //     estado.estado_trabalho.eventos.push_back({{}, key, mods, General_Op::TECLA});
+                // }
                 break;
             case GLFW_KEY_A:
                 if (estado.tela == Tela::DCEL_TESTE && !mods) {
@@ -2955,645 +2960,647 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                 break;
         }
     } else if (action == GLFW_REPEAT && key == GLFW_KEY_R) {
-        if (estado.tela == Tela::ORIGINAL) {
-            if (!mods) {
-                ++estado.novos_pontos_aleatorios;
-            } else if (mods == GLFW_MOD_SHIFT) {
-                estado.novos_pontos_aleatorios += 10;
-            } else if (mods == GLFW_MOD_CONTROL) {
-                estado.novos_pontos_aleatorios += 25;
-            }
-        } else if (estado.tela == Tela::DELAUNAY) {
+        // if (estado.tela == Tela::ORIGINAL) {
+        //     if (!mods) {
+        //         ++estado.novos_pontos_aleatorios;
+        //     } else if (mods == GLFW_MOD_SHIFT) {
+        //         estado.novos_pontos_aleatorios += 10;
+        //     } else if (mods == GLFW_MOD_CONTROL) {
+        //         estado.novos_pontos_aleatorios += 25;
+        //     }
+        // } else 
+        if (estado.tela == Tela::DELAUNAY) {
             estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
-        } else if (estado.tela == Tela::TRABALHO) {
-            estado.estado_trabalho.eventos.push_back({{}, key, mods, General_Op::TECLA});
         }
+        //  else if (estado.tela == Tela::TRABALHO) {
+        //     estado.estado_trabalho.eventos.push_back({{}, key, mods, General_Op::TECLA});
+        // }
     }
 }
 
-enum class Etapa {
-    ETAPA_1,
-    ETAPA_2,
-};
+// enum class Etapa {
+//     ETAPA_1,
+//     ETAPA_2,
+// };
 
-struct PassoAPasso {
-    Etapa etapa_do_passo_executado;
-    Reta desenhar_essa;
-    bool desenhar_a_outra;
-    Reta tambem_desenhar_essa;
-    Ponto colorir_esse;
-    Ponto esse_tambem;
-    bool acabou;
-    RetornoAlg resultado_ate_agora;
-};
+// struct PassoAPasso {
+//     Etapa etapa_do_passo_executado;
+//     Reta desenhar_essa;
+//     bool desenhar_a_outra;
+//     Reta tambem_desenhar_essa;
+//     Ponto colorir_esse;
+//     Ponto esse_tambem;
+//     bool acabou;
+//     RetornoAlg resultado_ate_agora;
+// };
 
-PassoAPasso algoritmo_v1_passo_a_passo(std::vector<Ponto> fecho);
+// PassoAPasso algoritmo_v1_passo_a_passo(std::vector<Ponto> fecho);
 
-// recebe o fecho de início já
-PassoAPasso algoritmo_v1_passo_a_passo(std::vector<Ponto> fecho) {
+// // recebe o fecho de início já
+// PassoAPasso algoritmo_v1_passo_a_passo(std::vector<Ponto> fecho) {
     
-    // essa parte toda precisa -- ou só é no momento -- recalculada todo passo
+//     // essa parte toda precisa -- ou só é no momento -- recalculada todo passo
 
-    // n é o número de pontos no fecho convexo
-    std::size_t n = fecho.size();
-    std::vector<double> angulos(n, 0.);
+//     // n é o número de pontos no fecho convexo
+//     std::size_t n = fecho.size();
+//     std::vector<double> angulos(n, 0.);
 
-    // adiciona manualmente primeiro e último ângulo
-    angulos[0] = angulo_interno(fecho[0], fecho[n-1], fecho[1]);
-    angulos[n-1] = angulo_interno(fecho[n-1], fecho[n-2], fecho[0]);
+//     // adiciona manualmente primeiro e último ângulo
+//     angulos[0] = angulo_interno(fecho[0], fecho[n-1], fecho[1]);
+//     angulos[n-1] = angulo_interno(fecho[n-1], fecho[n-2], fecho[0]);
 
-    for (std::size_t i = 1; i < n-1; ++i) {
-        angulos[i] = angulo_interno(fecho[i], fecho[i-1], fecho[i+1]);
-    }
-    std::vector<double> angulos_acumulados(n+1, 0.);
-    for (std::size_t i = 1; i <= n; ++i) {
-        angulos_acumulados[i] = angulos_acumulados[i-1] + angulos[i-1];
-    }
+//     for (std::size_t i = 1; i < n-1; ++i) {
+//         angulos[i] = angulo_interno(fecho[i], fecho[i-1], fecho[i+1]);
+//     }
+//     std::vector<double> angulos_acumulados(n+1, 0.);
+//     for (std::size_t i = 1; i <= n; ++i) {
+//         angulos_acumulados[i] = angulos_acumulados[i-1] + angulos[i-1];
+//     }
 
-    // guarda o passo atual; é resetado quando uma execução se completa
-    static std::size_t passo = 0;
-    // outras informações necessárias
-    static std::size_t ponto_atual = 0;
-    static std::size_t l_atual = 0;
-    static std::size_t r_atual = n;
-    static bool encontrado = false;
-    static std::size_t indice_encontrado = 0;
+//     // guarda o passo atual; é resetado quando uma execução se completa
+//     static std::size_t passo = 0;
+//     // outras informações necessárias
+//     static std::size_t ponto_atual = 0;
+//     static std::size_t l_atual = 0;
+//     static std::size_t r_atual = n;
+//     static bool encontrado = false;
+//     static std::size_t indice_encontrado = 0;
 
-    double metade = (3.14159265358979323846 * (n - 2)) / 2;
+//     double metade = (3.14159265358979323846 * (n - 2)) / 2;
 
-    std::size_t i = ponto_atual;
-    std::size_t m = (l_atual + r_atual) / 2;
-    // std::cout << l_atual << ' ' << r_atual << ' ' << i << ' ' << m << std::endl;
-    // corajosamente vou supor que r_atual nunca será menor que l_atual
-    std::size_t atual = i;
-    std::size_t meio = (i+m >= n) ? (i+m-n) : (i+m);
-    std::size_t prox = (i+m+1 >= n) ? (i+m+1-n) : (i+m+1);
-    if (!encontrado && l_atual <= r_atual) {
-        double phi_meio_atual = 0.;
-        if (meio > atual) {
-            phi_meio_atual = angulos_acumulados[meio] - angulos_acumulados[atual+1];
-        } else {
-            // meio <= atual
-            phi_meio_atual = angulos_acumulados[n] + angulos_acumulados[meio] - angulos_acumulados[atual+1];
-        }
-        double phi_prox_atual = phi_meio_atual + angulos[meio] + angulos[atual] / 2.;
-        if (phi_prox_atual >= metade) {
-            if (phi_meio_atual < metade) {
-                // encontrado
-                indice_encontrado = meio;
-                encontrado = true;
-            } else {
-                r_atual = m - 1;
-            }
-        } else {
-            l_atual = m + 1;
-        }
-    }
-    if (!encontrado) {
-        // retorna, pois esse passo acabou sem encontrar o meio
+//     std::size_t i = ponto_atual;
+//     std::size_t m = (l_atual + r_atual) / 2;
+//     // std::cout << l_atual << ' ' << r_atual << ' ' << i << ' ' << m << std::endl;
+//     // corajosamente vou supor que r_atual nunca será menor que l_atual
+//     std::size_t atual = i;
+//     std::size_t meio = (i+m >= n) ? (i+m-n) : (i+m);
+//     std::size_t prox = (i+m+1 >= n) ? (i+m+1-n) : (i+m+1);
+//     if (!encontrado && l_atual <= r_atual) {
+//         double phi_meio_atual = 0.;
+//         if (meio > atual) {
+//             phi_meio_atual = angulos_acumulados[meio] - angulos_acumulados[atual+1];
+//         } else {
+//             // meio <= atual
+//             phi_meio_atual = angulos_acumulados[n] + angulos_acumulados[meio] - angulos_acumulados[atual+1];
+//         }
+//         double phi_prox_atual = phi_meio_atual + angulos[meio] + angulos[atual] / 2.;
+//         if (phi_prox_atual >= metade) {
+//             if (phi_meio_atual < metade) {
+//                 // encontrado
+//                 indice_encontrado = meio;
+//                 encontrado = true;
+//             } else {
+//                 r_atual = m - 1;
+//             }
+//         } else {
+//             l_atual = m + 1;
+//         }
+//     }
+//     if (!encontrado) {
+//         // retorna, pois esse passo acabou sem encontrar o meio
         
-        //atualiza coisas
-        ++passo;
+//         //atualiza coisas
+//         ++passo;
 
-        return {Etapa::ETAPA_1, {fecho[i], fecho[meio]}, false, {}, fecho[i], fecho[meio], false, {}};
-    }
+//         return {Etapa::ETAPA_1, {fecho[i], fecho[meio]}, false, {}, fecho[i], fecho[meio], false, {}};
+//     }
 
-    // começo da etapa 2
+//     // começo da etapa 2
 
-    // segmentos
-    std::size_t indice_encontrado_prox = (indice_encontrado + 1 >= n) ? (indice_encontrado + 1 - n) : (indice_encontrado + 1);
-    std::size_t indice_encontrado_prev = (indice_encontrado == 0) ? (n - 1) : (indice_encontrado - 1);
-    std::size_t indice_prox = (i + 1 >= n) ? (i + 1 - n) : (i + 1);
-    std::size_t indice_prev = (i == 0) ? (n - 1) : (i - 1);
-    Reta op1 {fecho[indice_encontrado], fecho[indice_encontrado_prox]};
-    Reta op2 {fecho[indice_encontrado], fecho[indice_encontrado_prev]};
-    Reta sg1 {fecho[i], fecho[indice_prox]};
-    Reta sg2 {fecho[i], fecho[indice_prev]};
+//     // segmentos
+//     std::size_t indice_encontrado_prox = (indice_encontrado + 1 >= n) ? (indice_encontrado + 1 - n) : (indice_encontrado + 1);
+//     std::size_t indice_encontrado_prev = (indice_encontrado == 0) ? (n - 1) : (indice_encontrado - 1);
+//     std::size_t indice_prox = (i + 1 >= n) ? (i + 1 - n) : (i + 1);
+//     std::size_t indice_prev = (i == 0) ? (n - 1) : (i - 1);
+//     Reta op1 {fecho[indice_encontrado], fecho[indice_encontrado_prox]};
+//     Reta op2 {fecho[indice_encontrado], fecho[indice_encontrado_prev]};
+//     Reta sg1 {fecho[i], fecho[indice_prox]};
+//     Reta sg2 {fecho[i], fecho[indice_prev]};
     
-    // primeira bissetriz
-    double dx = fecho[indice_prox][0] - fecho[i][0];
-    double dy = fecho[indice_prox][1] - fecho[i][1];
-    double rotacao = angulos[i] / 2.;
-    double new_dx = dx * std::cos(rotacao) - dy * std::sin(rotacao);
-    double new_dy = dx * std::sin(rotacao) + dy * std::cos(rotacao);
-    Ponto p_bissetriz {fecho[i][0] + new_dx, fecho[i][1] + new_dy};
+//     // primeira bissetriz
+//     double dx = fecho[indice_prox][0] - fecho[i][0];
+//     double dy = fecho[indice_prox][1] - fecho[i][1];
+//     double rotacao = angulos[i] / 2.;
+//     double new_dx = dx * std::cos(rotacao) - dy * std::sin(rotacao);
+//     double new_dy = dx * std::sin(rotacao) + dy * std::cos(rotacao);
+//     Ponto p_bissetriz {fecho[i][0] + new_dx, fecho[i][1] + new_dy};
 
-    // segunda bissetriz
-    double dx_a = fecho[indice_encontrado_prox][0] - fecho[indice_encontrado][0];
-    double dy_a = fecho[indice_encontrado_prox][1] - fecho[indice_encontrado][1];
-    double rotacao_a = angulos[indice_encontrado] / 2.;
-    double new_dx_a = dx_a * std::cos(rotacao_a) - dy_a * std::sin(rotacao_a);
-    double new_dy_a = dx_a * std::sin(rotacao_a) + dy_a * std::cos(rotacao_a);
-    Ponto p_a_bissetriz {fecho[indice_encontrado][0] + new_dx_a, fecho[indice_encontrado][1] + new_dy_a};
+//     // segunda bissetriz
+//     double dx_a = fecho[indice_encontrado_prox][0] - fecho[indice_encontrado][0];
+//     double dy_a = fecho[indice_encontrado_prox][1] - fecho[indice_encontrado][1];
+//     double rotacao_a = angulos[indice_encontrado] / 2.;
+//     double new_dx_a = dx_a * std::cos(rotacao_a) - dy_a * std::sin(rotacao_a);
+//     double new_dy_a = dx_a * std::sin(rotacao_a) + dy_a * std::cos(rotacao_a);
+//     Ponto p_a_bissetriz {fecho[indice_encontrado][0] + new_dx_a, fecho[indice_encontrado][1] + new_dy_a};
 
-    Ponto p = fecho[i];
-    Ponto p_oposto = fecho[indice_encontrado];
-    // Ponto prox_oposto = fecho[indice_encontrado_prox];
-    // Ponto prev_oposto = fecho[indice_encontrado_prev];
-    double distancia {};
-    Reta encontrada {};
-    Ponto intersecao_encontrada {};
-    if (intersecao_semireta_segmento(p, p_bissetriz, op1[0], op1[1]) != Intersecao::NAO) {
-        distancia = dist(p, op1);
-        encontrada = op1;
-        intersecao_encontrada = ponto_intersecao(p, p_bissetriz, op1[0], op1[1]);
-    } else if (intersecao_semireta_segmento(p, p_bissetriz, op2[0], op2[1]) != Intersecao::NAO) {
-        distancia = dist(p, op2);
-        encontrada = op2;
-        intersecao_encontrada = ponto_intersecao(p, p_bissetriz, op2[0], op2[1]);
-    } else {
-        std::cout << "estranho" << std::endl;
-        distancia = std::numeric_limits<double>::max();
-        intersecao_encontrada = p_bissetriz;
-    }
+//     Ponto p = fecho[i];
+//     Ponto p_oposto = fecho[indice_encontrado];
+//     // Ponto prox_oposto = fecho[indice_encontrado_prox];
+//     // Ponto prev_oposto = fecho[indice_encontrado_prev];
+//     double distancia {};
+//     Reta encontrada {};
+//     Ponto intersecao_encontrada {};
+//     if (intersecao_semireta_segmento(p, p_bissetriz, op1[0], op1[1]) != Intersecao::NAO) {
+//         distancia = dist(p, op1);
+//         encontrada = op1;
+//         intersecao_encontrada = ponto_intersecao(p, p_bissetriz, op1[0], op1[1]);
+//     } else if (intersecao_semireta_segmento(p, p_bissetriz, op2[0], op2[1]) != Intersecao::NAO) {
+//         distancia = dist(p, op2);
+//         encontrada = op2;
+//         intersecao_encontrada = ponto_intersecao(p, p_bissetriz, op2[0], op2[1]);
+//     } else {
+//         std::cout << "estranho" << std::endl;
+//         distancia = std::numeric_limits<double>::max();
+//         intersecao_encontrada = p_bissetriz;
+//     }
 
-    double outra_distancia {};
-    Ponto outra_intersecao_encontrada {};
-    if (intersecao_semireta_segmento(p_oposto, p_a_bissetriz, sg1[0], sg1[1]) != Intersecao::NAO) {
-        outra_distancia = dist(p_oposto, sg1);
-        outra_intersecao_encontrada = ponto_intersecao(p_oposto, p_a_bissetriz, sg1[0], sg1[1]);
-    } else if (intersecao_semireta_segmento(p_oposto, p_a_bissetriz, sg2[0], sg2[1]) != Intersecao::NAO) {
-        outra_distancia = dist(p_oposto, sg2);
-        outra_intersecao_encontrada = ponto_intersecao(p_oposto, p_a_bissetriz, sg2[0], sg2[1]);
-    } else {
-        std::cout << "estranho2" << std::endl;
-        outra_distancia = distancia + 1.;
-        outra_intersecao_encontrada = p_a_bissetriz;
-        // std::cout << p_oposto << std::endl;
-        // dx_a
-        // dy_a
-        // rotacao_a
-        // new_dx_a
-        // new_dy_a
-        // p_a_bissetriz
-    }
+//     double outra_distancia {};
+//     Ponto outra_intersecao_encontrada {};
+//     if (intersecao_semireta_segmento(p_oposto, p_a_bissetriz, sg1[0], sg1[1]) != Intersecao::NAO) {
+//         outra_distancia = dist(p_oposto, sg1);
+//         outra_intersecao_encontrada = ponto_intersecao(p_oposto, p_a_bissetriz, sg1[0], sg1[1]);
+//     } else if (intersecao_semireta_segmento(p_oposto, p_a_bissetriz, sg2[0], sg2[1]) != Intersecao::NAO) {
+//         outra_distancia = dist(p_oposto, sg2);
+//         outra_intersecao_encontrada = ponto_intersecao(p_oposto, p_a_bissetriz, sg2[0], sg2[1]);
+//     } else {
+//         std::cout << "estranho2" << std::endl;
+//         outra_distancia = distancia + 1.;
+//         outra_intersecao_encontrada = p_a_bissetriz;
+//         // std::cout << p_oposto << std::endl;
+//         // dx_a
+//         // dy_a
+//         // rotacao_a
+//         // new_dx_a
+//         // new_dy_a
+//         // p_a_bissetriz
+//     }
 
-    static double menor_distancia { std::numeric_limits<double>::max() };
-    static Ponto menor_ponto {};
-    static Reta menor_segmento {};
-    static Ponto menor_intersecao {};
-    if (outra_distancia > distancia) {
-        // a coisa aconteceu (essa distância não é a procurada)
-    } else if (distancia < menor_distancia) {
-        menor_distancia = distancia;
-        menor_ponto = p;
-        menor_segmento = encontrada;
-        menor_intersecao = intersecao_encontrada;
-    }
-    // de qualquer forma, aqui acaba outro passo, então temos que retornar
-    // e fazer as atualizações necessárias
-    ++ponto_atual;
-    if (ponto_atual >= n) {
-        // esse foi o último ponto
-        // precisamos resetar tudo e retornar que acabou
+//     static double menor_distancia { std::numeric_limits<double>::max() };
+//     static Ponto menor_ponto {};
+//     static Reta menor_segmento {};
+//     static Ponto menor_intersecao {};
+//     if (outra_distancia > distancia) {
+//         // a coisa aconteceu (essa distância não é a procurada)
+//     } else if (distancia < menor_distancia) {
+//         menor_distancia = distancia;
+//         menor_ponto = p;
+//         menor_segmento = encontrada;
+//         menor_intersecao = intersecao_encontrada;
+//     }
+//     // de qualquer forma, aqui acaba outro passo, então temos que retornar
+//     // e fazer as atualizações necessárias
+//     ++ponto_atual;
+//     if (ponto_atual >= n) {
+//         // esse foi o último ponto
+//         // precisamos resetar tudo e retornar que acabou
 
-        // antes criar o objeto de retorno
-        PassoAPasso retorno {
-            Etapa::ETAPA_2,
-            {p, intersecao_encontrada},
-            true,
-            {p_oposto, outra_intersecao_encontrada},
-            p,
-            p_oposto,
-            true,
-            {menor_ponto, menor_segmento, menor_distancia, menor_intersecao}
-        };
-        passo = 0;
-        ponto_atual = 0;
-        l_atual = 0;
-        r_atual = n;
-        encontrado = false;
-        indice_encontrado = 0;
+//         // antes criar o objeto de retorno
+//         PassoAPasso retorno {
+//             Etapa::ETAPA_2,
+//             {p, intersecao_encontrada},
+//             true,
+//             {p_oposto, outra_intersecao_encontrada},
+//             p,
+//             p_oposto,
+//             true,
+//             {menor_ponto, menor_segmento, menor_distancia, menor_intersecao}
+//         };
+//         passo = 0;
+//         ponto_atual = 0;
+//         l_atual = 0;
+//         r_atual = n;
+//         encontrado = false;
+//         indice_encontrado = 0;
         
-        menor_distancia = std::numeric_limits<double>::max();
-        menor_ponto = Ponto{};
-        menor_segmento = Reta{};
-        menor_intersecao = Ponto{};
+//         menor_distancia = std::numeric_limits<double>::max();
+//         menor_ponto = Ponto{};
+//         menor_segmento = Reta{};
+//         menor_intersecao = Ponto{};
 
-        return retorno;
-    } else {
-        // o algoritmo continuará
-        ++passo;
-        // algumas partes são resetadas
-        l_atual = 0;
-        r_atual = n;
-        encontrado = false;
-        indice_encontrado = 0;
-        return {
-            Etapa::ETAPA_2,
-            {p, intersecao_encontrada},
-            true,
-            {p_oposto, outra_intersecao_encontrada},
-            p,
-            p_oposto,
-            false,
-            {menor_ponto, menor_segmento, menor_distancia, menor_intersecao}
-        };
-    }
-}
+//         return retorno;
+//     } else {
+//         // o algoritmo continuará
+//         ++passo;
+//         // algumas partes são resetadas
+//         l_atual = 0;
+//         r_atual = n;
+//         encontrado = false;
+//         indice_encontrado = 0;
+//         return {
+//             Etapa::ETAPA_2,
+//             {p, intersecao_encontrada},
+//             true,
+//             {p_oposto, outra_intersecao_encontrada},
+//             p,
+//             p_oposto,
+//             false,
+//             {menor_ponto, menor_segmento, menor_distancia, menor_intersecao}
+//         };
+//     }
+// }
 
-PassoAPasso algoritmo_guedes_v1_passo_a_passo(std::vector<Ponto> fecho);
+// PassoAPasso algoritmo_guedes_v1_passo_a_passo(std::vector<Ponto> fecho);
 
-// recebe o fecho de início já
-PassoAPasso algoritmo_guedes_v1_passo_a_passo(std::vector<Ponto> fecho) {
+// // recebe o fecho de início já
+// PassoAPasso algoritmo_guedes_v1_passo_a_passo(std::vector<Ponto> fecho) {
 
-    // n é o número de pontos no fecho convexo
-    std::size_t n = fecho.size();
+//     // n é o número de pontos no fecho convexo
+//     std::size_t n = fecho.size();
 
-    static bool resetar_a = false;
-    static bool resetar_b = false;
+//     static bool resetar_a = false;
+//     static bool resetar_b = false;
 
 
-    // guarda o passo atual; é resetado quando uma execução se completa
-    static std::size_t passo = 0;
-    // outras informações necessárias
-    static std::size_t segmento_atual = 0;
-    static std::size_t l_atual = 2;
-    static std::size_t r_atual = n - 1;
-    static bool encontrado = false;
-    static std::size_t indice_encontrado = 0;
+//     // guarda o passo atual; é resetado quando uma execução se completa
+//     static std::size_t passo = 0;
+//     // outras informações necessárias
+//     static std::size_t segmento_atual = 0;
+//     static std::size_t l_atual = 2;
+//     static std::size_t r_atual = n - 1;
+//     static bool encontrado = false;
+//     static std::size_t indice_encontrado = 0;
 
-    // usados na segunda parte
-    static double menor_distancia { std::numeric_limits<double>::max() };
-    static Ponto menor_ponto {};
-    static Reta menor_segmento {};
-    static Ponto menor_intersecao {};
+//     // usados na segunda parte
+//     static double menor_distancia { std::numeric_limits<double>::max() };
+//     static Ponto menor_ponto {};
+//     static Reta menor_segmento {};
+//     static Ponto menor_intersecao {};
 
-    double metade = (3.14159265358979323846 * (n - 2)) / 2;
+//     double metade = (3.14159265358979323846 * (n - 2)) / 2;
 
-    if (resetar_a) {
-        l_atual = 2;
-        r_atual = n - 1;
-        encontrado = false;
-        indice_encontrado = 0;
-        resetar_a = false;
-    }
-    if (resetar_b) {
-        passo = 0;
-        segmento_atual = 0;
-        l_atual = 2;
-        r_atual = n - 1;
-        encontrado = false;
-        indice_encontrado = 0;
+//     if (resetar_a) {
+//         l_atual = 2;
+//         r_atual = n - 1;
+//         encontrado = false;
+//         indice_encontrado = 0;
+//         resetar_a = false;
+//     }
+//     if (resetar_b) {
+//         passo = 0;
+//         segmento_atual = 0;
+//         l_atual = 2;
+//         r_atual = n - 1;
+//         encontrado = false;
+//         indice_encontrado = 0;
         
-        menor_distancia = std::numeric_limits<double>::max();
-        menor_ponto = Ponto{};
-        menor_segmento = Reta{};
-        menor_intersecao = Ponto{};
-        resetar_b = false;
-    }
+//         menor_distancia = std::numeric_limits<double>::max();
+//         menor_ponto = Ponto{};
+//         menor_segmento = Reta{};
+//         menor_intersecao = Ponto{};
+//         resetar_b = false;
+//     }
 
-    std::size_t i = segmento_atual;
-    std::size_t outro = (i + 1 >= n) ? (0) : (i + 1);
-    std::size_t m = (l_atual + r_atual) / 2;
-    // std::cout << l_atual << ' ' << r_atual << ' ' << i << ' ' << m << std::endl;
-    // corajosamente vou supor que r_atual nunca será menor que l_atual
-    std::size_t meio = (i+m >= n) ? (i+m-n) : (i+m);
-    std::size_t prev = (meio == 0) ? (n-1) : (meio-1);
-    std::size_t prox = (meio+1 >= n) ? (meio+1-n) : (meio+1);
-    if (l_atual > r_atual) {
-        encontrado = true;
-        std::cout << "aviso" << std::endl;
-    }
-    // checagem redundante
-    if (!encontrado && l_atual <= r_atual) {
-        double primeiro = produto_vetorial(fecho[i], fecho[outro], fecho[prev], fecho[meio]);
-        double segundo = produto_vetorial(fecho[i], fecho[outro], fecho[meio], fecho[prox]);
-        if (primeiro >= 0. && segundo <= 0.) {
-            indice_encontrado = meio;
-            encontrado = true;
-        } else if (primeiro < 0.) {
-            r_atual = m - 1;
-        } else {
-            l_atual = m + 1;
-        }
-    }
-    if (!encontrado) {
-        // retorna, pois esse passo acabou sem encontrar o meio
+//     std::size_t i = segmento_atual;
+//     std::size_t outro = (i + 1 >= n) ? (0) : (i + 1);
+//     std::size_t m = (l_atual + r_atual) / 2;
+//     // std::cout << l_atual << ' ' << r_atual << ' ' << i << ' ' << m << std::endl;
+//     // corajosamente vou supor que r_atual nunca será menor que l_atual
+//     std::size_t meio = (i+m >= n) ? (i+m-n) : (i+m);
+//     std::size_t prev = (meio == 0) ? (n-1) : (meio-1);
+//     std::size_t prox = (meio+1 >= n) ? (meio+1-n) : (meio+1);
+//     if (l_atual > r_atual) {
+//         encontrado = true;
+//         std::cout << "aviso" << std::endl;
+//     }
+//     // checagem redundante
+//     if (!encontrado && l_atual <= r_atual) {
+//         double primeiro = produto_vetorial(fecho[i], fecho[outro], fecho[prev], fecho[meio]);
+//         double segundo = produto_vetorial(fecho[i], fecho[outro], fecho[meio], fecho[prox]);
+//         if (primeiro >= 0. && segundo <= 0.) {
+//             indice_encontrado = meio;
+//             encontrado = true;
+//         } else if (primeiro < 0.) {
+//             r_atual = m - 1;
+//         } else {
+//             l_atual = m + 1;
+//         }
+//     }
+//     if (!encontrado) {
+//         // retorna, pois esse passo acabou sem encontrar o meio
         
-        //atualiza coisas
-        ++passo;
+//         //atualiza coisas
+//         ++passo;
 
-        return {Etapa::ETAPA_1, {fecho[i], fecho[outro]}, false, {}, fecho[i], fecho[meio], false, {}};
-    }
+//         return {Etapa::ETAPA_1, {fecho[i], fecho[outro]}, false, {}, fecho[i], fecho[meio], false, {}};
+//     }
 
-    // começo da etapa 2
+//     // começo da etapa 2
 
-    Ponto p = fecho[i];
-    Ponto p_o = fecho[outro];
-    Ponto p_oposto = fecho[indice_encontrado];
-    // Ponto prox_oposto = fecho[indice_encontrado_prox];
-    // Ponto prev_oposto = fecho[indice_encontrado_prev];
-    // double x3_x1 = p_oposto[0] - p[0];
-    // double x2_x1 = p_o[0] - p[0];
-    // double y3_y1 = p_oposto[1] - p[1];
-    // double y2_y1 = p_o[1] - p[1];
-    // double d_p = x2_x1*x3_x1 + y2_y1*y3_y1;
-    // double tam = x2_x1*x2_x1 + y2_y1*y2_y1;
-    // double c = (d_p) / (tam);
-    // double dist_x = x3_x1 - x2_x1*c;
-    // double dist_y = y3_y1 - y2_y1*c;
-    // double i_x = x2_x1*c + p[0];
-    // double i_y = y2_y1*c + p[1];
-    // if (i == 2) {
-    //     std::cout << p[0] << ' ' << p[1] << std::endl;
-    //     std::cout << p_o[0] << ' ' << p_o[1] << std::endl;
-    //     std::cout << p_oposto[0] << ' ' << p_oposto[1] << std::endl;
-    //     std::cout << d_p << std::endl;
-    //     std::cout << c << std::endl;
-    //     std::cout << tam << std::endl;
-    //     std::cout << x2_x1 << ' ' << y2_y1 << std::endl;
-    //     std::cout << x2_x1*c << ' ' << y2_y1*c << std::endl;
-    //     std::cout << i_x << ' ' << i_y << std::endl;
-    // }
-    auto diff = vetor_reta_ponto(p_oposto, {p, p_o});
-    // double distancia {dist(p_oposto, {p, p_o})};
-    Ponto intersecao_encontrada {p_oposto[0] - diff[0], p_oposto[1] - diff[1]};
-    // Ponto intersecao_encontrada {i_x, i_y};
-    double distancia {dist(p_oposto, intersecao_encontrada)};
-    Reta encontrada {p, p_o};
+//     Ponto p = fecho[i];
+//     Ponto p_o = fecho[outro];
+//     Ponto p_oposto = fecho[indice_encontrado];
+//     // Ponto prox_oposto = fecho[indice_encontrado_prox];
+//     // Ponto prev_oposto = fecho[indice_encontrado_prev];
+//     // double x3_x1 = p_oposto[0] - p[0];
+//     // double x2_x1 = p_o[0] - p[0];
+//     // double y3_y1 = p_oposto[1] - p[1];
+//     // double y2_y1 = p_o[1] - p[1];
+//     // double d_p = x2_x1*x3_x1 + y2_y1*y3_y1;
+//     // double tam = x2_x1*x2_x1 + y2_y1*y2_y1;
+//     // double c = (d_p) / (tam);
+//     // double dist_x = x3_x1 - x2_x1*c;
+//     // double dist_y = y3_y1 - y2_y1*c;
+//     // double i_x = x2_x1*c + p[0];
+//     // double i_y = y2_y1*c + p[1];
+//     // if (i == 2) {
+//     //     std::cout << p[0] << ' ' << p[1] << std::endl;
+//     //     std::cout << p_o[0] << ' ' << p_o[1] << std::endl;
+//     //     std::cout << p_oposto[0] << ' ' << p_oposto[1] << std::endl;
+//     //     std::cout << d_p << std::endl;
+//     //     std::cout << c << std::endl;
+//     //     std::cout << tam << std::endl;
+//     //     std::cout << x2_x1 << ' ' << y2_y1 << std::endl;
+//     //     std::cout << x2_x1*c << ' ' << y2_y1*c << std::endl;
+//     //     std::cout << i_x << ' ' << i_y << std::endl;
+//     // }
+//     auto diff = vetor_reta_ponto(p_oposto, {p, p_o});
+//     // double distancia {dist(p_oposto, {p, p_o})};
+//     Ponto intersecao_encontrada {p_oposto[0] - diff[0], p_oposto[1] - diff[1]};
+//     // Ponto intersecao_encontrada {i_x, i_y};
+//     double distancia {dist(p_oposto, intersecao_encontrada)};
+//     Reta encontrada {p, p_o};
 
-    if (distancia < menor_distancia) {
-        menor_distancia = distancia;
-        menor_ponto = p_oposto;
-        menor_segmento = encontrada;
-        menor_intersecao = intersecao_encontrada;
-    }
-    // de qualquer forma, aqui acaba outro passo, então temos que retornar
-    // e fazer as atualizações necessárias
-    ++segmento_atual;
-    if (segmento_atual >= n) {
-        // esse foi o último segmento
-        // precisamos resetar tudo e retornar que acabou
+//     if (distancia < menor_distancia) {
+//         menor_distancia = distancia;
+//         menor_ponto = p_oposto;
+//         menor_segmento = encontrada;
+//         menor_intersecao = intersecao_encontrada;
+//     }
+//     // de qualquer forma, aqui acaba outro passo, então temos que retornar
+//     // e fazer as atualizações necessárias
+//     ++segmento_atual;
+//     if (segmento_atual >= n) {
+//         // esse foi o último segmento
+//         // precisamos resetar tudo e retornar que acabou
 
-        // antes criar o objeto de retorno
-        PassoAPasso retorno {
-            Etapa::ETAPA_2,
-            {p, p_o},
-            true,
-            {p_oposto, intersecao_encontrada},
-            p,
-            p_oposto,
-            true,
-            {menor_ponto, menor_segmento, menor_distancia, menor_intersecao}
-        };
+//         // antes criar o objeto de retorno
+//         PassoAPasso retorno {
+//             Etapa::ETAPA_2,
+//             {p, p_o},
+//             true,
+//             {p_oposto, intersecao_encontrada},
+//             p,
+//             p_oposto,
+//             true,
+//             {menor_ponto, menor_segmento, menor_distancia, menor_intersecao}
+//         };
 
-        // isso é o resetar_b:
-        // passo = 0;
-        // segmento_atual = 0;
-        // l_atual = 2;
-        // r_atual = n - 1;
-        // encontrado = false;
-        // indice_encontrado = 0;
+//         // isso é o resetar_b:
+//         // passo = 0;
+//         // segmento_atual = 0;
+//         // l_atual = 2;
+//         // r_atual = n - 1;
+//         // encontrado = false;
+//         // indice_encontrado = 0;
         
-        // menor_distancia = std::numeric_limits<double>::max();
-        // menor_ponto = Ponto{};
-        // menor_segmento = Reta{};
-        // menor_intersecao = Ponto{};
-        resetar_b = true;
+//         // menor_distancia = std::numeric_limits<double>::max();
+//         // menor_ponto = Ponto{};
+//         // menor_segmento = Reta{};
+//         // menor_intersecao = Ponto{};
+//         resetar_b = true;
 
-        return retorno;
-    } else {
-        // o algoritmo continuará
-        ++passo;
-        // algumas partes são resetadas
-        // isso é o resetar_a:
-        // l_atual = 2;
-        // r_atual = n - 1;
-        // encontrado = false;
-        // indice_encontrado = 0;
-        resetar_a = true;
-        return {
-            Etapa::ETAPA_2,
-            {p, p_o},
-            true,
-            {p_oposto, intersecao_encontrada},
-            p,
-            p_oposto,
-            false,
-            {menor_ponto, menor_segmento, menor_distancia, menor_intersecao}
-        };
-    }
-}
+//         return retorno;
+//     } else {
+//         // o algoritmo continuará
+//         ++passo;
+//         // algumas partes são resetadas
+//         // isso é o resetar_a:
+//         // l_atual = 2;
+//         // r_atual = n - 1;
+//         // encontrado = false;
+//         // indice_encontrado = 0;
+//         resetar_a = true;
+//         return {
+//             Etapa::ETAPA_2,
+//             {p, p_o},
+//             true,
+//             {p_oposto, intersecao_encontrada},
+//             p,
+//             p_oposto,
+//             false,
+//             {menor_ponto, menor_segmento, menor_distancia, menor_intersecao}
+//         };
+//     }
+// }
 
-class AlgoritmoPassoAPasso {
-public:
-    AlgoritmoPassoAPasso(State& arg_estado, const Shader& arg_point_program, const Shader& arg_line_program) :
-        estado {arg_estado},
-        point_program {arg_point_program},
-        line_program {arg_line_program},
-        resultado_ate_agora {},
-        resultado_arrumado_para_renderizacao {false},
-        quantos {0} {
+// class AlgoritmoPassoAPasso {
+// public:
+//     AlgoritmoPassoAPasso(State& arg_estado, const Shader& arg_point_program, const Shader& arg_line_program) :
+//         estado {arg_estado},
+//         point_program {arg_point_program},
+//         line_program {arg_line_program},
+//         resultado_ate_agora {},
+//         resultado_arrumado_para_renderizacao {false},
+//         quantos {0} {
         
-        glGenBuffers(1, &passo_vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-        glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+//         glGenBuffers(1, &passo_vbo);
+//         glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+//         glBufferData(GL_ARRAY_BUFFER, 2*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
         
-        glGenVertexArrays(1, &passo_vao);
-        glBindVertexArray(passo_vao);
+//         glGenVertexArrays(1, &passo_vao);
+//         glBindVertexArray(passo_vao);
         
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
-        glEnableVertexAttribArray(1);
+//         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+//         glEnableVertexAttribArray(0);
+//         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+//         glEnableVertexAttribArray(1);
 
-        glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-    }
-    void reset() {
-        resultado_ate_agora = {};
-        quantos = 0;
-    }
-    void proximo_passo(const std::vector<Ponto>& fecho) {
-        ultimo_retorno = algoritmo_guedes_v1_passo_a_passo(fecho);
-        if (ultimo_retorno.etapa_do_passo_executado == Etapa::ETAPA_2) {
-            resultado_ate_agora = ultimo_retorno.resultado_ate_agora;
-        }
-        if (ultimo_retorno.acabou) {
-            estado.passo_a_passo_em_andamento = false;
-            estado.passo_a_passo_acabou_de_acabar = true;
-            resultado_arrumado_para_renderizacao = false;
-        }
-    }
-    void arruma_renderizacao() {
-        std::array<Ponto, 6> pontos {};
-        std::size_t num = 4;
-        pontos[0] = ultimo_retorno.colorir_esse;
-        pontos[1] = ultimo_retorno.esse_tambem;
-        pontos[2] = ultimo_retorno.desenhar_essa[0];
-        pontos[3] = ultimo_retorno.desenhar_essa[1];
-        if (ultimo_retorno.desenhar_a_outra) {
-            num += 2;
-            pontos[4] = ultimo_retorno.tambem_desenhar_essa[0];
-            pontos[5] = ultimo_retorno.tambem_desenhar_essa[1];
-        }
-        quantos = num;
+//         glBindVertexArray(0);
+//         glBindBuffer(GL_ARRAY_BUFFER, 0);
+//     }
+//     void reset() {
+//         resultado_ate_agora = {};
+//         quantos = 0;
+//     }
+//     void proximo_passo(const std::vector<Ponto>& fecho) {
+//         ultimo_retorno = algoritmo_guedes_v1_passo_a_passo(fecho);
+//         if (ultimo_retorno.etapa_do_passo_executado == Etapa::ETAPA_2) {
+//             resultado_ate_agora = ultimo_retorno.resultado_ate_agora;
+//         }
+//         if (ultimo_retorno.acabou) {
+//             estado.passo_a_passo_em_andamento = false;
+//             estado.passo_a_passo_acabou_de_acabar = true;
+//             resultado_arrumado_para_renderizacao = false;
+//         }
+//     }
+//     void arruma_renderizacao() {
+//         std::array<Ponto, 6> pontos {};
+//         std::size_t num = 4;
+//         pontos[0] = ultimo_retorno.colorir_esse;
+//         pontos[1] = ultimo_retorno.esse_tambem;
+//         pontos[2] = ultimo_retorno.desenhar_essa[0];
+//         pontos[3] = ultimo_retorno.desenhar_essa[1];
+//         if (ultimo_retorno.desenhar_a_outra) {
+//             num += 2;
+//             pontos[4] = ultimo_retorno.tambem_desenhar_essa[0];
+//             pontos[5] = ultimo_retorno.tambem_desenhar_essa[1];
+//         }
+//         quantos = num;
 
-        std::array<std::array<float, 3>, 6> cores {};
-        if (ultimo_retorno.etapa_do_passo_executado == Etapa::ETAPA_1) {
-            // usado como base: #26a6c9
-            cores[0] = {27, 181, 224};
-            cores[1] = {101, 197, 224};
-            cores[2] = {38, 166, 201};
-            cores[3] = {38, 166, 201};
-            if (ultimo_retorno.desenhar_a_outra) {
-                cores[4] = {111, 182, 201};
-                cores[5] = {111, 182, 201};
-            }
-        } else {
-            // usado como base: #c9262b
-            cores[0] = {230, 32, 39};
-            cores[1] = {230, 78, 83};
-            cores[2] = {201, 38, 43};
-            cores[3] = {201, 38, 43};
-            if (ultimo_retorno.desenhar_a_outra) {
-                cores[4] = {201, 71, 75};
-                cores[5] = {201, 71, 75};
-            }
-        }
-        std::vector<float> ps {};
-        ps.reserve(num * 5 * sizeof (float));
-        for (std::size_t i = 0; i < num; ++i) {
-            ps.push_back(pontos[i][0]);
-            ps.push_back(pontos[i][1]);
-            ps.push_back(cores[i][0] / 255.0f);
-            ps.push_back(cores[i][1] / 255.0f);
-            ps.push_back(cores[i][2] / 255.0f);
-        }
-        glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
+//         std::array<std::array<float, 3>, 6> cores {};
+//         if (ultimo_retorno.etapa_do_passo_executado == Etapa::ETAPA_1) {
+//             // usado como base: #26a6c9
+//             cores[0] = {27, 181, 224};
+//             cores[1] = {101, 197, 224};
+//             cores[2] = {38, 166, 201};
+//             cores[3] = {38, 166, 201};
+//             if (ultimo_retorno.desenhar_a_outra) {
+//                 cores[4] = {111, 182, 201};
+//                 cores[5] = {111, 182, 201};
+//             }
+//         } else {
+//             // usado como base: #c9262b
+//             cores[0] = {230, 32, 39};
+//             cores[1] = {230, 78, 83};
+//             cores[2] = {201, 38, 43};
+//             cores[3] = {201, 38, 43};
+//             if (ultimo_retorno.desenhar_a_outra) {
+//                 cores[4] = {201, 71, 75};
+//                 cores[5] = {201, 71, 75};
+//             }
+//         }
+//         std::vector<float> ps {};
+//         ps.reserve(num * 5 * sizeof (float));
+//         for (std::size_t i = 0; i < num; ++i) {
+//             ps.push_back(pontos[i][0]);
+//             ps.push_back(pontos[i][1]);
+//             ps.push_back(cores[i][0] / 255.0f);
+//             ps.push_back(cores[i][1] / 255.0f);
+//             ps.push_back(cores[i][2] / 255.0f);
+//         }
+//         glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+//         glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
 
-    }
-    void renderiza_passo() {
-        // isso vem junto, acho
-        // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-        glBindVertexArray(passo_vao);
-        line_program.use();
-        glDrawArrays(GL_LINES, 2, quantos - 2);
-        point_program.use();
-        glDrawArrays(GL_POINTS, 0, 2);
-    }
-    void renderiza_resultado() {
-        if (!resultado_arrumado_para_renderizacao) {
-            std::array<Ponto, 4> pontos {};
-            std::size_t num = 4;
-            pontos[0] = resultado_ate_agora.p;
-            pontos[1] = resultado_ate_agora.intersecao_encontrada;
-            pontos[2] = resultado_ate_agora.r[0];
-            pontos[3] = resultado_ate_agora.r[1];
-            std::vector<float> ps {};
-            ps.reserve(num * 5 * sizeof (float));
-            for (std::size_t i = 0; i < num; ++i) {
-                ps.push_back(pontos[i][0]);
-                ps.push_back(pontos[i][1]);
-                ps.push_back(0.149f); // 38
-                ps.push_back(0.788f); // 201
-                ps.push_back(0.682f); // 174
-            }
-            glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
+//     }
+//     void renderiza_passo() {
+//         // isso vem junto, acho
+//         // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+//         glBindVertexArray(passo_vao);
+//         line_program.use();
+//         glDrawArrays(GL_LINES, 2, quantos - 2);
+//         point_program.use();
+//         glDrawArrays(GL_POINTS, 0, 2);
+//     }
+//     void renderiza_resultado() {
+//         if (!resultado_arrumado_para_renderizacao) {
+//             std::array<Ponto, 4> pontos {};
+//             std::size_t num = 4;
+//             pontos[0] = resultado_ate_agora.p;
+//             pontos[1] = resultado_ate_agora.intersecao_encontrada;
+//             pontos[2] = resultado_ate_agora.r[0];
+//             pontos[3] = resultado_ate_agora.r[1];
+//             std::vector<float> ps {};
+//             ps.reserve(num * 5 * sizeof (float));
+//             for (std::size_t i = 0; i < num; ++i) {
+//                 ps.push_back(pontos[i][0]);
+//                 ps.push_back(pontos[i][1]);
+//                 ps.push_back(0.149f); // 38
+//                 ps.push_back(0.788f); // 201
+//                 ps.push_back(0.682f); // 174
+//             }
+//             glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+//             glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
 
-            resultado_arrumado_para_renderizacao = true;
-        }
+//             resultado_arrumado_para_renderizacao = true;
+//         }
 
-        glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-        glBindVertexArray(passo_vao);
-        line_program.use();
-        glDrawArrays(GL_LINES, 0, 4);
-        point_program.use();
-        glDrawArrays(GL_POINTS, 0, 4);
-    }
-private:
-    State& estado;
-    const Shader& point_program;
-    const Shader& line_program;
-    RetornoAlg resultado_ate_agora;
-    PassoAPasso ultimo_retorno;
-    bool resultado_arrumado_para_renderizacao = false;
-    std::size_t quantos;
-    unsigned int passo_vbo;
-    unsigned int passo_vao;
-};
+//         glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+//         glBindVertexArray(passo_vao);
+//         line_program.use();
+//         glDrawArrays(GL_LINES, 0, 4);
+//         point_program.use();
+//         glDrawArrays(GL_POINTS, 0, 4);
+//     }
+// private:
+//     State& estado;
+//     const Shader& point_program;
+//     const Shader& line_program;
+//     RetornoAlg resultado_ate_agora;
+//     PassoAPasso ultimo_retorno;
+//     bool resultado_arrumado_para_renderizacao = false;
+//     std::size_t quantos;
+//     unsigned int passo_vbo;
+//     unsigned int passo_vao;
+// };
 
-std::vector<Ponto> regiao_visivel(std::vector<Ponto> poligono, Ponto p);
+// std::vector<Ponto> regiao_visivel(std::vector<Ponto> poligono, Ponto p);
 
-std::vector<Ponto> regiao_visivel(std::vector<Ponto> poligono, Ponto p) {
-    // para facilitar nos loops, o primeiro vértice do polígono
-    // é copiado para o final do vetor
-    poligono.push_back(poligono[0]);
+// std::vector<Ponto> regiao_visivel(std::vector<Ponto> poligono, Ponto p) {
+//     // para facilitar nos loops, o primeiro vértice do polígono
+//     // é copiado para o final do vetor
+//     poligono.push_back(poligono[0]);
 
-    std::vector<bool> visiveis(poligono.size());
-    std::multimap<std::size_t, std::pair<Ponto, double>> inters;
-    // std::vector<std::tuple<Ponto, double, std::size_t>> inters;
-    for (std::size_t i = 1; i < poligono.size(); ++i) {
-        bool visivel = true;
-        for (std::size_t j = 0; j < poligono.size() - 1; ++j) {
-            if (j == i || j == i - 1 || (j == 0 && i == poligono.size() - 1)) {
-                continue;
-            }
-            auto [s, t] = intersecao(p, poligono[i], poligono[j], poligono[j + 1]);
+//     std::vector<bool> visiveis(poligono.size());
+//     std::multimap<std::size_t, std::pair<Ponto, double>> inters;
+//     // std::vector<std::tuple<Ponto, double, std::size_t>> inters;
+//     for (std::size_t i = 1; i < poligono.size(); ++i) {
+//         bool visivel = true;
+//         for (std::size_t j = 0; j < poligono.size() - 1; ++j) {
+//             if (j == i || j == i - 1 || (j == 0 && i == poligono.size() - 1)) {
+//                 continue;
+//             }
+//             auto [s, t] = intersecao(p, poligono[i], poligono[j], poligono[j + 1]);
 
-            // if (intersecao_com_left(p, poligono[i], poligono[j], poligono[j + 1]) != Intersecao::NAO) {
-            if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
-                visivel = false;
-                break;
-            }
-        }
-        if (visivel) {
-            visiveis[i] = true;
-            auto& poly = poligono;
-            // std::size_t prev = (i == 0) ? (poly.size()-1) : (i-1);
-            std::size_t prev = i - 1;
-            std::size_t prox = (i+1 >= poly.size()) ? (1) : (i+1);
-            if (!left(poly[prev], poly[i], poly[prox]) && !(left(poly[prev], poly[i], p) && left(poly[i], poly[prox], p))) {
-                // vai ter interseção com outra aresta
-                std::size_t menor_aresta = poly.size();
-                double menor_distancia = std::numeric_limits<double>::infinity();
-                double t_do_menor = std::numeric_limits<double>::infinity();
-                for (std::size_t j = 0; j < poligono.size() - 1; ++j) {
-                    if (j == i || j == i - 1 || (j == 0 && i == poligono.size() - 1)) {
-                        continue;
-                    }
-                    auto [s, t] = intersecao(p, poly[i], poly[j], poly[j + 1]);
-                    if (t > 0 && t < 1 && s > 0 && s < menor_distancia) {
-                        menor_distancia = s;
-                        menor_aresta = j;
-                        t_do_menor = t;
-                    }
-                }
-                if (menor_aresta == poly.size()) {
-                    // deveria ter pelo menos uma interseção
-                    std::cerr << "erro em 'regiao_visivel" << std::endl;
-                    return {};
-                }
-                double dx = menor_distancia * (poly[i][0] - p[0]);
-                double dy = menor_distancia * (poly[i][1] - p[1]);
-                Ponto inter = {p[0] + dx, p[1] + dy};
-                inters.insert({menor_aresta, {inter, t_do_menor}});
-            }
-        }
-    }
-    std::vector<Ponto> retorno;
-    for (std::size_t i = 0; i < poligono.size(); ++i) {
-        if (visiveis[i]) {
-            retorno.push_back(poligono[i]);
-        }
-        std::vector<std::pair<Ponto, double>> sub_inters;
-        auto [begin, end] = inters.equal_range(i);
-        while (begin != end) {
-            sub_inters.push_back(begin->second);
-            ++begin;
-        }
-        std::sort(sub_inters.begin(), sub_inters.end(), [](auto a, auto b) {
-            return a.second < b.second;
-        });
-        for (auto& [ponto, t] : sub_inters) {
-            retorno.push_back(ponto);
-        }
-    }
-    return retorno;
-}
+//             // if (intersecao_com_left(p, poligono[i], poligono[j], poligono[j + 1]) != Intersecao::NAO) {
+//             if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
+//                 visivel = false;
+//                 break;
+//             }
+//         }
+//         if (visivel) {
+//             visiveis[i] = true;
+//             auto& poly = poligono;
+//             // std::size_t prev = (i == 0) ? (poly.size()-1) : (i-1);
+//             std::size_t prev = i - 1;
+//             std::size_t prox = (i+1 >= poly.size()) ? (1) : (i+1);
+//             if (!left(poly[prev], poly[i], poly[prox]) && !(left(poly[prev], poly[i], p) && left(poly[i], poly[prox], p))) {
+//                 // vai ter interseção com outra aresta
+//                 std::size_t menor_aresta = poly.size();
+//                 double menor_distancia = std::numeric_limits<double>::infinity();
+//                 double t_do_menor = std::numeric_limits<double>::infinity();
+//                 for (std::size_t j = 0; j < poligono.size() - 1; ++j) {
+//                     if (j == i || j == i - 1 || (j == 0 && i == poligono.size() - 1)) {
+//                         continue;
+//                     }
+//                     auto [s, t] = intersecao(p, poly[i], poly[j], poly[j + 1]);
+//                     if (t > 0 && t < 1 && s > 0 && s < menor_distancia) {
+//                         menor_distancia = s;
+//                         menor_aresta = j;
+//                         t_do_menor = t;
+//                     }
+//                 }
+//                 if (menor_aresta == poly.size()) {
+//                     // deveria ter pelo menos uma interseção
+//                     std::cerr << "erro em 'regiao_visivel" << std::endl;
+//                     return {};
+//                 }
+//                 double dx = menor_distancia * (poly[i][0] - p[0]);
+//                 double dy = menor_distancia * (poly[i][1] - p[1]);
+//                 Ponto inter = {p[0] + dx, p[1] + dy};
+//                 inters.insert({menor_aresta, {inter, t_do_menor}});
+//             }
+//         }
+//     }
+//     std::vector<Ponto> retorno;
+//     for (std::size_t i = 0; i < poligono.size(); ++i) {
+//         if (visiveis[i]) {
+//             retorno.push_back(poligono[i]);
+//         }
+//         std::vector<std::pair<Ponto, double>> sub_inters;
+//         auto [begin, end] = inters.equal_range(i);
+//         while (begin != end) {
+//             sub_inters.push_back(begin->second);
+//             ++begin;
+//         }
+//         std::sort(sub_inters.begin(), sub_inters.end(), [](auto a, auto b) {
+//             return a.second < b.second;
+//         });
+//         for (auto& [ponto, t] : sub_inters) {
+//             retorno.push_back(ponto);
+//         }
+//     }
+//     return retorno;
+// }
 
 struct Coisas_Para_Piscar {
     std::size_t ticks;
@@ -3640,9 +3647,22 @@ enum class EntradaDelaunay {
 };
 
 // std::size_t vertice_maluco = 0;
+bool operator<(const Ponto& lhs, const Ponto& rhs);
+bool operator<(const Ponto& lhs, const Ponto& rhs) {
+    if (lhs[0] < rhs[0]) return true;
+    else if (lhs[0] == rhs[0]) return lhs[1] > rhs[1];
+    else return false;
+}
+
+// bool cmp_ponto(const Ponto& p1, const Ponto& p2);
+// bool cmp_ponto(const Ponto& p1, const Ponto& p2) {
+//     if (p1[0] < p2[0]) return true;
+//     else if (p1[0] == p2[0]) return p1[1] > p2[1];
+//     else return false;
+// }
 
 struct CoisasDelaunay {
-    CoisasDelaunay() {
+    CoisasDelaunay(std::string imagem) : x{0}, y{0}, n{0} {
         glGenBuffers(1, &extra_vbo);
         glBindBuffer(GL_ARRAY_BUFFER, extra_vbo);
         glBufferData(GL_ARRAY_BUFFER, 128*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
@@ -3687,179 +3707,202 @@ struct CoisasDelaunay {
         glBindVertexArray(0);
 
         mostrando_circulo = false;
-        estado = EstadoDelaunay::INICIANDO;
+        estado = EstadoDelaunay::OK;
         estado_entrada = EntradaDelaunay::NORMAL;
         last_size = 0;
         edge_count = 0;
         triangle_count = 0;
         last_gen = 0;
+        
+        image_data = stbi_load(imagem.c_str(), &x, &y, &n, 0);
+        if (!image_data) {
+            std::cerr << "nao carregou imagem \"" << imagem << "\"" << std::endl;
+            std::exit(1);
+        }
+        if (n != 3 || x != y) {
+            std::cout << "que estranho " << x << ' ' << y << ' ' << n << std::endl;
+        }
+        inicia();
+    }
+    ~CoisasDelaunay() {
+        stbi_image_free(image_data);
     }
 
-    void reset() {
+    void reset(std::string imagem) {
         // reseta tudo menos vbo e outros
-
-        mostrando_circulo = false;
-        estado = EstadoDelaunay::INICIANDO;
+        stbi_image_free(image_data);
+        estado = EstadoDelaunay::OK;
         estado_entrada = EntradaDelaunay::NORMAL;
-        pontos.clear();
         last_size = 0;
         edge_count = 0;
         triangle_count = 0;
         last_gen = 0;
         dcel.reset();
+        
+        image_data = stbi_load(imagem.c_str(), &x, &y, &n, 0);
+        if (!image_data) {
+            std::cerr << "nao carregou imagem \"" << imagem << "\"" << std::endl;
+            std::exit(1);
+        }
+        inicia();
     }
 
-    void triangulacao_inicial() {
-        double menor = std::numeric_limits<double>::infinity();
-        double menor_x = std::numeric_limits<double>::infinity();
-        double menor_y = std::numeric_limits<double>::infinity();
-        for (std::size_t i = 0; i < pontos.size(); ++i) {
-            for (std::size_t j = 0; j < pontos.size(); ++j) {
-                if (i == j) continue;
-                if (dist(pontos[i], pontos[j]) < menor) {
-                    menor = dist(pontos[i], pontos[j]);
-                    menor_x = std::abs(pontos[i][0] - pontos[j][0]);
-                    menor_y = std::abs(pontos[i][1] - pontos[j][1]);
-                }
-            }
+    Cor encontra_cor(Ponto p) {
+        double p_x = std::floor(((p[0] + 1.0) / 2.0) * x);
+        int i_x = std::min(x, static_cast<int>(p_x));
+        
+        double p_y = std::floor(((p[1] + 1.0) / 2.0) * y);
+        int i_y = std::min(y, static_cast<int>(p_y));
+        std::cout << p[0] << ' ' << p[1] << " -- " << p_x << ' ' << p_y << std::endl;
+        std::cout << "foi buscada a cor do pixel " << i_x << ' ' << i_y << std::endl;
+
+        unsigned char r = image_data[i_y * y * n + i_x * n + 0];
+        unsigned char g = image_data[i_y * y * n + i_x * n + 1];
+        unsigned char b = image_data[i_y * y * n + i_x * n + 2];
+
+        return Cor(r, g, b);
+    }
+    
+    bool adiciona_ponto(Ponto p) {
+        double p_x = std::floor(((p[0] + 1.0) / 2.0) * x);
+        int i_x = std::min(x, static_cast<int>(p_x));
+        
+        double p_y = std::floor(((p[1] + 1.0) / 2.0) * y);
+        int i_y = std::min(y, static_cast<int>(p_y));
+        std::cout << "foi adicionado o pixel " << i_x << ' ' << i_y << std::endl;
+
+        double new_x = (((static_cast<double>(i_x)) / x) * 2.0) - 1.0 + (1.0 / x);
+        double new_y = (((static_cast<double>(i_y)) / y) * 2.0) - 1.0 + (1.0 / y);
+
+        double lim_inf = (((0) / x) * 2.0) - 1.0 + (1.0 / x);
+        double lim_sup = ((static_cast<double>(x-1) / x) * 2.0) - 1.0 + (1.0 / x);
+        if (new_x < lim_inf || new_x > lim_sup || new_y < lim_inf || new_y > lim_sup) {
+            std::cout << "nao entendi " << new_x << ' ' << new_y << std::endl;
+            return false;
         }
-        std::cout << "menor distancia: " << menor << std::endl;
-        std::cout << "menor_x distancia: " << menor_x << std::endl;
-        std::cout << "menor_y distancia: " << menor_y << std::endl;
-        if (estado != EstadoDelaunay::INICIANDO) {
-            // isso quer dizer que já foi triangulado uma vez
-            return;
-        }
+        Ponto new_p = {new_x, new_y};
 
-        // temporário:
-        // if (pontos.size() == 4) {
-        //     dcel = std::make_unique<DCEL>(DCEL::EnganaCompilador{}, pontos);
-            
-        //     auto a = fecho_convexo(pontos);
-        //     for (std::size_t i = 0; i < a.size() - 1; ++i) {
-        //         auto it1 = std::find(pontos.begin(), pontos.end(), a[i]);
-        //         auto it2 = std::find(pontos.begin(), pontos.end(), a[i+1]);
-        //         dcel->novo_inclui_aresta(static_cast<std::size_t>(it1 - pontos.begin()), static_cast<std::size_t>(it2 - pontos.begin()));
-        //         for (std::size_t j = 0; j < dcel->faces.size(); ++j) {
-        //             std::cout << j << ": ";
-        //             auto is = dcel->indices_dos_vertices_de_uma_face(j);
-        //             for (auto ix : is) {
-        //                 std::cout << ix << ' ';
-        //             }
-        //             std::cout << std::endl;
-        //         }
-        //     }
-        //     dcel->novo_inclui_aresta(static_cast<std::size_t>(std::find(pontos.begin(), pontos.end(), a.back()) - pontos.begin()), static_cast<std::size_t>(std::find(pontos.begin(), pontos.end(), a.front()) - pontos.begin()));
-        //     for (std::size_t j = 0; j < dcel->faces.size(); ++j) {
-        //         std::cout << j << ": ";
-        //         auto is = dcel->indices_dos_vertices_de_uma_face(j);
-        //         for (auto ix : is) {
-        //             std::cout << ix << ' ';
-        //         }
-        //         std::cout << std::endl;
-        //     }
-            
-        //     if (a.size() == 3) {
-        //         std::size_t i = 0;
-        //         for (; i < 4; ++i) {
-        //             if (pontos[i] != a[0] && pontos[i] != a[1] && pontos[i] != a[2]) {
-        //                 break;
-        //             }
-        //         }
-        //         dcel->novo_inclui_aresta(i, static_cast<std::size_t>(std::find(pontos.begin(), pontos.end(), a[0]) - pontos.begin()));
-        //         for (std::size_t j = 0; j < dcel->faces.size(); ++j) {
-        //             std::cout << j << ": ";
-        //             auto is = dcel->indices_dos_vertices_de_uma_face(j);
-        //             for (auto ix : is) {
-        //                 std::cout << ix << ' ';
-        //             }
-        //             std::cout << std::endl;
-        //         }
-        //         dcel->novo_inclui_aresta(i, static_cast<std::size_t>(std::find(pontos.begin(), pontos.end(), a[1]) - pontos.begin()));
-        //         for (std::size_t j = 0; j < dcel->faces.size(); ++j) {
-        //             std::cout << j << ": ";
-        //             auto is = dcel->indices_dos_vertices_de_uma_face(j);
-        //             for (auto ix : is) {
-        //                 std::cout << ix << ' ';
-        //             }
-        //             std::cout << std::endl;
-        //         }
-        //         dcel->novo_inclui_aresta(i, static_cast<std::size_t>(std::find(pontos.begin(), pontos.end(), a[2]) - pontos.begin()));
-        //         for (std::size_t j = 0; j < dcel->faces.size(); ++j) {
-        //             std::cout << j << ": ";
-        //             auto is = dcel->indices_dos_vertices_de_uma_face(j);
-        //             for (auto ix : is) {
-        //                 std::cout << ix << ' ';
-        //             }
-        //             std::cout << std::endl;
-        //         }
-        //     } else {
-        //         for (std::size_t i = 0; i < 4; ++i) {
-        //             for (std::size_t j = 0; j < 4; ++j) {
-        //                 if (i == j) continue;
-        //                 for (std::size_t k = 0; k < 4; ++k) {
-        //                     if (k == i || k == j) continue;
-        //                     for (std::size_t l = 0; l < 4; ++l) {
-        //                         if (l == i || l == j || l == k) continue;
-        //                         if (left(pontos[i], pontos[j], pontos[k]) != left(pontos[i], pontos[j], pontos[l])) {
-        //                             dcel->novo_inclui_aresta(i, j);
-        //                             i = j = k = l = 5;
-        //                         }
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
+        pontos.insert(new_p);
 
-            // dcel->novo_inclui_aresta(0, 1);
-            // if (left(pontos[0], pontos[1], pontos[2]) != left(pontos[0], pontos[1], pontos[3])) {
-            //     dcel->novo_inclui_aresta(1, 2);
-            //     dcel->novo_inclui_aresta(2, 0);
+        triangulacao();
 
-            //     dcel->novo_inclui_aresta(1, 3);
-            //     dcel->novo_inclui_aresta(3, 0);
-            // } else if (left(pontos[1], pontos[2], pontos[3]) && left(pontos[2], pontos[0], pontos[3])) {
-            //     dcel->novo_inclui_aresta(1, 2);
-            //     dcel->novo_inclui_aresta(2, 0);
-
-            //     dcel->novo_inclui_aresta(3, 0);
-            //     dcel->novo_inclui_aresta(3, 1);
-            //     dcel->novo_inclui_aresta(3, 2);
-            // } else if (left(pontos[1], pontos[2], pontos[3])) {
-            //     dcel->novo_inclui_aresta(1, 2);
-            //     dcel->novo_inclui_aresta(2, 0);
-
-
-            // }
-
-
-        //     ++dcel->geracao_atual;
-        //     estado = EstadoDelaunay::OK;
+        return true;
+        // dcel->reserva_espacos(4, 8, 5);
+        // auto [em_alguma_aresta, aresta] = dcel->em_alguma_aresta(new_p);
+        // if (em_alguma_aresta) {
+        //     // ignorar esse caso por enquanto
+        //     return false;
         // }
-        // return;
+        // std::size_t f = dcel->qual_face(new_p);
 
-        if (pontos.size() < 3) {
-            // nem sei o que fazer nesse caso
-            return;
-        }
-        std::sort(pontos.begin(), pontos.end(), [](Ponto p1, Ponto p2) { if (p1[0] < p2[0]) return true; else if (p1[0] == p2[0]) return p1[1] > p2[1]; else return false; });
-        dcel = std::make_unique<DCEL>(DCEL::EnganaCompilador{}, pontos);
-        delaunay_div_conq_recursivo(0, pontos.size());
-        // std::cout << "aaa" << std::endl;
-        ++dcel->geracao_atual;
-        estado = EstadoDelaunay::OK;
-        std::set<std::size_t> componentes;
-        for (std::size_t i = 0; i < dcel->edges.size(); ++i) {
-            if (dcel->edges_invalidas.count(i) > 0) continue;
-            if (dcel->edges[i].componente != 0) {
-                if (componentes.count(dcel->edges[i].componente) == 0) {
-                    std::cout << "ah velho" << dcel->edges[i].componente << std::endl;
-                    componentes.insert(dcel->edges[i].componente);
-                }
-            }
-        }
+        // std::array<bool, 4> ok = {true, true, true, true};
+        // std::array<DCEL::Edge*, 4> es = {nullptr, nullptr, nullptr, nullptr};
+        // std::array<Ponto, 4> ds = {
+        //     Ponto{0, -3.0},
+        //     Ponto{3.0, 0},
+        //     Ponto{0, 3.0},
+        //     Ponto{-3.0, 0}
+        // };
+        // auto start = dcel->faces[f].edge;
+        // auto e = start;
+        // Ponto p2 = {new_x - 1.0, new_y};
+        // do {
+        //     for (std::size_t i = 0; i < 4; ++i) {
+        //         auto inter = intersecao_com_left(new_p, {new_x + ds[i][0], new_y + ds[i][1]}, e->origin->xy, e->twin->origin->xy);
+        //         if (inter == Intersecao::PROPRIA) {
+        //             es[i] = e;
+        //             break;
+        //         } else if (inter == Intersecao::IMPROPRIA) {
+        //             es[i] = e;
+        //             ok[i] = false;
+        //         }
+        //     }
+        //     e = e->next;
+        // } while (e != start);
+
+        // for (std::size_t i = 0; i < 4; ++i) {
+        //     if (ok[i]) {
+        //         auto [s, t] = intersecao(new_p, {new_x + ds[i][0], new_y + ds[i][1]}, es[i]->origin->xy, es[i]->twin->origin->xy);
+        //         dcel->inclui_vertice_em_aresta(static_cast<std::size_t>(es[i] - dcel->edges.data()), t);
+        //     } else {
+        //         std::cout << "deve dar errado, arrumar depois" << std::endl;
+        //     }
+        // }
+
+        // dcel->inclui_aresta(dcel->vertices.size() - 4, dcel->vertices.size() - 2);
+        // double t = dist(new_p, dcel->vertices[dcel->vertices.size() - 4].xy) / 
+        //            dist(dcel->vertices[dcel->vertices.size() - 4].xy, dcel->vertices[dcel->vertices.size() - 2].xy);
+        // dcel->inclui_vertice_em_aresta(dcel->edges.size() - 1, t);
+
+        // dcel->inclui_aresta(dcel->vertices.size() - 4, dcel->vertices.size() - 1);
+        // dcel->inclui_aresta(dcel->vertices.size() - 2, dcel->vertices.size() - 1);
+        // return true;
     }
 private:
+    void triangulacao() {
+        // double menor = std::numeric_limits<double>::infinity();
+        // double menor_x = std::numeric_limits<double>::infinity();
+        // double menor_y = std::numeric_limits<double>::infinity();
+        // for (std::size_t i = 0; i < pontos.size(); ++i) {
+        //     for (std::size_t j = 0; j < pontos.size(); ++j) {
+        //         if (i == j) continue;
+        //         if (dist(pontos[i], pontos[j]) < menor) {
+        //             menor = dist(pontos[i], pontos[j]);
+        //             menor_x = std::abs(pontos[i][0] - pontos[j][0]);
+        //             menor_y = std::abs(pontos[i][1] - pontos[j][1]);
+        //         }
+        //     }
+        // }
+        // std::cout << "menor distancia: " << menor << std::endl;
+        // std::cout << "menor_x distancia: " << menor_x << std::endl;
+        // std::cout << "menor_y distancia: " << menor_y << std::endl;
+        // if (estado != EstadoDelaunay::INICIANDO) {
+        //     // isso quer dizer que já foi triangulado uma vez
+        //     return;
+        // }
+
+        std::sort(pontos.begin(), pontos.end(), [](Ponto p1, Ponto p2) { if (p1[0] < p2[0]) return true; else if (p1[0] == p2[0]) return p1[1] > p2[1]; else return false; });
+        std::vector<Ponto> pontos_vec(pontos.begin(), pontos.end());
+        dcel = std::make_unique<DCEL>(DCEL::EnganaCompilador{}, pontos_vec);
+        delaunay_div_conq_recursivo(0, pontos_vec.size());
+        // std::cout << "aaa" << std::endl;
+        dcel->geracao_atual = pontos.size();
+        estado = EstadoDelaunay::OK;
+        // std::set<std::size_t> componentes;
+        // for (std::size_t i = 0; i < dcel->edges.size(); ++i) {
+        //     if (dcel->edges_invalidas.count(i) > 0) continue;
+        //     if (dcel->edges[i].componente != 0) {
+        //         if (componentes.count(dcel->edges[i].componente) == 0) {
+        //             std::cout << "ah velho" << dcel->edges[i].componente << std::endl;
+        //             componentes.insert(dcel->edges[i].componente);
+        //         }
+        //     }
+        // }
+    }
+
+    void inicia() {
+        double lim_inf = (((0) / x) * 2.0) - 1.0 + (1.0 / x);
+        double lim_sup = ((static_cast<double>(x-1) / x) * 2.0) - 1.0 + (1.0 / x);
+
+        // double lim_inf = -1.0 + (1.0 / x);
+        // double lim_sup =  1.0 - (1.0 / x);
+        pontos.insert({
+            {lim_inf, lim_inf},
+            {lim_sup, lim_inf},
+            {lim_sup, lim_sup},
+            {lim_inf, lim_sup}
+        });
+        dcel = std::make_unique<DCEL>(std::vector<Ponto>{
+            {lim_inf, lim_inf},
+            {lim_sup, lim_inf},
+            {lim_sup, lim_sup},
+            {lim_inf, lim_sup},
+            {lim_inf, lim_inf}
+        });
+        dcel->inclui_aresta(0, 2);
+
+    }
+
 
     // o 'j' não é incluso
     bool delaunay_div_conq_recursivo(std::size_t i, std::size_t j) {
@@ -4080,6 +4123,11 @@ private:
     }
 
 public:
+    int x;
+    int y;
+    int n;
+    unsigned char* image_data;
+
     unsigned vbo;
     unsigned vao;
     unsigned ebo;
@@ -4095,236 +4143,236 @@ public:
     std::size_t last_gen;
     EstadoDelaunay estado;
     EntradaDelaunay estado_entrada;
-    std::vector<Ponto> pontos;
+    std::set<Ponto> pontos;
     std::unique_ptr<DCEL> dcel;
 
     static const std::size_t max_floats = 512*1024;
 };
 
 
-enum class EstadoTrabalho {
-    OK,
-};
+// enum class EstadoTrabalho {
+//     OK,
+// };
 
-enum class EntradaTrabalho {
-    NORMAL,
-};
+// enum class EntradaTrabalho {
+//     NORMAL,
+// };
 
-// std::size_t vertice_maluco = 0;
+// // std::size_t vertice_maluco = 0;
 
-struct CoisasTrabalho {
-    CoisasTrabalho(std::string imagem) : x{0}, y{0}, n{0} {
-        glGenBuffers(1, &extra_vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, extra_vbo);
-        glBufferData(GL_ARRAY_BUFFER, 128*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+// struct CoisasTrabalho {
+//     CoisasTrabalho(std::string imagem) : x{0}, y{0}, n{0} {
+//         glGenBuffers(1, &extra_vbo);
+//         glBindBuffer(GL_ARRAY_BUFFER, extra_vbo);
+//         glBufferData(GL_ARRAY_BUFFER, 128*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
         
-        glGenVertexArrays(1, &extra_vao);
-        glBindVertexArray(extra_vao);
+//         glGenVertexArrays(1, &extra_vao);
+//         glBindVertexArray(extra_vao);
         
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
-        glEnableVertexAttribArray(1);
+//         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+//         glEnableVertexAttribArray(0);
+//         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+//         glEnableVertexAttribArray(1);
 
 
-        glGenBuffers(1, &vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, max_floats*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+//         glGenBuffers(1, &vbo);
+//         glBindBuffer(GL_ARRAY_BUFFER, vbo);
+//         glBufferData(GL_ARRAY_BUFFER, max_floats*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
         
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
+//         glGenVertexArrays(1, &vao);
+//         glBindVertexArray(vao);
         
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
-        glEnableVertexAttribArray(1);
+//         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+//         glEnableVertexAttribArray(0);
+//         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+//         glEnableVertexAttribArray(1);
         
-        glGenBuffers(1, &ebo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, max_floats*sizeof (unsigned), nullptr, GL_DYNAMIC_DRAW);
+//         glGenBuffers(1, &ebo);
+//         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+//         glBufferData(GL_ELEMENT_ARRAY_BUFFER, max_floats*sizeof (unsigned), nullptr, GL_DYNAMIC_DRAW);
 
-        glGenVertexArrays(1, &faces_vao);
-        glBindVertexArray(faces_vao);
+//         glGenVertexArrays(1, &faces_vao);
+//         glBindVertexArray(faces_vao);
         
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
-        glEnableVertexAttribArray(1);
+//         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+//         glEnableVertexAttribArray(0);
+//         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+//         glEnableVertexAttribArray(1);
         
-        glGenBuffers(1, &faces_ebo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, faces_ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, max_floats*sizeof (unsigned), nullptr, GL_DYNAMIC_DRAW);
+//         glGenBuffers(1, &faces_ebo);
+//         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, faces_ebo);
+//         glBufferData(GL_ELEMENT_ARRAY_BUFFER, max_floats*sizeof (unsigned), nullptr, GL_DYNAMIC_DRAW);
 
-        glBindVertexArray(0);
+//         glBindVertexArray(0);
 
-        estado = EstadoTrabalho::OK;
-        estado_entrada = EntradaTrabalho::NORMAL;
-        last_size = 0;
-        edge_count = 0;
-        triangle_count = 0;
-        last_gen = 0;
+//         estado = EstadoTrabalho::OK;
+//         estado_entrada = EntradaTrabalho::NORMAL;
+//         last_size = 0;
+//         edge_count = 0;
+//         triangle_count = 0;
+//         last_gen = 0;
 
-        image_data = stbi_load(imagem.c_str(), &x, &y, &n, 0);
-        if (!image_data) {
-            std::cerr << "nao carregou imagem \"" << imagem << "\"" << std::endl;
-            std::exit(1);
-        }
-        if (n != 3 || x != y) {
-            std::cout << "que estranho " << x << ' ' << y << ' ' << n << std::endl;
-        }
-        inicia();
-    }
-    ~CoisasTrabalho() {
-        stbi_image_free(image_data);
+//         image_data = stbi_load(imagem.c_str(), &x, &y, &n, 0);
+//         if (!image_data) {
+//             std::cerr << "nao carregou imagem \"" << imagem << "\"" << std::endl;
+//             std::exit(1);
+//         }
+//         if (n != 3 || x != y) {
+//             std::cout << "que estranho " << x << ' ' << y << ' ' << n << std::endl;
+//         }
+//         inicia();
+//     }
+//     ~CoisasTrabalho() {
+//         stbi_image_free(image_data);
 
-    }
+//     }
 
-    void reset(std::string imagem) {
-        // reseta tudo menos vbo e outros
-        stbi_image_free(image_data);
-        estado = EstadoTrabalho::OK;
-        estado_entrada = EntradaTrabalho::NORMAL;
-        last_size = 0;
-        edge_count = 0;
-        triangle_count = 0;
-        last_gen = 0;
-        dcel.reset();
+//     void reset(std::string imagem) {
+//         // reseta tudo menos vbo e outros
+//         stbi_image_free(image_data);
+//         estado = EstadoTrabalho::OK;
+//         estado_entrada = EntradaTrabalho::NORMAL;
+//         last_size = 0;
+//         edge_count = 0;
+//         triangle_count = 0;
+//         last_gen = 0;
+//         dcel.reset();
         
-        image_data = stbi_load(imagem.c_str(), &x, &y, &n, 0);
-        if (!image_data) {
-            std::cerr << "nao carregou imagem \"" << imagem << "\"" << std::endl;
-            std::exit(1);
-        }
-        inicia();
-    }
+//         image_data = stbi_load(imagem.c_str(), &x, &y, &n, 0);
+//         if (!image_data) {
+//             std::cerr << "nao carregou imagem \"" << imagem << "\"" << std::endl;
+//             std::exit(1);
+//         }
+//         inicia();
+//     }
 
-    Cor encontra_cor(Ponto p) {
-        double p_x = std::floor(((p[0] + 1.0) / 2.0) * x);
-        int i_x = std::min(x, static_cast<int>(p_x));
+//     Cor encontra_cor(Ponto p) {
+//         double p_x = std::floor(((p[0] + 1.0) / 2.0) * x);
+//         int i_x = std::min(x, static_cast<int>(p_x));
         
-        double p_y = std::floor(((p[1] + 1.0) / 2.0) * y);
-        int i_y = std::min(y, static_cast<int>(p_y));
-        std::cout << p[0] << ' ' << p[1] << " -- " << p_x << ' ' << p_y << std::endl;
-        std::cout << "foi buscada a cor do pixel " << i_x << ' ' << i_y << std::endl;
+//         double p_y = std::floor(((p[1] + 1.0) / 2.0) * y);
+//         int i_y = std::min(y, static_cast<int>(p_y));
+//         std::cout << p[0] << ' ' << p[1] << " -- " << p_x << ' ' << p_y << std::endl;
+//         std::cout << "foi buscada a cor do pixel " << i_x << ' ' << i_y << std::endl;
 
-        unsigned char r = image_data[i_y * y * n + i_x * n + 0];
-        unsigned char g = image_data[i_y * y * n + i_x * n + 1];
-        unsigned char b = image_data[i_y * y * n + i_x * n + 2];
+//         unsigned char r = image_data[i_y * y * n + i_x * n + 0];
+//         unsigned char g = image_data[i_y * y * n + i_x * n + 1];
+//         unsigned char b = image_data[i_y * y * n + i_x * n + 2];
 
-        return Cor(r, g, b);
-    }
+//         return Cor(r, g, b);
+//     }
 
-    bool adiciona_ponto(Ponto p) {
-        double p_x = std::floor(((p[0] + 1.0) / 2.0) * x);
-        int i_x = std::min(x, static_cast<int>(p_x));
+//     bool adiciona_ponto(Ponto p) {
+//         double p_x = std::floor(((p[0] + 1.0) / 2.0) * x);
+//         int i_x = std::min(x, static_cast<int>(p_x));
         
-        double p_y = std::floor(((p[1] + 1.0) / 2.0) * y);
-        int i_y = std::min(y, static_cast<int>(p_y));
-        std::cout << "foi adicionado o pixel " << i_x << ' ' << i_y << std::endl;
+//         double p_y = std::floor(((p[1] + 1.0) / 2.0) * y);
+//         int i_y = std::min(y, static_cast<int>(p_y));
+//         std::cout << "foi adicionado o pixel " << i_x << ' ' << i_y << std::endl;
 
-        double new_x = (((static_cast<double>(i_x)) / x) * 2.0) - 1.0 + (1.0 / x);
-        double new_y = (((static_cast<double>(i_y)) / y) * 2.0) - 1.0 + (1.0 / y);
+//         double new_x = (((static_cast<double>(i_x)) / x) * 2.0) - 1.0 + (1.0 / x);
+//         double new_y = (((static_cast<double>(i_y)) / y) * 2.0) - 1.0 + (1.0 / y);
 
-        double lim_inf = (((0) / x) * 2.0) - 1.0 + (1.0 / x);
-        double lim_sup = ((static_cast<double>(x-1) / x) * 2.0) - 1.0 + (1.0 / x);
-        if (new_x < lim_inf || new_x > lim_sup || new_y < lim_inf || new_y > lim_sup) {
-            std::cout << "nao entendi " << new_x << ' ' << new_y << std::endl;
-            return false;
-        }
-        Ponto new_p = {new_x, new_y};
+//         double lim_inf = (((0) / x) * 2.0) - 1.0 + (1.0 / x);
+//         double lim_sup = ((static_cast<double>(x-1) / x) * 2.0) - 1.0 + (1.0 / x);
+//         if (new_x < lim_inf || new_x > lim_sup || new_y < lim_inf || new_y > lim_sup) {
+//             std::cout << "nao entendi " << new_x << ' ' << new_y << std::endl;
+//             return false;
+//         }
+//         Ponto new_p = {new_x, new_y};
 
-        dcel->reserva_espacos(4, 8, 5);
-        auto [em_alguma_aresta, aresta] = dcel->em_alguma_aresta(new_p);
-        if (em_alguma_aresta) {
-            // ignorar esse caso por enquanto
-            return false;
-        }
-        std::size_t f = dcel->qual_face(new_p);
+//         dcel->reserva_espacos(4, 8, 5);
+//         auto [em_alguma_aresta, aresta] = dcel->em_alguma_aresta(new_p);
+//         if (em_alguma_aresta) {
+//             // ignorar esse caso por enquanto
+//             return false;
+//         }
+//         std::size_t f = dcel->qual_face(new_p);
 
-        std::array<bool, 4> ok = {true, true, true, true};
-        std::array<DCEL::Edge*, 4> es = {nullptr, nullptr, nullptr, nullptr};
-        std::array<Ponto, 4> ds = {
-            Ponto{0, -3.0},
-            Ponto{3.0, 0},
-            Ponto{0, 3.0},
-            Ponto{-3.0, 0}
-        };
-        auto start = dcel->faces[f].edge;
-        auto e = start;
-        Ponto p2 = {new_x - 1.0, new_y};
-        do {
-            for (std::size_t i = 0; i < 4; ++i) {
-                auto inter = intersecao_com_left(new_p, {new_x + ds[i][0], new_y + ds[i][1]}, e->origin->xy, e->twin->origin->xy);
-                if (inter == Intersecao::PROPRIA) {
-                    es[i] = e;
-                    break;
-                } else if (inter == Intersecao::IMPROPRIA) {
-                    es[i] = e;
-                    ok[i] = false;
-                }
-            }
-            e = e->next;
-        } while (e != start);
+//         std::array<bool, 4> ok = {true, true, true, true};
+//         std::array<DCEL::Edge*, 4> es = {nullptr, nullptr, nullptr, nullptr};
+//         std::array<Ponto, 4> ds = {
+//             Ponto{0, -3.0},
+//             Ponto{3.0, 0},
+//             Ponto{0, 3.0},
+//             Ponto{-3.0, 0}
+//         };
+//         auto start = dcel->faces[f].edge;
+//         auto e = start;
+//         Ponto p2 = {new_x - 1.0, new_y};
+//         do {
+//             for (std::size_t i = 0; i < 4; ++i) {
+//                 auto inter = intersecao_com_left(new_p, {new_x + ds[i][0], new_y + ds[i][1]}, e->origin->xy, e->twin->origin->xy);
+//                 if (inter == Intersecao::PROPRIA) {
+//                     es[i] = e;
+//                     break;
+//                 } else if (inter == Intersecao::IMPROPRIA) {
+//                     es[i] = e;
+//                     ok[i] = false;
+//                 }
+//             }
+//             e = e->next;
+//         } while (e != start);
 
-        for (std::size_t i = 0; i < 4; ++i) {
-            if (ok[i]) {
-                auto [s, t] = intersecao(new_p, {new_x + ds[i][0], new_y + ds[i][1]}, es[i]->origin->xy, es[i]->twin->origin->xy);
-                dcel->inclui_vertice_em_aresta(static_cast<std::size_t>(es[i] - dcel->edges.data()), t);
-            } else {
-                std::cout << "deve dar errado, arrumar depois" << std::endl;
-            }
-        }
+//         for (std::size_t i = 0; i < 4; ++i) {
+//             if (ok[i]) {
+//                 auto [s, t] = intersecao(new_p, {new_x + ds[i][0], new_y + ds[i][1]}, es[i]->origin->xy, es[i]->twin->origin->xy);
+//                 dcel->inclui_vertice_em_aresta(static_cast<std::size_t>(es[i] - dcel->edges.data()), t);
+//             } else {
+//                 std::cout << "deve dar errado, arrumar depois" << std::endl;
+//             }
+//         }
 
-        dcel->inclui_aresta(dcel->vertices.size() - 4, dcel->vertices.size() - 2);
-        double t = dist(new_p, dcel->vertices[dcel->vertices.size() - 4].xy) / 
-                   dist(dcel->vertices[dcel->vertices.size() - 4].xy, dcel->vertices[dcel->vertices.size() - 2].xy);
-        dcel->inclui_vertice_em_aresta(dcel->edges.size() - 1, t);
+//         dcel->inclui_aresta(dcel->vertices.size() - 4, dcel->vertices.size() - 2);
+//         double t = dist(new_p, dcel->vertices[dcel->vertices.size() - 4].xy) / 
+//                    dist(dcel->vertices[dcel->vertices.size() - 4].xy, dcel->vertices[dcel->vertices.size() - 2].xy);
+//         dcel->inclui_vertice_em_aresta(dcel->edges.size() - 1, t);
 
-        dcel->inclui_aresta(dcel->vertices.size() - 4, dcel->vertices.size() - 1);
-        dcel->inclui_aresta(dcel->vertices.size() - 2, dcel->vertices.size() - 1);
-        return true;
-    }
-private:
-    void inicia() {
-        double lim_inf = (((0) / x) * 2.0) - 1.0 + (1.0 / x);
-        double lim_sup = ((static_cast<double>(x-1) / x) * 2.0) - 1.0 + (1.0 / x);
+//         dcel->inclui_aresta(dcel->vertices.size() - 4, dcel->vertices.size() - 1);
+//         dcel->inclui_aresta(dcel->vertices.size() - 2, dcel->vertices.size() - 1);
+//         return true;
+//     }
+// private:
+//     void inicia() {
+//         double lim_inf = (((0) / x) * 2.0) - 1.0 + (1.0 / x);
+//         double lim_sup = ((static_cast<double>(x-1) / x) * 2.0) - 1.0 + (1.0 / x);
 
-        // double lim_inf = -1.0 + (1.0 / x);
-        // double lim_sup =  1.0 - (1.0 / x);
-        dcel = std::make_unique<DCEL>(std::vector<Ponto>{
-            {lim_inf, lim_inf},
-            {lim_sup, lim_inf},
-            {lim_sup, lim_sup},
-            {lim_inf, lim_sup},
-            {lim_inf, lim_inf}
-        });
+//         // double lim_inf = -1.0 + (1.0 / x);
+//         // double lim_sup =  1.0 - (1.0 / x);
+//         dcel = std::make_unique<DCEL>(std::vector<Ponto>{
+//             {lim_inf, lim_inf},
+//             {lim_sup, lim_inf},
+//             {lim_sup, lim_sup},
+//             {lim_inf, lim_sup},
+//             {lim_inf, lim_inf}
+//         });
 
-    }
+//     }
 
-public:
-    int x;
-    int y;
-    int n;
-    unsigned char* image_data;
+// public:
+//     int x;
+//     int y;
+//     int n;
+//     unsigned char* image_data;
 
-    unsigned vbo;
-    unsigned vao;
-    unsigned ebo;
-    unsigned faces_vao;
-    unsigned faces_ebo;
-    unsigned extra_vbo;
-    unsigned extra_vao;
+//     unsigned vbo;
+//     unsigned vao;
+//     unsigned ebo;
+//     unsigned faces_vao;
+//     unsigned faces_ebo;
+//     unsigned extra_vbo;
+//     unsigned extra_vao;
 
-    std::size_t last_size;
-    std::size_t edge_count;
-    std::size_t last_gen;
-    std::size_t triangle_count;
-    EstadoTrabalho estado;
-    EntradaTrabalho estado_entrada;
-    std::unique_ptr<DCEL> dcel;
+//     std::size_t last_size;
+//     std::size_t edge_count;
+//     std::size_t last_gen;
+//     std::size_t triangle_count;
+//     EstadoTrabalho estado;
+//     EntradaTrabalho estado_entrada;
+//     std::unique_ptr<DCEL> dcel;
 
-    static const std::size_t max_floats = 512*1024;
-};
+//     static const std::size_t max_floats = 512*1024;
+// };
 
 
 const Cor base_delaunay {"#2b2831"};
@@ -4332,824 +4380,824 @@ const Cor cor_dly {"#4d9184"};
 const Cor base_trabalho {"#30272b"};
 const Cor cor_trabalho {"#87914d"};
 
-class DelaunayPassoAPasso {
-public:
-    DelaunayPassoAPasso(State& arg_estado, CoisasDelaunay& arg_delaunay, const Shader& arg_point_program, const Shader& arg_line_program, const Shader& arg_circle_program) :
-        estado {arg_estado},
-        delaunay {arg_delaunay},
-        point_program {arg_point_program},
-        line_program {arg_line_program},
-        circle_program {arg_circle_program},
-        pacote {arg_delaunay} {
-        situacao = Situacao::RESETADO;
-        proxima_situacao = Situacao::RESETADO;
-        caderninho = {};
-        // recursao_atual = {};
-        ultima_recursao = {};
-    }
-    void reset() {
-        situacao = Situacao::RESETADO;
-        proxima_situacao = Situacao::RESETADO;
-        caderninho = {};
-        // recursao_atual = {};
-        ultima_recursao = {};
-        pilha_recursao.clear();
+// class DelaunayPassoAPasso {
+// public:
+//     DelaunayPassoAPasso(State& arg_estado, CoisasDelaunay& arg_delaunay, const Shader& arg_point_program, const Shader& arg_line_program, const Shader& arg_circle_program) :
+//         estado {arg_estado},
+//         delaunay {arg_delaunay},
+//         point_program {arg_point_program},
+//         line_program {arg_line_program},
+//         circle_program {arg_circle_program},
+//         pacote {arg_delaunay} {
+//         situacao = Situacao::RESETADO;
+//         proxima_situacao = Situacao::RESETADO;
+//         caderninho = {};
+//         // recursao_atual = {};
+//         ultima_recursao = {};
+//     }
+//     void reset() {
+//         situacao = Situacao::RESETADO;
+//         proxima_situacao = Situacao::RESETADO;
+//         caderninho = {};
+//         // recursao_atual = {};
+//         ultima_recursao = {};
+//         pilha_recursao.clear();
         
-        // também reseta parcialmente o CoisasDelaunay
-        // para reter os pontos, mas todo o resto ir de vala
-        delaunay.estado = EstadoDelaunay::INICIANDO;
-        delaunay.last_size = 0;
-        delaunay.edge_count = 0;
-        delaunay.triangle_count = 0;
-        delaunay.last_gen = 0;
-        delaunay.dcel.reset();
-    }
-    void prepara_triangulacao() {
-        if (delaunay.estado != EstadoDelaunay::INICIANDO || delaunay.estado_entrada != EntradaDelaunay::NORMAL || delaunay.pontos.size() < 3) {
-            return;
-        }
-        delaunay.mostrando_circulo = false;
-        delaunay.estado = EstadoDelaunay::TRIANGULANDO;
+//         // também reseta parcialmente o CoisasDelaunay
+//         // para reter os pontos, mas todo o resto ir de vala
+//         delaunay.estado = EstadoDelaunay::INICIANDO;
+//         delaunay.last_size = 0;
+//         delaunay.edge_count = 0;
+//         delaunay.triangle_count = 0;
+//         delaunay.last_gen = 0;
+//         delaunay.dcel.reset();
+//     }
+//     void prepara_triangulacao() {
+//         if (delaunay.estado != EstadoDelaunay::INICIANDO || delaunay.estado_entrada != EntradaDelaunay::NORMAL || delaunay.pontos.size() < 3) {
+//             return;
+//         }
+//         delaunay.mostrando_circulo = false;
+//         delaunay.estado = EstadoDelaunay::TRIANGULANDO;
 
-        std::sort(delaunay.pontos.begin(), delaunay.pontos.end(), [](Ponto p1, Ponto p2) { if (p1[0] < p2[0]) return true; else if (p1[0] == p2[0]) return p1[1] > p2[1]; else return false; });
-        delaunay.dcel = std::make_unique<DCEL>(DCEL::EnganaCompilador{}, delaunay.pontos);
+//         std::sort(delaunay.pontos.begin(), delaunay.pontos.end(), [](Ponto p1, Ponto p2) { if (p1[0] < p2[0]) return true; else if (p1[0] == p2[0]) return p1[1] > p2[1]; else return false; });
+//         delaunay.dcel = std::make_unique<DCEL>(DCEL::EnganaCompilador{}, delaunay.pontos);
 
-        // só recoloca os pontos no vbo na nova ordem
-        {
-            std::size_t diff = delaunay.pontos.size();
-            std::vector<float> ps {};
-            ps.reserve(diff * 5 * sizeof (float));
-            for (std::size_t i = 0; i < delaunay.pontos.size(); ++i) {
-                // ps.push_back(delaunay.pontos[i][0]/1000.0f);
-                ps.push_back((delaunay.pontos[i][0]+991.040)/4.0f);
-                ps.push_back(delaunay.pontos[i][1]/1000.0f);
-                ps.push_back(cor_dly.r());
-                ps.push_back(cor_dly.g());
-                ps.push_back(cor_dly.b());
-            }
-            glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
-            delaunay.last_size = delaunay.pontos.size();
-        }
+//         // só recoloca os pontos no vbo na nova ordem
+//         {
+//             std::size_t diff = delaunay.pontos.size();
+//             std::vector<float> ps {};
+//             ps.reserve(diff * 5 * sizeof (float));
+//             for (std::size_t i = 0; i < delaunay.pontos.size(); ++i) {
+//                 // ps.push_back(delaunay.pontos[i][0]/1000.0f);
+//                 ps.push_back((delaunay.pontos[i][0]+991.040)/4.0f);
+//                 ps.push_back(delaunay.pontos[i][1]/1000.0f);
+//                 ps.push_back(cor_dly.r());
+//                 ps.push_back(cor_dly.g());
+//                 ps.push_back(cor_dly.b());
+//             }
+//             glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+//             glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
+//             delaunay.last_size = delaunay.pontos.size();
+//         }
 
-        // não tenho certeza disso
-        situacao = Situacao::PRONTO_PARA_COMECAR;
+//         // não tenho certeza disso
+//         situacao = Situacao::PRONTO_PARA_COMECAR;
 
-        pilha_recursao.push_back({ {0, delaunay.pontos.size()}, false });
-        proxima_situacao = Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO;
+//         pilha_recursao.push_back({ {0, delaunay.pontos.size()}, false });
+//         proxima_situacao = Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO;
 
-        // delaunay_div_conq_recursivo(0, pontos.size());
+//         // delaunay_div_conq_recursivo(0, pontos.size());
 
-        // ++delaunay.dcel->geracao_atual;
-        // delaunay.estado = EstadoDelaunay::OK;
+//         // ++delaunay.dcel->geracao_atual;
+//         // delaunay.estado = EstadoDelaunay::OK;
 
-        // ultimo_retorno = algoritmo_guedes_v1_passo_a_passo(fecho);
-        // if (ultimo_retorno.etapa_do_passo_executado == Etapa::ETAPA_2) {
-        //     resultado_ate_agora = ultimo_retorno.resultado_ate_agora;
-        // }
-        // if (ultimo_retorno.acabou) {
-        //     estado.passo_a_passo_em_andamento = false;
-        //     estado.passo_a_passo_acabou_de_acabar = true;
-        //     resultado_arrumado_para_renderizacao = false;
-        // }
-    }
-    void proximo_passo() {
-        situacao = proxima_situacao;
-        Acao acao = Acao::A_DEFINIR;
-        bool atualizar_linhas_verticais = false;
+//         // ultimo_retorno = algoritmo_guedes_v1_passo_a_passo(fecho);
+//         // if (ultimo_retorno.etapa_do_passo_executado == Etapa::ETAPA_2) {
+//         //     resultado_ate_agora = ultimo_retorno.resultado_ate_agora;
+//         // }
+//         // if (ultimo_retorno.acabou) {
+//         //     estado.passo_a_passo_em_andamento = false;
+//         //     estado.passo_a_passo_acabou_de_acabar = true;
+//         //     resultado_arrumado_para_renderizacao = false;
+//         // }
+//     }
+//     void proximo_passo() {
+//         situacao = proxima_situacao;
+//         Acao acao = Acao::A_DEFINIR;
+//         bool atualizar_linhas_verticais = false;
 
-        switch (situacao) {
-            case Situacao::ACABOU:
-                reset();
-                return;
-            case Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO:{
-                auto [recursao_atual, expandida] = pilha_recursao.back();
-                auto [i, j] = recursao_atual;
-                if (j - i <= 2) {
-                    acao = Acao::CASO_BASE;
-                } else if (!expandida) {
-                    acao = Acao::EXPANDIR_E_VER_PROXIMO;
-                } else {
-                    acao = Acao::COMECAR_A_PROCURAR_TANGENTES;
-                }
-                }
-                break;
-            case Situacao::PROCURANDO_TANGENTES:
-                acao = Acao::PROCURAR_TANGENTES;
-                break;
-            default:
-                break;
-        }
+//         switch (situacao) {
+//             case Situacao::ACABOU:
+//                 reset();
+//                 return;
+//             case Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO:{
+//                 auto [recursao_atual, expandida] = pilha_recursao.back();
+//                 auto [i, j] = recursao_atual;
+//                 if (j - i <= 2) {
+//                     acao = Acao::CASO_BASE;
+//                 } else if (!expandida) {
+//                     acao = Acao::EXPANDIR_E_VER_PROXIMO;
+//                 } else {
+//                     acao = Acao::COMECAR_A_PROCURAR_TANGENTES;
+//                 }
+//                 }
+//                 break;
+//             case Situacao::PROCURANDO_TANGENTES:
+//                 acao = Acao::PROCURAR_TANGENTES;
+//                 break;
+//             default:
+//                 break;
+//         }
 
-        auto [recursao_atual, expandida] = pilha_recursao.back();
-        auto [i, j] = recursao_atual;
-        switch (acao) {
-            case Acao::CASO_BASE:
-                if (j - i == 2) {
-                    if (!delaunay.dcel->novo_inclui_aresta(i, i + 1)) {
-                        std::cout << "mas que 1" << std::endl;
-                        proxima_situacao = Situacao::ENCONTRAMOS_ERRO;
-                    }
-                    pacote.caso_base(delaunay.dcel->vertices[i].xy, delaunay.dcel->vertices[i+1].xy);
-                } else {
-                    pacote.caso_base(delaunay.dcel->vertices[i].xy);
-                }
-                pilha_recursao.pop_back();
-                situacao = Situacao::MOSTRANDO_MUDANCAS_BASE;
-                if (pilha_recursao.size() != 0) {
-                    proxima_situacao = Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO;
-                } else {
-                    proxima_situacao = Situacao::ACABOU;
-                }
-                break;
+//         auto [recursao_atual, expandida] = pilha_recursao.back();
+//         auto [i, j] = recursao_atual;
+//         switch (acao) {
+//             case Acao::CASO_BASE:
+//                 if (j - i == 2) {
+//                     if (!delaunay.dcel->novo_inclui_aresta(i, i + 1)) {
+//                         std::cout << "mas que 1" << std::endl;
+//                         proxima_situacao = Situacao::ENCONTRAMOS_ERRO;
+//                     }
+//                     pacote.caso_base(delaunay.dcel->vertices[i].xy, delaunay.dcel->vertices[i+1].xy);
+//                 } else {
+//                     pacote.caso_base(delaunay.dcel->vertices[i].xy);
+//                 }
+//                 pilha_recursao.pop_back();
+//                 situacao = Situacao::MOSTRANDO_MUDANCAS_BASE;
+//                 if (pilha_recursao.size() != 0) {
+//                     proxima_situacao = Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO;
+//                 } else {
+//                     proxima_situacao = Situacao::ACABOU;
+//                 }
+//                 break;
 
-            case Acao::EXPANDIR_E_VER_PROXIMO:{
-                pilha_recursao.back() = { recursao_atual, true };
-                std::size_t m = (i + j + 1) / 2;
-                pilha_recursao.push_back({ {m, j}, false });
-                pilha_recursao.push_back({ {i, m}, false });
-                proxima_situacao = Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO;
-                }
-                break;
+//             case Acao::EXPANDIR_E_VER_PROXIMO:{
+//                 pilha_recursao.back() = { recursao_atual, true };
+//                 std::size_t m = (i + j + 1) / 2;
+//                 pilha_recursao.push_back({ {m, j}, false });
+//                 pilha_recursao.push_back({ {i, m}, false });
+//                 proxima_situacao = Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO;
+//                 }
+//                 break;
 
-            case Acao::COMECAR_A_PROCURAR_TANGENTES:{
-                situacao = Situacao::MOSTRANDO_POSSIVEL_TANGENTE;
-                proxima_situacao = Situacao::PROCURANDO_TANGENTES;
+//             case Acao::COMECAR_A_PROCURAR_TANGENTES:{
+//                 situacao = Situacao::MOSTRANDO_POSSIVEL_TANGENTE;
+//                 proxima_situacao = Situacao::PROCURANDO_TANGENTES;
 
-                // etapa de combinação
-                std::size_t m = (i + j + 1) / 2;
-                std::size_t b_l_i = m - 1; // o mais da direita do lado esquerdo
-                std::size_t b_r_i = m;     // o mais da esquerda do lado direito
+//                 // etapa de combinação
+//                 std::size_t m = (i + j + 1) / 2;
+//                 std::size_t b_l_i = m - 1; // o mais da direita do lado esquerdo
+//                 std::size_t b_r_i = m;     // o mais da esquerda do lado direito
 
-                bool descendo_esquerda = true;
-                bool naodeu_esquerda = false;
-                bool naodeu_direita = false;
-                DCEL::Vertex* v_l = &delaunay.dcel->vertices[b_l_i];
-                DCEL::Vertex* v_r = &delaunay.dcel->vertices[b_r_i];
-                DCEL::Vertex* v_prox_l = nullptr;
-                DCEL::Edge* v_prox_l_edge = nullptr;
-                DCEL::Vertex* v_prox_r = nullptr;
-                DCEL::Edge* v_prox_r_edge = nullptr;
+//                 bool descendo_esquerda = true;
+//                 bool naodeu_esquerda = false;
+//                 bool naodeu_direita = false;
+//                 DCEL::Vertex* v_l = &delaunay.dcel->vertices[b_l_i];
+//                 DCEL::Vertex* v_r = &delaunay.dcel->vertices[b_r_i];
+//                 DCEL::Vertex* v_prox_l = nullptr;
+//                 DCEL::Edge* v_prox_l_edge = nullptr;
+//                 DCEL::Vertex* v_prox_r = nullptr;
+//                 DCEL::Edge* v_prox_r_edge = nullptr;
 
-                pacote.possivel_tangente(v_l->xy, v_r->xy);
+//                 pacote.possivel_tangente(v_l->xy, v_r->xy);
 
-                if (v_l->edge) {
-                    DCEL::Edge* e = v_l->edge;
-                    DCEL::Edge* start = e;
-                    do {
-                        if (e->face == delaunay.dcel->faces.data() && e->twin->origin->xy[1] < v_l->xy[1]) {
-                            v_prox_l_edge = e;
-                            v_prox_l = e->twin->origin;
-                            break;
-                        }
-                        e = e->prev->twin;
-                    } while (e->origin == v_l && e != start);
-                    if (!v_prox_l) {
-                        do {
-                            if (e->face == delaunay.dcel->faces.data()) {
-                                v_prox_l_edge = e;
-                                v_prox_l = e->twin->origin;
-                                break;
-                            }
-                            e = e->prev->twin;
-                        } while (e->origin == v_l && e != start);
-                    }
-                } if (!v_prox_l) {
-                    std::cerr << "o erro foi detectado" << std::endl;
-                    proxima_situacao = Situacao::ENCONTRAMOS_ERRO;
-                    break;
-                }
-                if (v_r->edge) {
-                    DCEL::Edge* e = v_r->edge;
-                    DCEL::Edge* start = e;
-                    do {
-                        if (e->face == delaunay.dcel->faces.data() && e->prev->origin->xy[1] < v_r->xy[1]) {
-                            v_prox_r_edge = e;
-                            v_prox_r = e->prev->origin;
-                            break;
-                        }
-                        e = e->prev->twin;
-                    } while (e->origin == v_r && e != start);
-                    if (!v_prox_r) {
-                        do {
-                            if (e->face == delaunay.dcel->faces.data()) {
-                                v_prox_r_edge = e;
-                                v_prox_r = e->prev->origin;
-                                break;
-                            }
-                            e = e->prev->twin;
-                        } while (e->origin == v_r && e != start);
-                    }
-                }
+//                 if (v_l->edge) {
+//                     DCEL::Edge* e = v_l->edge;
+//                     DCEL::Edge* start = e;
+//                     do {
+//                         if (e->face == delaunay.dcel->faces.data() && e->twin->origin->xy[1] < v_l->xy[1]) {
+//                             v_prox_l_edge = e;
+//                             v_prox_l = e->twin->origin;
+//                             break;
+//                         }
+//                         e = e->prev->twin;
+//                     } while (e->origin == v_l && e != start);
+//                     if (!v_prox_l) {
+//                         do {
+//                             if (e->face == delaunay.dcel->faces.data()) {
+//                                 v_prox_l_edge = e;
+//                                 v_prox_l = e->twin->origin;
+//                                 break;
+//                             }
+//                             e = e->prev->twin;
+//                         } while (e->origin == v_l && e != start);
+//                     }
+//                 } if (!v_prox_l) {
+//                     std::cerr << "o erro foi detectado" << std::endl;
+//                     proxima_situacao = Situacao::ENCONTRAMOS_ERRO;
+//                     break;
+//                 }
+//                 if (v_r->edge) {
+//                     DCEL::Edge* e = v_r->edge;
+//                     DCEL::Edge* start = e;
+//                     do {
+//                         if (e->face == delaunay.dcel->faces.data() && e->prev->origin->xy[1] < v_r->xy[1]) {
+//                             v_prox_r_edge = e;
+//                             v_prox_r = e->prev->origin;
+//                             break;
+//                         }
+//                         e = e->prev->twin;
+//                     } while (e->origin == v_r && e != start);
+//                     if (!v_prox_r) {
+//                         do {
+//                             if (e->face == delaunay.dcel->faces.data()) {
+//                                 v_prox_r_edge = e;
+//                                 v_prox_r = e->prev->origin;
+//                                 break;
+//                             }
+//                             e = e->prev->twin;
+//                         } while (e->origin == v_r && e != start);
+//                     }
+//                 }
 
-                caderninho.comeca_tangente(
-                    descendo_esquerda,
-                    naodeu_esquerda,
-                    naodeu_direita,
-                    v_l,
-                    v_r,
-                    v_prox_l,
-                    v_prox_l_edge,
-                    v_prox_r,
-                    v_prox_r_edge
-                );
-                }
-                break;
+//                 caderninho.comeca_tangente(
+//                     descendo_esquerda,
+//                     naodeu_esquerda,
+//                     naodeu_direita,
+//                     v_l,
+//                     v_r,
+//                     v_prox_l,
+//                     v_prox_l_edge,
+//                     v_prox_r,
+//                     v_prox_r_edge
+//                 );
+//                 }
+//                 break;
             
-            case Acao::PROCURAR_TANGENTES:{
-                situacao = Situacao::MOSTRANDO_POSSIVEL_TANGENTE;
-                proxima_situacao = Situacao::PROCURANDO_TANGENTES;
-                bool encontrou = true;
+//             case Acao::PROCURAR_TANGENTES:{
+//                 situacao = Situacao::MOSTRANDO_POSSIVEL_TANGENTE;
+//                 proxima_situacao = Situacao::PROCURANDO_TANGENTES;
+//                 bool encontrou = true;
 
-                if (caderninho.v_prox_l && caderninho.v_prox_r) {
-                    while (!(caderninho.naodeu_esquerda && caderninho.naodeu_direita)) {
-                        // std::cout << static_cast<std::size_t>(caderninho.v_l - delaunay.dcel->vertices.data()) << ' ' << static_cast<std::size_t>(caderninho.v_prox_l - dcel->vertices.data()) << ' ' << static_cast<std::size_t>(caderninho.v_r - dcel->vertices.data()) << ' ' << static_cast<std::size_t>(caderninho.v_prox_r - dcel->vertices.data()) << std::endl;
-                        if (caderninho.descendo_esquerda) {
-                            if (left(caderninho.v_r->xy, caderninho.v_l->xy, caderninho.v_prox_l->xy)) {
-                                // dá pra descer do lado esquerdo
-                                caderninho.v_prox_l_edge = caderninho.v_prox_l_edge->next;
-                                caderninho.v_l = caderninho.v_prox_l_edge->origin;
-                                caderninho.v_prox_l = caderninho.v_prox_l_edge->twin->origin;
-                                caderninho.naodeu_esquerda = false;
-                                caderninho.naodeu_direita = false;
-                                pacote.possivel_tangente(caderninho.v_l->xy, caderninho.v_r->xy);
-                                encontrou = false;
-                                break;
-                            }
-                            caderninho.descendo_esquerda = false;
-                            caderninho.naodeu_esquerda = true;
-                        } else {
-                            if (left(caderninho.v_prox_r->xy, caderninho.v_r->xy, caderninho.v_l->xy)) {
-                                // dá pra descer do lado direito
-                                caderninho.v_prox_r_edge = caderninho.v_prox_r_edge->prev;
-                                caderninho.v_r = caderninho.v_prox_r_edge->origin;
-                                caderninho.v_prox_r = caderninho.v_prox_r_edge->prev->origin;
-                                caderninho.naodeu_esquerda = false;
-                                caderninho.naodeu_direita = false;
-                                pacote.possivel_tangente(caderninho.v_l->xy, caderninho.v_r->xy);
-                                encontrou = false;
-                                break;
-                            }
-                            caderninho.descendo_esquerda = true;
-                            caderninho.naodeu_direita = true;
-                        }
-                    } if (encontrou) {
-                        // achamos a tangente???????????
-                        // supostamente sim
-                        {
+//                 if (caderninho.v_prox_l && caderninho.v_prox_r) {
+//                     while (!(caderninho.naodeu_esquerda && caderninho.naodeu_direita)) {
+//                         // std::cout << static_cast<std::size_t>(caderninho.v_l - delaunay.dcel->vertices.data()) << ' ' << static_cast<std::size_t>(caderninho.v_prox_l - dcel->vertices.data()) << ' ' << static_cast<std::size_t>(caderninho.v_r - dcel->vertices.data()) << ' ' << static_cast<std::size_t>(caderninho.v_prox_r - dcel->vertices.data()) << std::endl;
+//                         if (caderninho.descendo_esquerda) {
+//                             if (left(caderninho.v_r->xy, caderninho.v_l->xy, caderninho.v_prox_l->xy)) {
+//                                 // dá pra descer do lado esquerdo
+//                                 caderninho.v_prox_l_edge = caderninho.v_prox_l_edge->next;
+//                                 caderninho.v_l = caderninho.v_prox_l_edge->origin;
+//                                 caderninho.v_prox_l = caderninho.v_prox_l_edge->twin->origin;
+//                                 caderninho.naodeu_esquerda = false;
+//                                 caderninho.naodeu_direita = false;
+//                                 pacote.possivel_tangente(caderninho.v_l->xy, caderninho.v_r->xy);
+//                                 encontrou = false;
+//                                 break;
+//                             }
+//                             caderninho.descendo_esquerda = false;
+//                             caderninho.naodeu_esquerda = true;
+//                         } else {
+//                             if (left(caderninho.v_prox_r->xy, caderninho.v_r->xy, caderninho.v_l->xy)) {
+//                                 // dá pra descer do lado direito
+//                                 caderninho.v_prox_r_edge = caderninho.v_prox_r_edge->prev;
+//                                 caderninho.v_r = caderninho.v_prox_r_edge->origin;
+//                                 caderninho.v_prox_r = caderninho.v_prox_r_edge->prev->origin;
+//                                 caderninho.naodeu_esquerda = false;
+//                                 caderninho.naodeu_direita = false;
+//                                 pacote.possivel_tangente(caderninho.v_l->xy, caderninho.v_r->xy);
+//                                 encontrou = false;
+//                                 break;
+//                             }
+//                             caderninho.descendo_esquerda = true;
+//                             caderninho.naodeu_direita = true;
+//                         }
+//                     } if (encontrou) {
+//                         // achamos a tangente???????????
+//                         // supostamente sim
+//                         {
 
-                            caderninho.v_prox_l_edge = caderninho.v_prox_l_edge->prev;
-                            caderninho.v_prox_l = caderninho.v_prox_l_edge->origin;
-                            if (caderninho.v_prox_r_edge) {
-                                // caderninho.v_prox_r_edge = caderninho.v_prox_r_edge->next;
-                                caderninho.v_prox_r = caderninho.v_prox_r_edge->twin->origin;
-                            }
-                            proxima_situacao = Situacao::COSTURANDO;
+//                             caderninho.v_prox_l_edge = caderninho.v_prox_l_edge->prev;
+//                             caderninho.v_prox_l = caderninho.v_prox_l_edge->origin;
+//                             if (caderninho.v_prox_r_edge) {
+//                                 // caderninho.v_prox_r_edge = caderninho.v_prox_r_edge->next;
+//                                 caderninho.v_prox_r = caderninho.v_prox_r_edge->twin->origin;
+//                             }
+//                             proxima_situacao = Situacao::COSTURANDO;
 
-                        }
-                    }
-                } else if (!caderninho.v_prox_r && caderninho.v_prox_l) {
-                    if (left(caderninho.v_r->xy, caderninho.v_l->xy, caderninho.v_prox_l->xy)) {
-                        // dá pra descer do lado esquerdo
-                        caderninho.v_prox_l_edge = caderninho.v_prox_l_edge->next;
-                        caderninho.v_l = caderninho.v_prox_l_edge->origin;
-                        caderninho.v_prox_l = caderninho.v_prox_l_edge->twin->origin;
-                        pacote.possivel_tangente(caderninho.v_l->xy, caderninho.v_r->xy);
-                        encontrou = false;
-                    } else {
+//                         }
+//                     }
+//                 } else if (!caderninho.v_prox_r && caderninho.v_prox_l) {
+//                     if (left(caderninho.v_r->xy, caderninho.v_l->xy, caderninho.v_prox_l->xy)) {
+//                         // dá pra descer do lado esquerdo
+//                         caderninho.v_prox_l_edge = caderninho.v_prox_l_edge->next;
+//                         caderninho.v_l = caderninho.v_prox_l_edge->origin;
+//                         caderninho.v_prox_l = caderninho.v_prox_l_edge->twin->origin;
+//                         pacote.possivel_tangente(caderninho.v_l->xy, caderninho.v_r->xy);
+//                         encontrou = false;
+//                     } else {
                         
-                        // aqui o mesmo
-                        {
+//                         // aqui o mesmo
+//                         {
 
-                            caderninho.v_prox_l_edge = caderninho.v_prox_l_edge->prev;
-                            caderninho.v_prox_l = caderninho.v_prox_l_edge->origin;
-                            if (caderninho.v_prox_r_edge) {
-                                // caderninho.v_prox_r_edge = caderninho.v_prox_r_edge->next;
-                                caderninho.v_prox_r = caderninho.v_prox_r_edge->twin->origin;
-                            }
-                            proxima_situacao = Situacao::COSTURANDO;
+//                             caderninho.v_prox_l_edge = caderninho.v_prox_l_edge->prev;
+//                             caderninho.v_prox_l = caderninho.v_prox_l_edge->origin;
+//                             if (caderninho.v_prox_r_edge) {
+//                                 // caderninho.v_prox_r_edge = caderninho.v_prox_r_edge->next;
+//                                 caderninho.v_prox_r = caderninho.v_prox_r_edge->twin->origin;
+//                             }
+//                             proxima_situacao = Situacao::COSTURANDO;
 
-                        }
-                    }
-                } else {
-                    std::cerr << "deu errado?" << std::endl;
-                    proxima_situacao = Situacao::ENCONTRAMOS_ERRO;
-                    break;
-                }
+//                         }
+//                     }
+//                 } else {
+//                     std::cerr << "deu errado?" << std::endl;
+//                     proxima_situacao = Situacao::ENCONTRAMOS_ERRO;
+//                     break;
+//                 }
 
-                }
-                break;
+//                 }
+//                 break;
 
-            case Acao::A_DEFINIR:
-            default:
-                break;
-        }
+//             case Acao::A_DEFINIR:
+//             default:
+//                 break;
+//         }
 
-        atualiza_buffers_dcel();
+//         atualiza_buffers_dcel();
 
-        {
-            // atualiza vbo extra para mostrar linhas da recursão atual
-            float x_l = static_cast<float>((delaunay.pontos[std::get<0>(recursao_atual)][0]+991.040)/4.0f);
-            float x_r = static_cast<float>((delaunay.pontos[std::get<1>(recursao_atual) - 1][0]+991.040)/4.0f);
+//         {
+//             // atualiza vbo extra para mostrar linhas da recursão atual
+//             float x_l = static_cast<float>((delaunay.pontos[std::get<0>(recursao_atual)][0]+991.040)/4.0f);
+//             float x_r = static_cast<float>((delaunay.pontos[std::get<1>(recursao_atual) - 1][0]+991.040)/4.0f);
 
-            {
-                std::array<float, 4> xs {x_l, x_l, x_r, x_r};
-                std::array<float, 4> ys {-1.0f, 1.0f, -1.0f, 1.0f};
-                std::vector<float> ps;
-                ps.reserve(4 * 5 * sizeof (float));
-                for (std::size_t k = 0; k < 4; ++k) {
-                    // ps.push_back(delaunay.pontos[k][0]/1000.0f);
-                    ps.push_back(xs[k]);
-                    ps.push_back(ys[k]);
-                    ps.push_back(cor_dly.r());
-                    ps.push_back(cor_dly.g());
-                    ps.push_back(cor_dly.b());
-                }
-                glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(4 * 5 * sizeof (float)), ps.data());
-            }
-        }
+//             {
+//                 std::array<float, 4> xs {x_l, x_l, x_r, x_r};
+//                 std::array<float, 4> ys {-1.0f, 1.0f, -1.0f, 1.0f};
+//                 std::vector<float> ps;
+//                 ps.reserve(4 * 5 * sizeof (float));
+//                 for (std::size_t k = 0; k < 4; ++k) {
+//                     // ps.push_back(delaunay.pontos[k][0]/1000.0f);
+//                     ps.push_back(xs[k]);
+//                     ps.push_back(ys[k]);
+//                     ps.push_back(cor_dly.r());
+//                     ps.push_back(cor_dly.g());
+//                     ps.push_back(cor_dly.b());
+//                 }
+//                 glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
+//                 glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(4 * 5 * sizeof (float)), ps.data());
+//             }
+//         }
 
 
-        // if (situacao == Situacao::ACABOU) {
-        //     reset();
-        //     return;
-        // }
-        // auto [recursao_atual, expandida] = pilha_recursao.back();
-        // std::cout << "recursao atual: " << std::get<0>(recursao_atual) << ' ' << std::get<1>(recursao_atual) << std::endl;
-        // // auto ultima_recursao = recursao_atual;
-        // if (situacao == Situacao::PRONTO_PARA_COMECAR) {
-        //     situacao = Situacao::INICIANDO_NIVEL_RECURSAO;
-        //     // std::cerr << "quero melhorar isso depois" << std::endl;
-        // } else if (situacao == Situacao::INICIANDO_NIVEL_RECURSAO) {
-        //     auto [i, j] = recursao_atual;
-        //     if (j - i <= 2) {
-        //         pilha_recursao.pop_back();
-        //         if (pilha_recursao.size() != 0) {
-        //             situacao = Situacao::TERMINANDO_NIVEL_RECURSAO;
-        //         } else {
-        //             situacao = Situacao::ACABOU;
-        //         }
-        //     } else if (!expandida) {
-        //         pilha_recursao.back() = { recursao_atual, true };
-        //         std::size_t m = (i + j + 1) / 2;
-        //         pilha_recursao.push_back({ {m, j}, false });
-        //         pilha_recursao.push_back({ {i, m}, false });
-        //         recursao_atual = {i, m};
-        //     } else {
-        //         pilha_recursao.pop_back();
-        //         if (pilha_recursao.size() != 0) {
-        //             situacao = Situacao::TERMINANDO_NIVEL_RECURSAO;
-        //         } else {
-        //             situacao = Situacao::ACABOU;
-        //             return;
-        //         }
-        //         // fazer a combinação (costura)
-        //     }
-        // } else if (situacao == Situacao::TERMINANDO_NIVEL_RECURSAO) {
-        //     situacao = Situacao::INICIANDO_NIVEL_RECURSAO;
-        // }
+//         // if (situacao == Situacao::ACABOU) {
+//         //     reset();
+//         //     return;
+//         // }
+//         // auto [recursao_atual, expandida] = pilha_recursao.back();
+//         // std::cout << "recursao atual: " << std::get<0>(recursao_atual) << ' ' << std::get<1>(recursao_atual) << std::endl;
+//         // // auto ultima_recursao = recursao_atual;
+//         // if (situacao == Situacao::PRONTO_PARA_COMECAR) {
+//         //     situacao = Situacao::INICIANDO_NIVEL_RECURSAO;
+//         //     // std::cerr << "quero melhorar isso depois" << std::endl;
+//         // } else if (situacao == Situacao::INICIANDO_NIVEL_RECURSAO) {
+//         //     auto [i, j] = recursao_atual;
+//         //     if (j - i <= 2) {
+//         //         pilha_recursao.pop_back();
+//         //         if (pilha_recursao.size() != 0) {
+//         //             situacao = Situacao::TERMINANDO_NIVEL_RECURSAO;
+//         //         } else {
+//         //             situacao = Situacao::ACABOU;
+//         //         }
+//         //     } else if (!expandida) {
+//         //         pilha_recursao.back() = { recursao_atual, true };
+//         //         std::size_t m = (i + j + 1) / 2;
+//         //         pilha_recursao.push_back({ {m, j}, false });
+//         //         pilha_recursao.push_back({ {i, m}, false });
+//         //         recursao_atual = {i, m};
+//         //     } else {
+//         //         pilha_recursao.pop_back();
+//         //         if (pilha_recursao.size() != 0) {
+//         //             situacao = Situacao::TERMINANDO_NIVEL_RECURSAO;
+//         //         } else {
+//         //             situacao = Situacao::ACABOU;
+//         //             return;
+//         //         }
+//         //         // fazer a combinação (costura)
+//         //     }
+//         // } else if (situacao == Situacao::TERMINANDO_NIVEL_RECURSAO) {
+//         //     situacao = Situacao::INICIANDO_NIVEL_RECURSAO;
+//         // }
 
-        // if (ultima_recursao != recursao_atual) {
-        //     ultima_recursao = recursao_atual;
-        //     // atualiza vbo extra para mostrar linhas da recursão atual
-        //     float x_l = static_cast<float>((delaunay.pontos[std::get<0>(recursao_atual)][0]+991.040)/4.0f);
-        //     float x_r = static_cast<float>((delaunay.pontos[std::get<1>(recursao_atual) - 1][0]+991.040)/4.0f);
+//         // if (ultima_recursao != recursao_atual) {
+//         //     ultima_recursao = recursao_atual;
+//         //     // atualiza vbo extra para mostrar linhas da recursão atual
+//         //     float x_l = static_cast<float>((delaunay.pontos[std::get<0>(recursao_atual)][0]+991.040)/4.0f);
+//         //     float x_r = static_cast<float>((delaunay.pontos[std::get<1>(recursao_atual) - 1][0]+991.040)/4.0f);
 
-        //     {
-        //         std::array<float, 4> xs {x_l, x_l, x_r, x_r};
-        //         std::array<float, 4> ys {-1.0f, 1.0f, -1.0f, 1.0f};
-        //         std::vector<float> ps;
-        //         ps.reserve(4 * 5 * sizeof (float));
-        //         for (std::size_t i = 0; i < 4; ++i) {
-        //             // ps.push_back(delaunay.pontos[i][0]/1000.0f);
-        //             ps.push_back(xs[i]);
-        //             ps.push_back(ys[i]);
-        //             ps.push_back(cor_dly.r());
-        //             ps.push_back(cor_dly.g());
-        //             ps.push_back(cor_dly.b());
-        //         }
-        //         glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
-        //         glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(4 * 5 * sizeof (float)), ps.data());
-        //     }
-        // }
-    }
-    void vai_que_e_tua() {
-        switch (situacao) {
-            case Situacao::RESETADO:
-                std::cerr << "nem era pra isso acontecer" << std::endl;
-                break;
-            case Situacao::PRONTO_PARA_COMECAR:
-                // aqui ainda só mostra os pontos né
-                point_program.use();
-                point_program.setFloat("pointRadius", estado.pointSize);
+//         //     {
+//         //         std::array<float, 4> xs {x_l, x_l, x_r, x_r};
+//         //         std::array<float, 4> ys {-1.0f, 1.0f, -1.0f, 1.0f};
+//         //         std::vector<float> ps;
+//         //         ps.reserve(4 * 5 * sizeof (float));
+//         //         for (std::size_t i = 0; i < 4; ++i) {
+//         //             // ps.push_back(delaunay.pontos[i][0]/1000.0f);
+//         //             ps.push_back(xs[i]);
+//         //             ps.push_back(ys[i]);
+//         //             ps.push_back(cor_dly.r());
+//         //             ps.push_back(cor_dly.g());
+//         //             ps.push_back(cor_dly.b());
+//         //         }
+//         //         glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
+//         //         glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(4 * 5 * sizeof (float)), ps.data());
+//         //     }
+//         // }
+//     }
+//     void vai_que_e_tua() {
+//         switch (situacao) {
+//             case Situacao::RESETADO:
+//                 std::cerr << "nem era pra isso acontecer" << std::endl;
+//                 break;
+//             case Situacao::PRONTO_PARA_COMECAR:
+//                 // aqui ainda só mostra os pontos né
+//                 point_program.use();
+//                 point_program.setFloat("pointRadius", estado.pointSize);
                 
-                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                glBindVertexArray(delaunay.vao);
-                glDrawArrays(GL_POINTS, 0, delaunay.last_size);
-                break;
-            case Situacao::MOSTRANDO_MUDANCAS_BASE:
+//                 glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+//                 glBindVertexArray(delaunay.vao);
+//                 glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+//                 break;
+//             case Situacao::MOSTRANDO_MUDANCAS_BASE:
             
-                glLineWidth(50.0f);
-                line_program.use();
-                line_program.setFloat("alpha", 0.3f);
-                glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
-                glBindVertexArray(delaunay.extra_vao);
-                glDrawArrays(GL_LINES, 0, 4);
-                line_program.setFloat("alpha", 1.0f);
-                glLineWidth(std::max(estado.pointSize / 6.0f, 1.0f));
+//                 glLineWidth(50.0f);
+//                 line_program.use();
+//                 line_program.setFloat("alpha", 0.3f);
+//                 glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
+//                 glBindVertexArray(delaunay.extra_vao);
+//                 glDrawArrays(GL_LINES, 0, 4);
+//                 line_program.setFloat("alpha", 1.0f);
+//                 glLineWidth(std::max(estado.pointSize / 6.0f, 1.0f));
 
-                // point_program.use();
-                // point_program.setFloat("pointRadius", estado.pointSize);
+//                 // point_program.use();
+//                 // point_program.setFloat("pointRadius", estado.pointSize);
                 
-                // glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                // glBindVertexArray(delaunay.vao);
-                // glDrawArrays(GL_POINTS, 0, delaunay.last_size);
-                mostra_dcel();
+//                 // glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+//                 // glBindVertexArray(delaunay.vao);
+//                 // glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+//                 mostra_dcel();
 
-                renderiza_pacote(1.0f);
-                break;
-            // case
-            // case Situacao::INICIANDO_NIVEL_RECURSAO:
-            // case Situacao::TERMINANDO_NIVEL_RECURSAO:
-            case Situacao::MOSTRANDO_POSSIVEL_TANGENTE:
+//                 renderiza_pacote(1.0f);
+//                 break;
+//             // case
+//             // case Situacao::INICIANDO_NIVEL_RECURSAO:
+//             // case Situacao::TERMINANDO_NIVEL_RECURSAO:
+//             case Situacao::MOSTRANDO_POSSIVEL_TANGENTE:
                 
-                glLineWidth(50.0f);
-                line_program.use();
-                line_program.setFloat("alpha", 0.3f);
-                glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
-                glBindVertexArray(delaunay.extra_vao);
-                glDrawArrays(GL_LINES, 0, 4);
-                line_program.setFloat("alpha", 1.0f);
-                glLineWidth(std::max(estado.pointSize / 6.0f, 1.0f));
+//                 glLineWidth(50.0f);
+//                 line_program.use();
+//                 line_program.setFloat("alpha", 0.3f);
+//                 glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
+//                 glBindVertexArray(delaunay.extra_vao);
+//                 glDrawArrays(GL_LINES, 0, 4);
+//                 line_program.setFloat("alpha", 1.0f);
+//                 glLineWidth(std::max(estado.pointSize / 6.0f, 1.0f));
 
-                mostra_dcel();
+//                 mostra_dcel();
 
-                renderiza_pacote(0.3f);
+//                 renderiza_pacote(0.3f);
 
-                break;
-            case Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO:
-            case Situacao::ACABOU:
+//                 break;
+//             case Situacao::PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO:
+//             case Situacao::ACABOU:
             
-                glLineWidth(50.0f);
-                line_program.use();
-                line_program.setFloat("alpha", 0.3f);
-                glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
-                glBindVertexArray(delaunay.extra_vao);
-                glDrawArrays(GL_LINES, 0, 4);
-                line_program.setFloat("alpha", 1.0f);
-                glLineWidth(std::max(estado.pointSize / 6.0f, 1.0f));
+//                 glLineWidth(50.0f);
+//                 line_program.use();
+//                 line_program.setFloat("alpha", 0.3f);
+//                 glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
+//                 glBindVertexArray(delaunay.extra_vao);
+//                 glDrawArrays(GL_LINES, 0, 4);
+//                 line_program.setFloat("alpha", 1.0f);
+//                 glLineWidth(std::max(estado.pointSize / 6.0f, 1.0f));
 
-                // point_program.use();
-                // point_program.setFloat("pointRadius", estado.pointSize);
+//                 // point_program.use();
+//                 // point_program.setFloat("pointRadius", estado.pointSize);
                 
-                // glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                // glBindVertexArray(delaunay.vao);
-                // glDrawArrays(GL_POINTS, 0, delaunay.last_size);
-                mostra_dcel();
+//                 // glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+//                 // glBindVertexArray(delaunay.vao);
+//                 // glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+//                 mostra_dcel();
 
-                break;
-            default:
-                break;
-        }
-    }
-private:
-    enum class Acao {
-        A_DEFINIR,
-        CASO_BASE,
-        EXPANDIR_E_VER_PROXIMO,
-        COMECAR_A_PROCURAR_TANGENTES,
-        PROCURAR_TANGENTES,
-    };
-    enum class Situacao {
-        RESETADO,
-        PRONTO_PARA_COMECAR,
-        // INICIANDO_NIVEL_RECURSAO,
-        // TERMINANDO_NIVEL_RECURSAO,
+//                 break;
+//             default:
+//                 break;
+//         }
+//     }
+// private:
+//     enum class Acao {
+//         A_DEFINIR,
+//         CASO_BASE,
+//         EXPANDIR_E_VER_PROXIMO,
+//         COMECAR_A_PROCURAR_TANGENTES,
+//         PROCURAR_TANGENTES,
+//     };
+//     enum class Situacao {
+//         RESETADO,
+//         PRONTO_PARA_COMECAR,
+//         // INICIANDO_NIVEL_RECURSAO,
+//         // TERMINANDO_NIVEL_RECURSAO,
 
-        PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO,
-        MOSTRANDO_MUDANCAS_BASE,
-        MOSTRANDO_POSSIVEL_TANGENTE,
-        PROCURANDO_TANGENTES,
-        COSTURANDO,
-        ENCONTRAMOS_ERRO,
-        ACABOU,
-    };
-    struct Caderninho {
-        bool descendo_esquerda;
-        bool naodeu_esquerda;
-        bool naodeu_direita;
-        DCEL::Vertex* v_l;
-        DCEL::Vertex* v_r;
-        DCEL::Vertex* v_prox_l;
-        DCEL::Edge* v_prox_l_edge;
-        DCEL::Vertex* v_prox_r;
-        DCEL::Edge* v_prox_r_edge;
+//         PRECISO_VER_COMO_ESTA_ESSE_NIVEL_DE_RECURSAO,
+//         MOSTRANDO_MUDANCAS_BASE,
+//         MOSTRANDO_POSSIVEL_TANGENTE,
+//         PROCURANDO_TANGENTES,
+//         COSTURANDO,
+//         ENCONTRAMOS_ERRO,
+//         ACABOU,
+//     };
+//     struct Caderninho {
+//         bool descendo_esquerda;
+//         bool naodeu_esquerda;
+//         bool naodeu_direita;
+//         DCEL::Vertex* v_l;
+//         DCEL::Vertex* v_r;
+//         DCEL::Vertex* v_prox_l;
+//         DCEL::Edge* v_prox_l_edge;
+//         DCEL::Vertex* v_prox_r;
+//         DCEL::Edge* v_prox_r_edge;
 
-        void comeca_tangente(
-            bool descendo_esquerda_arg,
-            bool naodeu_esquerda_arg,
-            bool naodeu_direita_arg,
-            DCEL::Vertex* v_l_arg,
-            DCEL::Vertex* v_r_arg,
-            DCEL::Vertex* v_prox_l_arg,
-            DCEL::Edge* v_prox_l_edge_arg,
-            DCEL::Vertex* v_prox_r_arg,
-            DCEL::Edge* v_prox_r_edge_arg) {
-            descendo_esquerda = descendo_esquerda_arg;
-            naodeu_esquerda = naodeu_esquerda_arg;
-            naodeu_direita = naodeu_direita_arg;
-            v_l = v_l_arg;
-            v_r = v_r_arg;
-            v_prox_l = v_prox_l_arg;
-            v_prox_l_edge = v_prox_l_edge_arg;
-            v_prox_r = v_prox_r_arg;
-            v_prox_r_edge = v_prox_r_edge_arg;
-        }
-    };
-    struct Pacote {
-        friend class DelaunayPassoAPasso;
+//         void comeca_tangente(
+//             bool descendo_esquerda_arg,
+//             bool naodeu_esquerda_arg,
+//             bool naodeu_direita_arg,
+//             DCEL::Vertex* v_l_arg,
+//             DCEL::Vertex* v_r_arg,
+//             DCEL::Vertex* v_prox_l_arg,
+//             DCEL::Edge* v_prox_l_edge_arg,
+//             DCEL::Vertex* v_prox_r_arg,
+//             DCEL::Edge* v_prox_r_edge_arg) {
+//             descendo_esquerda = descendo_esquerda_arg;
+//             naodeu_esquerda = naodeu_esquerda_arg;
+//             naodeu_direita = naodeu_direita_arg;
+//             v_l = v_l_arg;
+//             v_r = v_r_arg;
+//             v_prox_l = v_prox_l_arg;
+//             v_prox_l_edge = v_prox_l_edge_arg;
+//             v_prox_r = v_prox_r_arg;
+//             v_prox_r_edge = v_prox_r_edge_arg;
+//         }
+//     };
+//     struct Pacote {
+//         friend class DelaunayPassoAPasso;
 
-        Pacote(CoisasDelaunay& in_delaunay) : delaunay {in_delaunay} {}
-        CoisasDelaunay& delaunay;
-        Cor c1;
-        Cor c2;
-        Cor circulo;
+//         Pacote(CoisasDelaunay& in_delaunay) : delaunay {in_delaunay} {}
+//         CoisasDelaunay& delaunay;
+//         Cor c1;
+//         Cor c2;
+//         Cor circulo;
 
-        std::vector<std::pair<std::size_t, std::size_t>> pontos;
-        std::vector<std::pair<std::size_t, std::size_t>> linhas;
-        void caso_base(Ponto p1, Cor cor = Cor("#91744d")) {
-            c1 = cor;
-            pontos.clear();
-            linhas.clear();
+//         std::vector<std::pair<std::size_t, std::size_t>> pontos;
+//         std::vector<std::pair<std::size_t, std::size_t>> linhas;
+//         void caso_base(Ponto p1, Cor cor = Cor("#91744d")) {
+//             c1 = cor;
+//             pontos.clear();
+//             linhas.clear();
 
-            pontos.push_back({4, 1});
-            preenche_buffer(4, {{p1, c1}});
-        }
+//             pontos.push_back({4, 1});
+//             preenche_buffer(4, {{p1, c1}});
+//         }
 
-        void caso_base(Ponto p1, Ponto p2, Cor cor = Cor("#91744d")) {
-            c1 = cor;
-            pontos.clear();
-            linhas.clear();
+//         void caso_base(Ponto p1, Ponto p2, Cor cor = Cor("#91744d")) {
+//             c1 = cor;
+//             pontos.clear();
+//             linhas.clear();
 
-            pontos.push_back({4, 2});
-            linhas.push_back({4, 2});
-            preenche_buffer(4, {{p1, c1}, {p2, c1}});
-        }
+//             pontos.push_back({4, 2});
+//             linhas.push_back({4, 2});
+//             preenche_buffer(4, {{p1, c1}, {p2, c1}});
+//         }
 
-        void possivel_tangente(Ponto p_l, Ponto p_r, Cor cor = Cor("#5f4d91")) {
-            c1 = cor;
-            pontos.clear();
-            linhas.clear();
+//         void possivel_tangente(Ponto p_l, Ponto p_r, Cor cor = Cor("#5f4d91")) {
+//             c1 = cor;
+//             pontos.clear();
+//             linhas.clear();
 
-            pontos.push_back({4, 2});
-            linhas.push_back({4, 2});
-            preenche_buffer(4, {{p_l, c1}, {p_r, c1}});
-        }
+//             pontos.push_back({4, 2});
+//             linhas.push_back({4, 2});
+//             preenche_buffer(4, {{p_l, c1}, {p_r, c1}});
+//         }
 
-        void preenche_buffer(std::size_t start, std::vector<std::pair<Ponto, Cor>> vec) {
-            std::vector<float> ps;
-            ps.reserve(vec.size() * 5 * sizeof (float));
-            for (std::size_t i = 0; i < vec.size(); ++i) {
-                ps.push_back((std::get<0>(vec[i])[0]+991.040)/4.0f);
-                ps.push_back(std::get<0>(vec[i])[1]/1000.0f);
-                ps.push_back(std::get<1>(vec[i]).r());
-                ps.push_back(std::get<1>(vec[i]).g());
-                ps.push_back(std::get<1>(vec[i]).b());
-            }
-            glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
-            glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(start * 5 * sizeof (float)), static_cast<GLintptr>(vec.size() * 5 * sizeof (float)), ps.data());
-        }
-    };
+//         void preenche_buffer(std::size_t start, std::vector<std::pair<Ponto, Cor>> vec) {
+//             std::vector<float> ps;
+//             ps.reserve(vec.size() * 5 * sizeof (float));
+//             for (std::size_t i = 0; i < vec.size(); ++i) {
+//                 ps.push_back((std::get<0>(vec[i])[0]+991.040)/4.0f);
+//                 ps.push_back(std::get<0>(vec[i])[1]/1000.0f);
+//                 ps.push_back(std::get<1>(vec[i]).r());
+//                 ps.push_back(std::get<1>(vec[i]).g());
+//                 ps.push_back(std::get<1>(vec[i]).b());
+//             }
+//             glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
+//             glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(start * 5 * sizeof (float)), static_cast<GLintptr>(vec.size() * 5 * sizeof (float)), ps.data());
+//         }
+//     };
 
-    void renderiza_pacote(float line_alpha) {
-        if (pacote.pontos.size() == 0 || pacote.linhas.size() == 0) {
-            return;
-        }
-        glLineWidth(std::max(estado.pointSize / 4.0f, 1.0f));
-        line_program.use();
-        line_program.setFloat("alpha", line_alpha);
-        glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
-        glBindVertexArray(delaunay.extra_vao);
-        for (std::size_t i = 0; i < pacote.linhas.size(); ++i) {
-            glDrawArrays(GL_LINES, std::get<0>(pacote.linhas[i]), std::get<1>(pacote.linhas[i]));
-        }
-        line_program.setFloat("alpha", 1.0f);
-        glLineWidth(std::max(estado.pointSize / 6.0f, 1.0f));
+//     void renderiza_pacote(float line_alpha) {
+//         if (pacote.pontos.size() == 0 || pacote.linhas.size() == 0) {
+//             return;
+//         }
+//         glLineWidth(std::max(estado.pointSize / 4.0f, 1.0f));
+//         line_program.use();
+//         line_program.setFloat("alpha", line_alpha);
+//         glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
+//         glBindVertexArray(delaunay.extra_vao);
+//         for (std::size_t i = 0; i < pacote.linhas.size(); ++i) {
+//             glDrawArrays(GL_LINES, std::get<0>(pacote.linhas[i]), std::get<1>(pacote.linhas[i]));
+//         }
+//         line_program.setFloat("alpha", 1.0f);
+//         glLineWidth(std::max(estado.pointSize / 6.0f, 1.0f));
 
-        point_program.use();
-        point_program.setFloat("pointRadius", estado.pointSize);
-        for (std::size_t i = 0; i < pacote.pontos.size(); ++i) {
-            glDrawArrays(GL_POINTS, std::get<0>(pacote.pontos[i]), std::get<1>(pacote.pontos[i]));
-        }
-    }
+//         point_program.use();
+//         point_program.setFloat("pointRadius", estado.pointSize);
+//         for (std::size_t i = 0; i < pacote.pontos.size(); ++i) {
+//             glDrawArrays(GL_POINTS, std::get<0>(pacote.pontos[i]), std::get<1>(pacote.pontos[i]));
+//         }
+//     }
 
-    void mostra_dcel() {
-        glBindVertexArray(delaunay.faces_vao);
-        glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
+//     void mostra_dcel() {
+//         glBindVertexArray(delaunay.faces_vao);
+//         glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+//         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
         
-        line_program.use();
-        line_program.setFloat("alpha", 0.2f);
-        glDrawElements(GL_TRIANGLES, delaunay.triangle_count*3, GL_UNSIGNED_INT, nullptr);
+//         line_program.use();
+//         line_program.setFloat("alpha", 0.2f);
+//         glDrawElements(GL_TRIANGLES, delaunay.triangle_count*3, GL_UNSIGNED_INT, nullptr);
 
-        glBindVertexArray(delaunay.vao);
-        glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
+//         glBindVertexArray(delaunay.vao);
+//         glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+//         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
 
-        line_program.use();
-        line_program.setFloat("alpha", 1.0f);
-        glDrawElements(GL_LINES, delaunay.edge_count*2, GL_UNSIGNED_INT, nullptr);
+//         line_program.use();
+//         line_program.setFloat("alpha", 1.0f);
+//         glDrawElements(GL_LINES, delaunay.edge_count*2, GL_UNSIGNED_INT, nullptr);
 
-        point_program.use();
-        point_program.setFloat("pointRadius", estado.pointSize);
+//         point_program.use();
+//         point_program.setFloat("pointRadius", estado.pointSize);
         
-        glDrawArrays(GL_POINTS, 0, delaunay.last_size);
-    }
+//         glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+//     }
 
-    void atualiza_buffers_dcel() {
-        // recalcula VBO e EBO com coisas da DCEL atualizada
-        auto& verts = delaunay.dcel->vertices;
-        auto& v_invs = delaunay.dcel->vertices_invalidas;
-        auto& edges = delaunay.dcel->edges;
-        auto& e_invs = delaunay.dcel->edges_invalidas;
-        auto& faces = delaunay.dcel->faces;
-        auto& f_invs = delaunay.dcel->faces_invalidas;
+//     void atualiza_buffers_dcel() {
+//         // recalcula VBO e EBO com coisas da DCEL atualizada
+//         auto& verts = delaunay.dcel->vertices;
+//         auto& v_invs = delaunay.dcel->vertices_invalidas;
+//         auto& edges = delaunay.dcel->edges;
+//         auto& e_invs = delaunay.dcel->edges_invalidas;
+//         auto& faces = delaunay.dcel->faces;
+//         auto& f_invs = delaunay.dcel->faces_invalidas;
 
-        std::vector<float> ps {};
-        ps.reserve(verts.size() * 5 * sizeof (float));
-        for (std::size_t i = 0; i < verts.size(); ++i) {
-            auto ponto = verts[i];
-            if (v_invs.count(i)) {
-                ps.push_back(2.0f);
-                ps.push_back(2.0f);
-            } else {
-                ps.push_back((ponto.xy[0]+991.040)/4.0f);
-                ps.push_back(ponto.xy[1]/1000.0f);
-            }
-            ps.push_back(cor_dly.r());
-            ps.push_back(cor_dly.g());
-            ps.push_back(cor_dly.b());
-        }
+//         std::vector<float> ps {};
+//         ps.reserve(verts.size() * 5 * sizeof (float));
+//         for (std::size_t i = 0; i < verts.size(); ++i) {
+//             auto ponto = verts[i];
+//             if (v_invs.count(i)) {
+//                 ps.push_back(2.0f);
+//                 ps.push_back(2.0f);
+//             } else {
+//                 ps.push_back((ponto.xy[0]+991.040)/4.0f);
+//                 ps.push_back(ponto.xy[1]/1000.0f);
+//             }
+//             ps.push_back(cor_dly.r());
+//             ps.push_back(cor_dly.g());
+//             ps.push_back(cor_dly.b());
+//         }
 
-        std::vector<unsigned> is {};
-        is.reserve((edges.size() / 2) * sizeof (unsigned));
-        for (std::size_t i = 0; i < (edges.size() / 2); ++i) {
-            if (e_invs.count(2*i)) {
-                is.push_back(65535);
-                is.push_back(65535);
-            } else {
-                unsigned p1 = static_cast<unsigned>(edges[2*i].origin - &verts[0]);
-                unsigned p2 = static_cast<unsigned>(edges[2*i + 1].origin - &verts[0]);
-                is.push_back(p1);
-                is.push_back(p2);
-            }
-        }
+//         std::vector<unsigned> is {};
+//         is.reserve((edges.size() / 2) * sizeof (unsigned));
+//         for (std::size_t i = 0; i < (edges.size() / 2); ++i) {
+//             if (e_invs.count(2*i)) {
+//                 is.push_back(65535);
+//                 is.push_back(65535);
+//             } else {
+//                 unsigned p1 = static_cast<unsigned>(edges[2*i].origin - &verts[0]);
+//                 unsigned p2 = static_cast<unsigned>(edges[2*i + 1].origin - &verts[0]);
+//                 is.push_back(p1);
+//                 is.push_back(p2);
+//             }
+//         }
 
-        glBindVertexArray(delaunay.vao);
-        glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * sizeof (float)), ps.data());
+//         glBindVertexArray(delaunay.vao);
+//         glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+//         glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * sizeof (float)), ps.data());
         
-        // atualiza arestas a serem desenhadas:
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
+//         // atualiza arestas a serem desenhadas:
+//         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
+//         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
         
-        std::vector<unsigned> fs {};
-        fs.reserve(faces.size() * 3 * sizeof (unsigned));
-        for (std::size_t i = 1; i < faces.size(); ++i) {
-            if (f_invs.count(i)) {
-                fs.push_back(65535);
-                fs.push_back(65535);
-                fs.push_back(65535);
-            } else {
-                auto vs = delaunay.dcel->indices_dos_vertices_de_uma_face(i);
-                if (vs.size() != 3) {
-                    fs.push_back(65535);
-                    fs.push_back(65535);
-                    fs.push_back(65535);
-                }
-                for (auto v : vs) {
-                    unsigned p = static_cast<unsigned>(v);
-                    fs.push_back(p);
-                }
-            }
-        }
+//         std::vector<unsigned> fs {};
+//         fs.reserve(faces.size() * 3 * sizeof (unsigned));
+//         for (std::size_t i = 1; i < faces.size(); ++i) {
+//             if (f_invs.count(i)) {
+//                 fs.push_back(65535);
+//                 fs.push_back(65535);
+//                 fs.push_back(65535);
+//             } else {
+//                 auto vs = delaunay.dcel->indices_dos_vertices_de_uma_face(i);
+//                 if (vs.size() != 3) {
+//                     fs.push_back(65535);
+//                     fs.push_back(65535);
+//                     fs.push_back(65535);
+//                 }
+//                 for (auto v : vs) {
+//                     unsigned p = static_cast<unsigned>(v);
+//                     fs.push_back(p);
+//                 }
+//             }
+//         }
 
-        // atualiza triângulos a serem desenhadas:
-        glBindVertexArray(delaunay.faces_vao);
-        glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(fs.size() * sizeof (unsigned)), fs.data());
+//         // atualiza triângulos a serem desenhadas:
+//         glBindVertexArray(delaunay.faces_vao);
+//         glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+//         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
+//         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(fs.size() * sizeof (unsigned)), fs.data());
 
-        // atualiza contagem de arestas e vértices
-        delaunay.edge_count = edges.size() / 2;
-        delaunay.last_size = verts.size();
-        delaunay.triangle_count = faces.size() - 1;
-    }
+//         // atualiza contagem de arestas e vértices
+//         delaunay.edge_count = edges.size() / 2;
+//         delaunay.last_size = verts.size();
+//         delaunay.triangle_count = faces.size() - 1;
+//     }
 
-    State& estado;
-    CoisasDelaunay& delaunay;
-    const Shader& point_program;
-    const Shader& line_program;
-    const Shader& circle_program;
+//     State& estado;
+//     CoisasDelaunay& delaunay;
+//     const Shader& point_program;
+//     const Shader& line_program;
+//     const Shader& circle_program;
 
-    Situacao situacao;
-    Situacao proxima_situacao;
-    Caderninho caderninho;
-    Pacote pacote;
-    std::pair<std::size_t, std::size_t> ultima_recursao;
-    std::vector<std::pair<std::pair<std::size_t, std::size_t>, bool>> pilha_recursao;
+//     Situacao situacao;
+//     Situacao proxima_situacao;
+//     Caderninho caderninho;
+//     Pacote pacote;
+//     std::pair<std::size_t, std::size_t> ultima_recursao;
+//     std::vector<std::pair<std::pair<std::size_t, std::size_t>, bool>> pilha_recursao;
 
 
-    // void arruma_renderizacao() {
-    //     std::array<Ponto, 6> pontos {};
-    //     std::size_t num = 4;
-    //     pontos[0] = ultimo_retorno.colorir_esse;
-    //     pontos[1] = ultimo_retorno.esse_tambem;
-    //     pontos[2] = ultimo_retorno.desenhar_essa[0];
-    //     pontos[3] = ultimo_retorno.desenhar_essa[1];
-    //     if (ultimo_retorno.desenhar_a_outra) {
-    //         num += 2;
-    //         pontos[4] = ultimo_retorno.tambem_desenhar_essa[0];
-    //         pontos[5] = ultimo_retorno.tambem_desenhar_essa[1];
-    //     }
-    //     quantos = num;
+//     // void arruma_renderizacao() {
+//     //     std::array<Ponto, 6> pontos {};
+//     //     std::size_t num = 4;
+//     //     pontos[0] = ultimo_retorno.colorir_esse;
+//     //     pontos[1] = ultimo_retorno.esse_tambem;
+//     //     pontos[2] = ultimo_retorno.desenhar_essa[0];
+//     //     pontos[3] = ultimo_retorno.desenhar_essa[1];
+//     //     if (ultimo_retorno.desenhar_a_outra) {
+//     //         num += 2;
+//     //         pontos[4] = ultimo_retorno.tambem_desenhar_essa[0];
+//     //         pontos[5] = ultimo_retorno.tambem_desenhar_essa[1];
+//     //     }
+//     //     quantos = num;
 
-    //     std::array<std::array<float, 3>, 6> cores {};
-    //     if (ultimo_retorno.etapa_do_passo_executado == Etapa::ETAPA_1) {
-    //         // usado como base: #26a6c9
-    //         cores[0] = {27, 181, 224};
-    //         cores[1] = {101, 197, 224};
-    //         cores[2] = {38, 166, 201};
-    //         cores[3] = {38, 166, 201};
-    //         if (ultimo_retorno.desenhar_a_outra) {
-    //             cores[4] = {111, 182, 201};
-    //             cores[5] = {111, 182, 201};
-    //         }
-    //     } else {
-    //         // usado como base: #c9262b
-    //         cores[0] = {230, 32, 39};
-    //         cores[1] = {230, 78, 83};
-    //         cores[2] = {201, 38, 43};
-    //         cores[3] = {201, 38, 43};
-    //         if (ultimo_retorno.desenhar_a_outra) {
-    //             cores[4] = {201, 71, 75};
-    //             cores[5] = {201, 71, 75};
-    //         }
-    //     }
-    //     std::vector<float> ps {};
-    //     ps.reserve(num * 5 * sizeof (float));
-    //     for (std::size_t i = 0; i < num; ++i) {
-    //         ps.push_back(pontos[i][0]);
-    //         ps.push_back(pontos[i][1]);
-    //         ps.push_back(cores[i][0] / 255.0f);
-    //         ps.push_back(cores[i][1] / 255.0f);
-    //         ps.push_back(cores[i][2] / 255.0f);
-    //     }
-    //     glBindBuffer(GL_ARRAY_BUFFER, delpasso_vbo);
-    //     glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
+//     //     std::array<std::array<float, 3>, 6> cores {};
+//     //     if (ultimo_retorno.etapa_do_passo_executado == Etapa::ETAPA_1) {
+//     //         // usado como base: #26a6c9
+//     //         cores[0] = {27, 181, 224};
+//     //         cores[1] = {101, 197, 224};
+//     //         cores[2] = {38, 166, 201};
+//     //         cores[3] = {38, 166, 201};
+//     //         if (ultimo_retorno.desenhar_a_outra) {
+//     //             cores[4] = {111, 182, 201};
+//     //             cores[5] = {111, 182, 201};
+//     //         }
+//     //     } else {
+//     //         // usado como base: #c9262b
+//     //         cores[0] = {230, 32, 39};
+//     //         cores[1] = {230, 78, 83};
+//     //         cores[2] = {201, 38, 43};
+//     //         cores[3] = {201, 38, 43};
+//     //         if (ultimo_retorno.desenhar_a_outra) {
+//     //             cores[4] = {201, 71, 75};
+//     //             cores[5] = {201, 71, 75};
+//     //         }
+//     //     }
+//     //     std::vector<float> ps {};
+//     //     ps.reserve(num * 5 * sizeof (float));
+//     //     for (std::size_t i = 0; i < num; ++i) {
+//     //         ps.push_back(pontos[i][0]);
+//     //         ps.push_back(pontos[i][1]);
+//     //         ps.push_back(cores[i][0] / 255.0f);
+//     //         ps.push_back(cores[i][1] / 255.0f);
+//     //         ps.push_back(cores[i][2] / 255.0f);
+//     //     }
+//     //     glBindBuffer(GL_ARRAY_BUFFER, delpasso_vbo);
+//     //     glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
 
-    // }
-    // void renderiza_passo() {
-    //     // isso vem junto, acho
-    //     // glBindBuffer(GL_ARRAY_BUFFER, delpasso_vbo);
-    //     glBindVertexArray(delpasso_vao);
-    //     line_program.use();
-    //     glDrawArrays(GL_LINES, 2, quantos - 2);
-    //     point_program.use();
-    //     glDrawArrays(GL_POINTS, 0, 2);
-    // }
-    // void renderiza_resultado() {
-    //     if (!resultado_arrumado_para_renderizacao) {
-    //         std::array<Ponto, 4> pontos {};
-    //         std::size_t num = 4;
-    //         pontos[0] = resultado_ate_agora.p;
-    //         pontos[1] = resultado_ate_agora.intersecao_encontrada;
-    //         pontos[2] = resultado_ate_agora.r[0];
-    //         pontos[3] = resultado_ate_agora.r[1];
-    //         std::vector<float> ps {};
-    //         ps.reserve(num * 5 * sizeof (float));
-    //         for (std::size_t i = 0; i < num; ++i) {
-    //             ps.push_back(pontos[i][0]);
-    //             ps.push_back(pontos[i][1]);
-    //             ps.push_back(0.149f); // 38
-    //             ps.push_back(0.788f); // 201
-    //             ps.push_back(0.682f); // 174
-    //         }
-    //         glBindBuffer(GL_ARRAY_BUFFER, delpasso_vbo);
-    //         glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
+//     // }
+//     // void renderiza_passo() {
+//     //     // isso vem junto, acho
+//     //     // glBindBuffer(GL_ARRAY_BUFFER, delpasso_vbo);
+//     //     glBindVertexArray(delpasso_vao);
+//     //     line_program.use();
+//     //     glDrawArrays(GL_LINES, 2, quantos - 2);
+//     //     point_program.use();
+//     //     glDrawArrays(GL_POINTS, 0, 2);
+//     // }
+//     // void renderiza_resultado() {
+//     //     if (!resultado_arrumado_para_renderizacao) {
+//     //         std::array<Ponto, 4> pontos {};
+//     //         std::size_t num = 4;
+//     //         pontos[0] = resultado_ate_agora.p;
+//     //         pontos[1] = resultado_ate_agora.intersecao_encontrada;
+//     //         pontos[2] = resultado_ate_agora.r[0];
+//     //         pontos[3] = resultado_ate_agora.r[1];
+//     //         std::vector<float> ps {};
+//     //         ps.reserve(num * 5 * sizeof (float));
+//     //         for (std::size_t i = 0; i < num; ++i) {
+//     //             ps.push_back(pontos[i][0]);
+//     //             ps.push_back(pontos[i][1]);
+//     //             ps.push_back(0.149f); // 38
+//     //             ps.push_back(0.788f); // 201
+//     //             ps.push_back(0.682f); // 174
+//     //         }
+//     //         glBindBuffer(GL_ARRAY_BUFFER, delpasso_vbo);
+//     //         glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
 
-    //         resultado_arrumado_para_renderizacao = true;
-    //     }
+//     //         resultado_arrumado_para_renderizacao = true;
+//     //     }
 
-    //     glBindBuffer(GL_ARRAY_BUFFER, delpasso_vbo);
-    //     glBindVertexArray(delpasso_vao);
-    //     line_program.use();
-    //     glDrawArrays(GL_LINES, 0, 4);
-    //     point_program.use();
-    //     glDrawArrays(GL_POINTS, 0, 4);
-    // }
-};
+//     //     glBindBuffer(GL_ARRAY_BUFFER, delpasso_vbo);
+//     //     glBindVertexArray(delpasso_vao);
+//     //     line_program.use();
+//     //     glDrawArrays(GL_LINES, 0, 4);
+//     //     point_program.use();
+//     //     glDrawArrays(GL_POINTS, 0, 4);
+//     // }
+// };
 
 
 int main() {
@@ -5231,7 +5279,8 @@ int main() {
     glfwMakeContextCurrent(window);
     
     State estado {};
-    estado.recebendo_pontos = true;
+    estado.tela = Tela::DELAUNAY;
+    // estado.recebendo_pontos = true;
     glfwSetWindowUserPointer(window, &estado);
     
     // glfwSetCursorEnterCallback(window, cursor_enter_callback);
@@ -5300,70 +5349,70 @@ int main() {
     // float mixing { 0.3 };
     // float red { 0.7 };
     
-    unsigned vbo {};
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    // unsigned vbo {};
+    // glGenBuffers(1, &vbo);
+    // glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    // glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
-    unsigned vao {};
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    // unsigned vao {};
+    // glGenVertexArrays(1, &vao);
+    // glBindVertexArray(vao);
     
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
-    glEnableVertexAttribArray(1);
-    glBindVertexArray(0);
+    // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+    // glEnableVertexAttribArray(0);
+    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+    // glEnableVertexAttribArray(1);
+    // glBindVertexArray(0);
     
-    /////////////////////////////
-    unsigned outros_vbo {};
-    glGenBuffers(1, &outros_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, outros_vbo);
-    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    // /////////////////////////////
+    // unsigned outros_vbo {};
+    // glGenBuffers(1, &outros_vbo);
+    // glBindBuffer(GL_ARRAY_BUFFER, outros_vbo);
+    // glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
-    unsigned outros_vao {};
-    glGenVertexArrays(1, &outros_vao);
-    glBindVertexArray(outros_vao);
+    // unsigned outros_vao {};
+    // glGenVertexArrays(1, &outros_vao);
+    // glBindVertexArray(outros_vao);
     
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
-    glEnableVertexAttribArray(1);
-    glBindVertexArray(0);
+    // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+    // glEnableVertexAttribArray(0);
+    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+    // glEnableVertexAttribArray(1);
+    // glBindVertexArray(0);
     
-    /////////////////////////////
-    unsigned fecho_vbo {};
-    glGenBuffers(1, &fecho_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, fecho_vbo);
-    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    // /////////////////////////////
+    // unsigned fecho_vbo {};
+    // glGenBuffers(1, &fecho_vbo);
+    // glBindBuffer(GL_ARRAY_BUFFER, fecho_vbo);
+    // glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
-    unsigned fecho_vao {};
-    glGenVertexArrays(1, &fecho_vao);
-    glBindVertexArray(fecho_vao);
+    // unsigned fecho_vao {};
+    // glGenVertexArrays(1, &fecho_vao);
+    // glBindVertexArray(fecho_vao);
     
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof (float), nullptr);
-    glEnableVertexAttribArray(0);
-    glBindVertexArray(0);
+    // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof (float), nullptr);
+    // glEnableVertexAttribArray(0);
+    // glBindVertexArray(0);
     
-    /////////////////////////////
-    unsigned atividade_vbo {};
-    glGenBuffers(1, &atividade_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
-    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    // /////////////////////////////
+    // unsigned atividade_vbo {};
+    // glGenBuffers(1, &atividade_vbo);
+    // glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+    // glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
-    unsigned atividade_vao {};
-    glGenVertexArrays(1, &atividade_vao);
-    glBindVertexArray(atividade_vao);
+    // unsigned atividade_vao {};
+    // glGenVertexArrays(1, &atividade_vao);
+    // glBindVertexArray(atividade_vao);
     
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
-    glEnableVertexAttribArray(1);
-    glBindVertexArray(0);
+    // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+    // glEnableVertexAttribArray(0);
+    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+    // glEnableVertexAttribArray(1);
+    // glBindVertexArray(0);
     
-    std::vector<Ponto> fecho_calculado {};
-    std::size_t last_size = 0;
-    std::size_t outros_control = 0;
+    // std::vector<Ponto> fecho_calculado {};
+    // std::size_t last_size = 0;
+    // std::size_t outros_control = 0;
     estado.pointSize = 4.0f;
     glLineWidth(estado.pointSize / 2.0f);
     // estado.cliques.push_back({-.53726, -.48185});
@@ -5373,61 +5422,61 @@ int main() {
     // RetornoAlg resultado_ate_agora {};
     // bool resultado_arrumado_para_renderizacao = false;
     // std::size_t passo_quantos {};
-    std::array<bool, 2> polys_pronto = {false, false};
-    std::array<std::size_t, 2> ultimo_polys_idx = {0, 0};
-    std::array<std::size_t, 2> ultimo_polys_pos = {0, 0};
-    std::array<std::size_t, 2> polys_buffer_pos = {0, 0};
-    std::array<std::vector<std::size_t>, 2> polys_indices_inicio;
-    std::array<std::vector<std::size_t>, 2> polys_indices_fim;
+    // std::array<bool, 2> polys_pronto = {false, false};
+    // std::array<std::size_t, 2> ultimo_polys_idx = {0, 0};
+    // std::array<std::size_t, 2> ultimo_polys_pos = {0, 0};
+    // std::array<std::size_t, 2> polys_buffer_pos = {0, 0};
+    // std::array<std::vector<std::size_t>, 2> polys_indices_inicio;
+    // std::array<std::vector<std::size_t>, 2> polys_indices_fim;
 
-    // estado.polys[0].push_back({});
-    // estado.polys[1].push_back({});
-    estado.mostrando_polys[0] = true;
-    estado.mostrando_polys[1] = true;
+    // // estado.polys[0].push_back({});
+    // // estado.polys[1].push_back({});
+    // estado.mostrando_polys[0] = true;
+    // estado.mostrando_polys[1] = true;
 
-    std::array<unsigned, 2> polys_vbo {};
-    glGenBuffers(1, &polys_vbo[0]);
-    glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[0]);
-    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    // std::array<unsigned, 2> polys_vbo {};
+    // glGenBuffers(1, &polys_vbo[0]);
+    // glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[0]);
+    // glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
-    std::array<unsigned, 2> polys_vao {};
-    glGenVertexArrays(1, &polys_vao[0]);
-    glBindVertexArray(polys_vao[0]);
+    // std::array<unsigned, 2> polys_vao {};
+    // glGenVertexArrays(1, &polys_vao[0]);
+    // glBindVertexArray(polys_vao[0]);
     
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
-    glEnableVertexAttribArray(1);
-    glBindVertexArray(0);
+    // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+    // glEnableVertexAttribArray(0);
+    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+    // glEnableVertexAttribArray(1);
+    // glBindVertexArray(0);
     
-    glGenBuffers(1, &polys_vbo[1]);
-    glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[1]);
-    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    // glGenBuffers(1, &polys_vbo[1]);
+    // glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[1]);
+    // glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
-    glGenVertexArrays(1, &polys_vao[1]);
-    glBindVertexArray(polys_vao[1]);
+    // glGenVertexArrays(1, &polys_vao[1]);
+    // glBindVertexArray(polys_vao[1]);
     
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
-    glEnableVertexAttribArray(1);
-    glBindVertexArray(0);
+    // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+    // glEnableVertexAttribArray(0);
+    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+    // glEnableVertexAttribArray(1);
+    // glBindVertexArray(0);
 
-    bool inter_resul_pronto = false;
-    unsigned inter_resul_vbo {};
-    glGenBuffers(1, &inter_resul_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, inter_resul_vbo);
-    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
+    // bool inter_resul_pronto = false;
+    // unsigned inter_resul_vbo {};
+    // glGenBuffers(1, &inter_resul_vbo);
+    // glBindBuffer(GL_ARRAY_BUFFER, inter_resul_vbo);
+    // glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
     
-    unsigned inter_resul_vao {};
-    glGenVertexArrays(1, &inter_resul_vao);
-    glBindVertexArray(inter_resul_vao);
+    // unsigned inter_resul_vao {};
+    // glGenVertexArrays(1, &inter_resul_vao);
+    // glBindVertexArray(inter_resul_vao);
     
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
-    glEnableVertexAttribArray(1);
-    glBindVertexArray(0);
+    // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
+    // glEnableVertexAttribArray(0);
+    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
+    // glEnableVertexAttribArray(1);
+    // glBindVertexArray(0);
 
     CoisasDCEL coisas_dcel {};
     glGenVertexArrays(1, &coisas_dcel.vao);
@@ -5463,14 +5512,14 @@ int main() {
 
     glBindVertexArray(0);
     
-    std::vector<std::size_t> inter_indices_inicio;
-    std::vector<std::size_t> inter_indices_fim;
+    // std::vector<std::size_t> inter_indices_inicio;
+    // std::vector<std::size_t> inter_indices_fim;
 
     std::size_t mano = 0;
     std::size_t atividade_size = 0;
     // bool visivel_pronto = false;
-    std::vector<Ponto> area_visivel {};
-    AlgoritmoPassoAPasso passo_a_passo_manager {estado, point_program, color_line_program};
+    // std::vector<Ponto> area_visivel {};
+    // AlgoritmoPassoAPasso passo_a_passo_manager {estado, point_program, color_line_program};
 
     // coisa aleatória
     // créditos: https://en.cppreference.com/w/cpp/numeric/random/uniform_real_distribution
@@ -5482,9 +5531,9 @@ int main() {
     std::uniform_real_distribution<> ok_x(-1.0, 1.0);
     std::uniform_real_distribution<> ok_y(-1.0, 1.0);
 
-    CoisasDelaunay delaunay;
-    CoisasTrabalho trabalho {"teste0.bmp"};
-    DelaunayPassoAPasso passo_delaunay {estado, delaunay, point_program, color_line_program, circle_program};
+    CoisasDelaunay delaunay {"teste0.bmp"};
+    // CoisasTrabalho trabalho {"teste0.bmp"};
+    // DelaunayPassoAPasso passo_delaunay {estado, delaunay, point_program, color_line_program, circle_program};
 
     while (!glfwWindowShouldClose(window)) {
         // win.processInput();
@@ -5493,731 +5542,732 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        if (estado.tela == Tela::ORIGINAL) {
-            while (estado.novos_pontos_aleatorios --> 0) {
-                Ponto p {dis_x(gen), dis_y(gen)};
-                estado.cliques.push_back(p);
-            }
-            estado.novos_pontos_aleatorios = 0;
+        // if (estado.tela == Tela::ORIGINAL) {
+        //     while (estado.novos_pontos_aleatorios --> 0) {
+        //         Ponto p {dis_x(gen), dis_y(gen)};
+        //         estado.cliques.push_back(p);
+        //     }
+        //     estado.novos_pontos_aleatorios = 0;
             
-            if (estado.cliques.size() > last_size) {
-                std::size_t diff = estado.cliques.size() - last_size;
-                std::vector<float> ps {};
-                ps.reserve(diff * 5 * sizeof (float));
-                for (std::size_t i = last_size; i < estado.cliques.size(); ++i) {
-                    ps.push_back(estado.cliques[i][0]);
-                    ps.push_back(estado.cliques[i][1]);
-                    ps.push_back(1.0f);
-                    ps.push_back(1.0f);
-                    ps.push_back(1.0f);
-                }
-                glBindBuffer(GL_ARRAY_BUFFER, vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(last_size * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
-                last_size = estado.cliques.size();
-            }
+        //     if (estado.cliques.size() > last_size) {
+        //         std::size_t diff = estado.cliques.size() - last_size;
+        //         std::vector<float> ps {};
+        //         ps.reserve(diff * 5 * sizeof (float));
+        //         for (std::size_t i = last_size; i < estado.cliques.size(); ++i) {
+        //             ps.push_back(estado.cliques[i][0]);
+        //             ps.push_back(estado.cliques[i][1]);
+        //             ps.push_back(1.0f);
+        //             ps.push_back(1.0f);
+        //             ps.push_back(1.0f);
+        //         }
+        //         glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        //         glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(last_size * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
+        //         last_size = estado.cliques.size();
+        //     }
 
-            if (estado.outros.size() > outros_control) {
-                std::size_t diff = estado.outros.size() - outros_control;
-                std::vector<float> ps {};
-                ps.reserve(diff * 5 * sizeof (float));
-                for (std::size_t i = outros_control; i < estado.outros.size(); ++i) {
-                    auto [ponto, cor] = estado.outros[i];
-                    ps.push_back(ponto[0]);
-                    ps.push_back(ponto[1]);
-                    // sempre começa com amarelo
-                    ps.push_back(0.788f);
-                    ps.push_back(0.682f);
-                    ps.push_back(0.078f);
-                }
-                glBindBuffer(GL_ARRAY_BUFFER, outros_vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(outros_control * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
-                outros_control = estado.outros.size();
-            }
+        //     if (estado.outros.size() > outros_control) {
+        //         std::size_t diff = estado.outros.size() - outros_control;
+        //         std::vector<float> ps {};
+        //         ps.reserve(diff * 5 * sizeof (float));
+        //         for (std::size_t i = outros_control; i < estado.outros.size(); ++i) {
+        //             auto [ponto, cor] = estado.outros[i];
+        //             ps.push_back(ponto[0]);
+        //             ps.push_back(ponto[1]);
+        //             // sempre começa com amarelo
+        //             ps.push_back(0.788f);
+        //             ps.push_back(0.682f);
+        //             ps.push_back(0.078f);
+        //         }
+        //         glBindBuffer(GL_ARRAY_BUFFER, outros_vbo);
+        //         glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(outros_control * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
+        //         outros_control = estado.outros.size();
+        //     }
             
-            if (estado.should_recalculate_convex_hull || estado.comecar_passo_a_passo) {
-                fecho_calculado = fecho_convexo(estado.cliques);
-                std::vector<float> ps {};
-                ps.reserve(fecho_calculado.size() * 2 * sizeof (float));
-                for (std::size_t i = 0; i < fecho_calculado.size(); ++i) {
-                    ps.push_back(fecho_calculado[i][0]);
-                    ps.push_back(fecho_calculado[i][1]);
-                }
-                glBindBuffer(GL_ARRAY_BUFFER, fecho_vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(fecho_calculado.size() * 2 * sizeof (float)), ps.data());
-                estado.should_recalculate_convex_hull = false;
-            }
+        //     if (estado.should_recalculate_convex_hull || estado.comecar_passo_a_passo) {
+        //         fecho_calculado = fecho_convexo(estado.cliques);
+        //         std::vector<float> ps {};
+        //         ps.reserve(fecho_calculado.size() * 2 * sizeof (float));
+        //         for (std::size_t i = 0; i < fecho_calculado.size(); ++i) {
+        //             ps.push_back(fecho_calculado[i][0]);
+        //             ps.push_back(fecho_calculado[i][1]);
+        //         }
+        //         glBindBuffer(GL_ARRAY_BUFFER, fecho_vbo);
+        //         glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(fecho_calculado.size() * 2 * sizeof (float)), ps.data());
+        //         estado.should_recalculate_convex_hull = false;
+        //     }
 
-            if (estado.should_recalculate_area) {
-                double area = area_poligono(fecho_calculado);
-                std::cout << "Area atual do fecho convexo: " << area << std::endl;
-                estado.should_recalculate_area = false;
-            }
+        //     if (estado.should_recalculate_area) {
+        //         double area = area_poligono(fecho_calculado);
+        //         std::cout << "Area atual do fecho convexo: " << area << std::endl;
+        //         estado.should_recalculate_area = false;
+        //     }
 
-            if (estado.should_recalculate_point_in_polygon) {
-                for (auto& [ponto, cor] : estado.outros) {
-                    if (cor != DentroFora::DENTRO) {
-                        DentroFora nova_cor = point_in_polygon(ponto, fecho_calculado) ? DentroFora::DENTRO : DentroFora::FORA;
-                        cor = nova_cor;
-                    }
-                }
-                // depois disso, por enquanto, recolocamos todos os dados no buffer
-                // isso pode ser demorado (?)
+        //     if (estado.should_recalculate_point_in_polygon) {
+        //         for (auto& [ponto, cor] : estado.outros) {
+        //             if (cor != DentroFora::DENTRO) {
+        //                 DentroFora nova_cor = point_in_polygon(ponto, fecho_calculado) ? DentroFora::DENTRO : DentroFora::FORA;
+        //                 cor = nova_cor;
+        //             }
+        //         }
+        //         // depois disso, por enquanto, recolocamos todos os dados no buffer
+        //         // isso pode ser demorado (?)
 
-                std::vector<float> ps {};
-                ps.reserve(outros_control * 5 * sizeof (float));
-                for (std::size_t i = 0; i < outros_control; ++i) {
-                    auto [ponto, cor] = estado.outros[i];
-                    ps.push_back(ponto[0]);
-                    ps.push_back(ponto[1]);
-                    // agora não vai ter nenhum amarelo
-                    if (cor == DentroFora::DESCONHECIDO) {
-                        std::cerr << "não era para ter amarelo" << std::endl;
-                        ps.push_back(0.788f); // 201
-                        ps.push_back(0.682f); // 174
-                        ps.push_back(0.078f); // 20
-                    } else if (cor == DentroFora::DENTRO) {
-                        ps.push_back(0.325f); // 83
-                        ps.push_back(0.788f); // 201
-                        ps.push_back(0.078f); // 20
-                    } else {
-                        ps.push_back(0.788f); // 201
-                        ps.push_back(0.149f); // 38
-                        ps.push_back(0.078f); // 20
-                    }
-                }
-                glBindBuffer(GL_ARRAY_BUFFER, outros_vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(outros_control * 5 * sizeof (float)), ps.data());
+        //         std::vector<float> ps {};
+        //         ps.reserve(outros_control * 5 * sizeof (float));
+        //         for (std::size_t i = 0; i < outros_control; ++i) {
+        //             auto [ponto, cor] = estado.outros[i];
+        //             ps.push_back(ponto[0]);
+        //             ps.push_back(ponto[1]);
+        //             // agora não vai ter nenhum amarelo
+        //             if (cor == DentroFora::DESCONHECIDO) {
+        //                 std::cerr << "não era para ter amarelo" << std::endl;
+        //                 ps.push_back(0.788f); // 201
+        //                 ps.push_back(0.682f); // 174
+        //                 ps.push_back(0.078f); // 20
+        //             } else if (cor == DentroFora::DENTRO) {
+        //                 ps.push_back(0.325f); // 83
+        //                 ps.push_back(0.788f); // 201
+        //                 ps.push_back(0.078f); // 20
+        //             } else {
+        //                 ps.push_back(0.788f); // 201
+        //                 ps.push_back(0.149f); // 38
+        //                 ps.push_back(0.078f); // 20
+        //             }
+        //         }
+        //         glBindBuffer(GL_ARRAY_BUFFER, outros_vbo);
+        //         glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(outros_control * 5 * sizeof (float)), ps.data());
                 
-                estado.should_recalculate_point_in_polygon = false;
-            }
+        //         estado.should_recalculate_point_in_polygon = false;
+        //     }
             
-            if (fecho_calculado.size() > 0) {
-                program.use();
-                program.setFloat("alpha", 0.9f);
-                glBindBuffer(GL_ARRAY_BUFFER, fecho_vbo);
-                glBindVertexArray(fecho_vao);
-                glDrawArrays(GL_LINE_LOOP, 0, fecho_calculado.size());
+        //     if (fecho_calculado.size() > 0) {
+        //         program.use();
+        //         program.setFloat("alpha", 0.9f);
+        //         glBindBuffer(GL_ARRAY_BUFFER, fecho_vbo);
+        //         glBindVertexArray(fecho_vao);
+        //         glDrawArrays(GL_LINE_LOOP, 0, fecho_calculado.size());
                 
-                program.setFloat("alpha", 0.4f);
-                glDrawArrays(GL_TRIANGLE_FAN, 0, fecho_calculado.size());
-            }
+        //         program.setFloat("alpha", 0.4f);
+        //         glDrawArrays(GL_TRIANGLE_FAN, 0, fecho_calculado.size());
+        //     }
             
-            point_program.use();
-            point_program.setFloat("pointRadius", estado.pointSize);
+        //     point_program.use();
+        //     point_program.setFloat("pointRadius", estado.pointSize);
             
-            glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            glBindVertexArray(vao);
-            glDrawArrays(GL_POINTS, 0, last_size);
+        //     glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        //     glBindVertexArray(vao);
+        //     glDrawArrays(GL_POINTS, 0, last_size);
 
-            glBindBuffer(GL_ARRAY_BUFFER, outros_vbo);
-            glBindVertexArray(outros_vao);
-            glDrawArrays(GL_POINTS, 0, outros_control);
+        //     glBindBuffer(GL_ARRAY_BUFFER, outros_vbo);
+        //     glBindVertexArray(outros_vao);
+        //     glDrawArrays(GL_POINTS, 0, outros_control);
 
-            if (estado.comecar_passo_a_passo) {
-                estado.passo_a_passo_em_andamento = true;
-                estado.proximo_passo = true;
-                estado.comecar_passo_a_passo = false;
-                // resultado_ate_agora = {};
-                passo_a_passo_manager.reset();
-            }
-            if (estado.proximo_passo) {
-                estado.proximo_passo = false;
-                passo_a_passo_manager.proximo_passo(fecho_calculado);
-                // auto res = algoritmo_v1_passo_a_passo(fecho_calculado);
-                // if (res.etapa_do_passo_executado == Etapa::ETAPA_2) {
-                //     resultado_ate_agora = res.resultado_ate_agora;
-                // }
-                // if (res.acabou) {
-                //     estado.passo_a_passo_em_andamento = false;
-                //     estado.passo_a_passo_acabou_de_acabar = true;
-                //     resultado_arrumado_para_renderizacao = false;
-                // }
-                passo_a_passo_manager.arruma_renderizacao();
-                // std::array<Ponto, 6> pontos {};
-                // std::size_t num = 4;
-                // pontos[0] = res.colorir_esse;
-                // pontos[1] = res.esse_tambem;
-                // pontos[2] = res.desenhar_essa[0];
-                // pontos[3] = res.desenhar_essa[1];
-                // if (res.desenhar_a_outra) {
-                //     num += 2;
-                //     pontos[4] = res.tambem_desenhar_essa[0];
-                //     pontos[5] = res.tambem_desenhar_essa[1];
-                // }
+        //     if (estado.comecar_passo_a_passo) {
+        //         estado.passo_a_passo_em_andamento = true;
+        //         estado.proximo_passo = true;
+        //         estado.comecar_passo_a_passo = false;
+        //         // resultado_ate_agora = {};
+        //         passo_a_passo_manager.reset();
+        //     }
+        //     if (estado.proximo_passo) {
+        //         estado.proximo_passo = false;
+        //         passo_a_passo_manager.proximo_passo(fecho_calculado);
+        //         // auto res = algoritmo_v1_passo_a_passo(fecho_calculado);
+        //         // if (res.etapa_do_passo_executado == Etapa::ETAPA_2) {
+        //         //     resultado_ate_agora = res.resultado_ate_agora;
+        //         // }
+        //         // if (res.acabou) {
+        //         //     estado.passo_a_passo_em_andamento = false;
+        //         //     estado.passo_a_passo_acabou_de_acabar = true;
+        //         //     resultado_arrumado_para_renderizacao = false;
+        //         // }
+        //         passo_a_passo_manager.arruma_renderizacao();
+        //         // std::array<Ponto, 6> pontos {};
+        //         // std::size_t num = 4;
+        //         // pontos[0] = res.colorir_esse;
+        //         // pontos[1] = res.esse_tambem;
+        //         // pontos[2] = res.desenhar_essa[0];
+        //         // pontos[3] = res.desenhar_essa[1];
+        //         // if (res.desenhar_a_outra) {
+        //         //     num += 2;
+        //         //     pontos[4] = res.tambem_desenhar_essa[0];
+        //         //     pontos[5] = res.tambem_desenhar_essa[1];
+        //         // }
 
-                // std::array<std::array<float, 3>, 6> cores {};
-                // if (res.etapa_do_passo_executado == Etapa::ETAPA_1) {
-                //     // usado como base: #26a6c9
-                //     cores[0] = {27, 181, 224};
-                //     cores[1] = {101, 197, 224};
-                //     cores[2] = {38, 166, 201};
-                //     cores[3] = {38, 166, 201};
-                //     if (res.desenhar_a_outra) {
-                //         cores[4] = {111, 182, 201};
-                //         cores[5] = {111, 182, 201};
-                //     }
-                // } else {
-                //     // usado como base: #c9262b
-                //     cores[0] = {230, 32, 39};
-                //     cores[1] = {230, 78, 83};
-                //     cores[2] = {201, 38, 43};
-                //     cores[3] = {201, 38, 43};
-                //     if (res.desenhar_a_outra) {
-                //         cores[4] = {201, 71, 75};
-                //         cores[5] = {201, 71, 75};
-                //     }
-                // }
-                // std::vector<float> ps {};
-                // ps.reserve(num * 5 * sizeof (float));
-                // for (std::size_t i = 0; i < num; ++i) {
-                //     ps.push_back(pontos[i][0]);
-                //     ps.push_back(pontos[i][1]);
-                //     ps.push_back(cores[i][0] / 255.0f);
-                //     ps.push_back(cores[i][1] / 255.0f);
-                //     ps.push_back(cores[i][2] / 255.0f);
-                // }
-                // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-                // glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
+        //         // std::array<std::array<float, 3>, 6> cores {};
+        //         // if (res.etapa_do_passo_executado == Etapa::ETAPA_1) {
+        //         //     // usado como base: #26a6c9
+        //         //     cores[0] = {27, 181, 224};
+        //         //     cores[1] = {101, 197, 224};
+        //         //     cores[2] = {38, 166, 201};
+        //         //     cores[3] = {38, 166, 201};
+        //         //     if (res.desenhar_a_outra) {
+        //         //         cores[4] = {111, 182, 201};
+        //         //         cores[5] = {111, 182, 201};
+        //         //     }
+        //         // } else {
+        //         //     // usado como base: #c9262b
+        //         //     cores[0] = {230, 32, 39};
+        //         //     cores[1] = {230, 78, 83};
+        //         //     cores[2] = {201, 38, 43};
+        //         //     cores[3] = {201, 38, 43};
+        //         //     if (res.desenhar_a_outra) {
+        //         //         cores[4] = {201, 71, 75};
+        //         //         cores[5] = {201, 71, 75};
+        //         //     }
+        //         // }
+        //         // std::vector<float> ps {};
+        //         // ps.reserve(num * 5 * sizeof (float));
+        //         // for (std::size_t i = 0; i < num; ++i) {
+        //         //     ps.push_back(pontos[i][0]);
+        //         //     ps.push_back(pontos[i][1]);
+        //         //     ps.push_back(cores[i][0] / 255.0f);
+        //         //     ps.push_back(cores[i][1] / 255.0f);
+        //         //     ps.push_back(cores[i][2] / 255.0f);
+        //         // }
+        //         // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+        //         // glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
 
-                // passo_a_passo_manager.renderiza_passo();
-                // glBindVertexArray(passo_vao);
-                // point_program.use();
-                // glDrawArrays(GL_POINTS, 0, 2);
-                // color_line_program.use();
-                // passo_quantos = num - 2;
-                // glDrawArrays(GL_LINES, 2, passo_quantos);
-            }
-            if (estado.passo_a_passo_em_andamento || estado.passo_a_passo_acabou_de_acabar) {
-                passo_a_passo_manager.renderiza_passo();
-                // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-                // glBindVertexArray(passo_vao);
-                // point_program.use();
-                // glDrawArrays(GL_POINTS, 0, 2);
-                // color_line_program.use();
-                // glDrawArrays(GL_LINES, 2, passo_quantos);
-            }
-            if (estado.mostrar_resultado_passo_a_passo) {
-                estado.mostrando_resultado_passo_a_passo = true;
-                passo_a_passo_manager.renderiza_resultado();
-                // if (!resultado_arrumado_para_renderizacao) {
-                //     std::array<Ponto, 4> pontos {};
-                //     std::size_t num = 4;
-                //     pontos[0] = resultado_ate_agora.p;
-                //     pontos[1] = resultado_ate_agora.intersecao_encontrada;
-                //     pontos[2] = resultado_ate_agora.r[0];
-                //     pontos[3] = resultado_ate_agora.r[1];
-                //     std::vector<float> ps {};
-                //     ps.reserve(num * 5 * sizeof (float));
-                //     for (std::size_t i = 0; i < num; ++i) {
-                //         ps.push_back(pontos[i][0]);
-                //         ps.push_back(pontos[i][1]);
-                //         ps.push_back(0.149f); // 38
-                //         ps.push_back(0.788f); // 201
-                //         ps.push_back(0.682f); // 174
-                //     }
-                //     glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-                //     glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
+        //         // passo_a_passo_manager.renderiza_passo();
+        //         // glBindVertexArray(passo_vao);
+        //         // point_program.use();
+        //         // glDrawArrays(GL_POINTS, 0, 2);
+        //         // color_line_program.use();
+        //         // passo_quantos = num - 2;
+        //         // glDrawArrays(GL_LINES, 2, passo_quantos);
+        //     }
+        //     if (estado.passo_a_passo_em_andamento || estado.passo_a_passo_acabou_de_acabar) {
+        //         passo_a_passo_manager.renderiza_passo();
+        //         // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+        //         // glBindVertexArray(passo_vao);
+        //         // point_program.use();
+        //         // glDrawArrays(GL_POINTS, 0, 2);
+        //         // color_line_program.use();
+        //         // glDrawArrays(GL_LINES, 2, passo_quantos);
+        //     }
+        //     if (estado.mostrar_resultado_passo_a_passo) {
+        //         estado.mostrando_resultado_passo_a_passo = true;
+        //         passo_a_passo_manager.renderiza_resultado();
+        //         // if (!resultado_arrumado_para_renderizacao) {
+        //         //     std::array<Ponto, 4> pontos {};
+        //         //     std::size_t num = 4;
+        //         //     pontos[0] = resultado_ate_agora.p;
+        //         //     pontos[1] = resultado_ate_agora.intersecao_encontrada;
+        //         //     pontos[2] = resultado_ate_agora.r[0];
+        //         //     pontos[3] = resultado_ate_agora.r[1];
+        //         //     std::vector<float> ps {};
+        //         //     ps.reserve(num * 5 * sizeof (float));
+        //         //     for (std::size_t i = 0; i < num; ++i) {
+        //         //         ps.push_back(pontos[i][0]);
+        //         //         ps.push_back(pontos[i][1]);
+        //         //         ps.push_back(0.149f); // 38
+        //         //         ps.push_back(0.788f); // 201
+        //         //         ps.push_back(0.682f); // 174
+        //         //     }
+        //         //     glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+        //         //     glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(num * 5 * sizeof (float)), ps.data());
 
-                //     resultado_arrumado_para_renderizacao = true;
-                // }
+        //         //     resultado_arrumado_para_renderizacao = true;
+        //         // }
 
-                // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
-                // glBindVertexArray(passo_vao);
-                // point_program.use();
-                // glDrawArrays(GL_POINTS, 0, 4);
-                // color_line_program.use();
-                // glDrawArrays(GL_LINES, 0, 4);
-            } else {
-                estado.mostrando_resultado_passo_a_passo = false;
-            }
+        //         // glBindBuffer(GL_ARRAY_BUFFER, passo_vbo);
+        //         // glBindVertexArray(passo_vao);
+        //         // point_program.use();
+        //         // glDrawArrays(GL_POINTS, 0, 4);
+        //         // color_line_program.use();
+        //         // glDrawArrays(GL_LINES, 0, 4);
+        //     } else {
+        //         estado.mostrando_resultado_passo_a_passo = false;
+        //     }
             
-        } else if (estado.tela == Tela::OPERACOES_BOOLEANAS) {
-            glClearColor(0.34f, 0.34f, 0.34f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        // } else if (estado.tela == Tela::OPERACOES_BOOLEANAS) {
+        //     glClearColor(0.34f, 0.34f, 0.34f, 1.0f);
+        //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             
 
-            for (std::size_t poly_sel = 0; poly_sel < 2; ++poly_sel) {
+        //     for (std::size_t poly_sel = 0; poly_sel < 2; ++poly_sel) {
 
-                if (estado.limpar_ultimo_polys[poly_sel]) {
-                    if (estado.polys_prontos[poly_sel] == 0) {
-                        estado.limpar_polys[poly_sel] = true;
-                    } else {
-                        if (ultimo_polys_idx[poly_sel] == estado.polys_prontos[poly_sel]) {
-                            ultimo_polys_pos[poly_sel] = 0;
-                        }
-                        estado.polys[poly_sel].pop_back();
-                        // estado.polys[poly_sel].push_back({});
-                        polys_buffer_pos[poly_sel] = polys_indices_fim[poly_sel][polys_indices_fim[poly_sel].size()-2];
-                        polys_indices_inicio[poly_sel].back() = 0;
-                        polys_indices_fim[poly_sel].back() = 0;
-                    }
-                    estado.limpar_ultimo_polys[poly_sel] = false;
-                }
-                if (estado.limpar_polys[poly_sel]) {
-                    estado.polys[poly_sel] = {{}};
-                    estado.mostrando_polys[poly_sel] = false;
-                    estado.polys_prontos[poly_sel] = 0;
-                    ultimo_polys_idx[poly_sel] = 0;
-                    ultimo_polys_pos[poly_sel] = 0;
-                    polys_indices_inicio[poly_sel].clear();
-                    polys_indices_fim[poly_sel].clear();
-                    polys_pronto[poly_sel] = false;
-                    polys_buffer_pos[poly_sel] = 0;
+        //         if (estado.limpar_ultimo_polys[poly_sel]) {
+        //             if (estado.polys_prontos[poly_sel] == 0) {
+        //                 estado.limpar_polys[poly_sel] = true;
+        //             } else {
+        //                 if (ultimo_polys_idx[poly_sel] == estado.polys_prontos[poly_sel]) {
+        //                     ultimo_polys_pos[poly_sel] = 0;
+        //                 }
+        //                 estado.polys[poly_sel].pop_back();
+        //                 // estado.polys[poly_sel].push_back({});
+        //                 polys_buffer_pos[poly_sel] = polys_indices_fim[poly_sel][polys_indices_fim[poly_sel].size()-2];
+        //                 polys_indices_inicio[poly_sel].back() = 0;
+        //                 polys_indices_fim[poly_sel].back() = 0;
+        //             }
+        //             estado.limpar_ultimo_polys[poly_sel] = false;
+        //         }
+        //         if (estado.limpar_polys[poly_sel]) {
+        //             estado.polys[poly_sel] = {{}};
+        //             estado.mostrando_polys[poly_sel] = false;
+        //             estado.polys_prontos[poly_sel] = 0;
+        //             ultimo_polys_idx[poly_sel] = 0;
+        //             ultimo_polys_pos[poly_sel] = 0;
+        //             polys_indices_inicio[poly_sel].clear();
+        //             polys_indices_fim[poly_sel].clear();
+        //             polys_pronto[poly_sel] = false;
+        //             polys_buffer_pos[poly_sel] = 0;
 
-                    estado.limpar_polys[poly_sel] = false;
-                }
-                std::size_t max_idx = estado.polys_prontos[poly_sel];
-                std::size_t tamanho = 0;
-                if (estado.polys[poly_sel].size() == max_idx) {
-                    --max_idx;
-                } else {
-                    tamanho = estado.polys[poly_sel][max_idx].size();
-                }
-                if (estado.polys_prontos[poly_sel] > ultimo_polys_idx[poly_sel] || tamanho > ultimo_polys_pos[poly_sel]) {
-                    // std::size_t diff = estado.polys[poly_sel][estado.polys_idx[poly_sel]].size() - ultimo_polys_pos[poly_sel];
-                    std::vector<float> ps {};
-                    // ps.reserve(diff * 5 * sizeof (float));
-                    while (polys_indices_inicio[poly_sel].size() > estado.polys[poly_sel].size()) {
-                        polys_indices_inicio[poly_sel].pop_back();
-                        polys_indices_fim[poly_sel].pop_back();
-                        polys_buffer_pos[poly_sel] = polys_indices_fim[poly_sel].back();
-                    }
-                    std::size_t old_buffer_pos = polys_buffer_pos[poly_sel];
-                    while (polys_indices_inicio[poly_sel].size() < estado.polys[poly_sel].size()) {
-                        polys_indices_inicio[poly_sel].push_back(0);
-                        polys_indices_fim[poly_sel].push_back(0);
-                    }
+        //             estado.limpar_polys[poly_sel] = false;
+        //         }
+        //         std::size_t max_idx = estado.polys_prontos[poly_sel];
+        //         std::size_t tamanho = 0;
+        //         if (estado.polys[poly_sel].size() == max_idx) {
+        //             --max_idx;
+        //         } else {
+        //             tamanho = estado.polys[poly_sel][max_idx].size();
+        //         }
+        //         if (estado.polys_prontos[poly_sel] > ultimo_polys_idx[poly_sel] || tamanho > ultimo_polys_pos[poly_sel]) {
+        //             // std::size_t diff = estado.polys[poly_sel][estado.polys_idx[poly_sel]].size() - ultimo_polys_pos[poly_sel];
+        //             std::vector<float> ps {};
+        //             // ps.reserve(diff * 5 * sizeof (float));
+        //             while (polys_indices_inicio[poly_sel].size() > estado.polys[poly_sel].size()) {
+        //                 polys_indices_inicio[poly_sel].pop_back();
+        //                 polys_indices_fim[poly_sel].pop_back();
+        //                 polys_buffer_pos[poly_sel] = polys_indices_fim[poly_sel].back();
+        //             }
+        //             std::size_t old_buffer_pos = polys_buffer_pos[poly_sel];
+        //             while (polys_indices_inicio[poly_sel].size() < estado.polys[poly_sel].size()) {
+        //                 polys_indices_inicio[poly_sel].push_back(0);
+        //                 polys_indices_fim[poly_sel].push_back(0);
+        //             }
                     
-                    if (estado.polys_prontos[poly_sel] > ultimo_polys_idx[poly_sel]) {
-                        for (std::size_t i = ultimo_polys_idx[poly_sel]; i < estado.polys_prontos[poly_sel]; ++i) {
-                            for (std::size_t j = ultimo_polys_pos[poly_sel]; j < estado.polys[poly_sel][i].size(); ++j) {
-                                if (j == 0) {
-                                    polys_indices_inicio[poly_sel][i] = polys_buffer_pos[poly_sel];
-                                }
-                                ++polys_buffer_pos[poly_sel];
-                                auto ponto = estado.polys[poly_sel][i][j];
-                                ps.push_back(ponto[0]);
-                                ps.push_back(ponto[1]);
+        //             if (estado.polys_prontos[poly_sel] > ultimo_polys_idx[poly_sel]) {
+        //                 for (std::size_t i = ultimo_polys_idx[poly_sel]; i < estado.polys_prontos[poly_sel]; ++i) {
+        //                     for (std::size_t j = ultimo_polys_pos[poly_sel]; j < estado.polys[poly_sel][i].size(); ++j) {
+        //                         if (j == 0) {
+        //                             polys_indices_inicio[poly_sel][i] = polys_buffer_pos[poly_sel];
+        //                         }
+        //                         ++polys_buffer_pos[poly_sel];
+        //                         auto ponto = estado.polys[poly_sel][i][j];
+        //                         ps.push_back(ponto[0]);
+        //                         ps.push_back(ponto[1]);
                                 
-                                if (poly_sel == 0) {
-                                    if (i == 0) {
-                                        ps.push_back(0.788f);
-                                        ps.push_back(0.682f);
-                                        ps.push_back(0.078f);
-                                    } else {
-                                        ps.push_back(0.325f); // 83
-                                        ps.push_back(0.788f); // 201
-                                        ps.push_back(0.078f); // 20
-                                    }
-                                } else {
-                                    if (i == 0) {
-                                        ps.push_back(0.078f); // 20
-                                        ps.push_back(0.325f); // 83
-                                        ps.push_back(0.788f); // 201
-                                    } else {
-                                        ps.push_back(0.682f);
-                                        ps.push_back(0.078f);
-                                        ps.push_back(0.788f);
-                                    }
-                                }
-                            }
-                            polys_indices_fim[poly_sel][i] = polys_buffer_pos[poly_sel];
-                            ultimo_polys_pos[poly_sel] = 0;
-                        }
-                    }
+        //                         if (poly_sel == 0) {
+        //                             if (i == 0) {
+        //                                 ps.push_back(0.788f);
+        //                                 ps.push_back(0.682f);
+        //                                 ps.push_back(0.078f);
+        //                             } else {
+        //                                 ps.push_back(0.325f); // 83
+        //                                 ps.push_back(0.788f); // 201
+        //                                 ps.push_back(0.078f); // 20
+        //                             }
+        //                         } else {
+        //                             if (i == 0) {
+        //                                 ps.push_back(0.078f); // 20
+        //                                 ps.push_back(0.325f); // 83
+        //                                 ps.push_back(0.788f); // 201
+        //                             } else {
+        //                                 ps.push_back(0.682f);
+        //                                 ps.push_back(0.078f);
+        //                                 ps.push_back(0.788f);
+        //                             }
+        //                         }
+        //                     }
+        //                     polys_indices_fim[poly_sel][i] = polys_buffer_pos[poly_sel];
+        //                     ultimo_polys_pos[poly_sel] = 0;
+        //                 }
+        //             }
 
-                    for (std::size_t i = ultimo_polys_pos[poly_sel]; i < tamanho; ++i) {
-                        // std::cout << i << ' ' << tamanho << std::endl;
-                        if (i == 0) {
-                            polys_indices_inicio[poly_sel][estado.polys_prontos[poly_sel]] = polys_buffer_pos[poly_sel];
-                        }
-                        ++polys_buffer_pos[poly_sel];
-                        auto ponto = estado.polys[poly_sel][estado.polys_prontos[poly_sel]][i];
-                        ps.push_back(ponto[0]);
-                        ps.push_back(ponto[1]);
+        //             for (std::size_t i = ultimo_polys_pos[poly_sel]; i < tamanho; ++i) {
+        //                 // std::cout << i << ' ' << tamanho << std::endl;
+        //                 if (i == 0) {
+        //                     polys_indices_inicio[poly_sel][estado.polys_prontos[poly_sel]] = polys_buffer_pos[poly_sel];
+        //                 }
+        //                 ++polys_buffer_pos[poly_sel];
+        //                 auto ponto = estado.polys[poly_sel][estado.polys_prontos[poly_sel]][i];
+        //                 ps.push_back(ponto[0]);
+        //                 ps.push_back(ponto[1]);
                         
-                        if (poly_sel == 0) {
-                            if (estado.polys_prontos[poly_sel] == 0) {
-                                ps.push_back(0.788f);
-                                ps.push_back(0.682f);
-                                ps.push_back(0.078f);
-                            } else {
-                                ps.push_back(0.325f); // 83
-                                ps.push_back(0.788f); // 201
-                                ps.push_back(0.078f); // 20
-                            }
-                        } else {
-                            if (estado.polys_prontos[poly_sel] == 0) {
-                                ps.push_back(0.078f); // 20
-                                ps.push_back(0.325f); // 83
-                                ps.push_back(0.788f); // 201
-                            } else {
-                                ps.push_back(0.682f);
-                                ps.push_back(0.078f);
-                                ps.push_back(0.788f);
-                            }
-                        }
-                    }
+        //                 if (poly_sel == 0) {
+        //                     if (estado.polys_prontos[poly_sel] == 0) {
+        //                         ps.push_back(0.788f);
+        //                         ps.push_back(0.682f);
+        //                         ps.push_back(0.078f);
+        //                     } else {
+        //                         ps.push_back(0.325f); // 83
+        //                         ps.push_back(0.788f); // 201
+        //                         ps.push_back(0.078f); // 20
+        //                     }
+        //                 } else {
+        //                     if (estado.polys_prontos[poly_sel] == 0) {
+        //                         ps.push_back(0.078f); // 20
+        //                         ps.push_back(0.325f); // 83
+        //                         ps.push_back(0.788f); // 201
+        //                     } else {
+        //                         ps.push_back(0.682f);
+        //                         ps.push_back(0.078f);
+        //                         ps.push_back(0.788f);
+        //                     }
+        //                 }
+        //             }
                     
-                    polys_indices_fim[poly_sel].back() = polys_buffer_pos[poly_sel];
+        //             polys_indices_fim[poly_sel].back() = polys_buffer_pos[poly_sel];
 
-                    glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[poly_sel]);
-                    glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(old_buffer_pos * 5 * sizeof (float)), static_cast<GLintptr>(ps.size() * 5 * sizeof (float)), ps.data());
+        //             glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[poly_sel]);
+        //             glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(old_buffer_pos * 5 * sizeof (float)), static_cast<GLintptr>(ps.size() * 5 * sizeof (float)), ps.data());
                     
-                    ultimo_polys_pos[poly_sel] = tamanho;
-                    ultimo_polys_idx[poly_sel] = estado.polys_prontos[poly_sel];
-                    polys_pronto[poly_sel] = true;
-                }
-                if (polys_pronto[poly_sel] && estado.mostrando_polys[poly_sel]) {
+        //             ultimo_polys_pos[poly_sel] = tamanho;
+        //             ultimo_polys_idx[poly_sel] = estado.polys_prontos[poly_sel];
+        //             polys_pronto[poly_sel] = true;
+        //         }
+        //         if (polys_pronto[poly_sel] && estado.mostrando_polys[poly_sel]) {
                     
-                    glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[poly_sel]);
-                    glBindVertexArray(polys_vao[poly_sel]);
-                    std::size_t ate = polys_indices_fim[poly_sel].size();
-                    // if (estado.polys[poly_sel][estado.polys_prontos[poly_sel]].size() == 0) {
-                    //     ate--;
-                    // }
+        //             glBindBuffer(GL_ARRAY_BUFFER, polys_vbo[poly_sel]);
+        //             glBindVertexArray(polys_vao[poly_sel]);
+        //             std::size_t ate = polys_indices_fim[poly_sel].size();
+        //             // if (estado.polys[poly_sel][estado.polys_prontos[poly_sel]].size() == 0) {
+        //             //     ate--;
+        //             // }
 
-                    color_line_program.use();
-                    color_line_program.setFloat("alpha", 0.2f);
-                    for (std::size_t i = 0; i < ate; ++i) {
-                        glDrawArrays(GL_TRIANGLE_FAN, polys_indices_inicio[poly_sel][i], polys_indices_fim[poly_sel][i] - polys_indices_inicio[poly_sel][i]);
-                    }
-                    color_line_program.setFloat("alpha", 1.0f);
-                    for (std::size_t i = 0; i < ate; ++i) {
-                        glDrawArrays(GL_LINE_STRIP, polys_indices_inicio[poly_sel][i], polys_indices_fim[poly_sel][i] - polys_indices_inicio[poly_sel][i]);
-                        // if (mano == 80 || mano == 0) {
-                        //     std::cout << polys_indices_inicio[poly_sel][i] << ' ' << polys_indices_fim[poly_sel][i] << std::endl;
-                        //     mano = 0;
-                        // }
-                    }
-                    ++mano;
+        //             color_line_program.use();
+        //             color_line_program.setFloat("alpha", 0.2f);
+        //             for (std::size_t i = 0; i < ate; ++i) {
+        //                 glDrawArrays(GL_TRIANGLE_FAN, polys_indices_inicio[poly_sel][i], polys_indices_fim[poly_sel][i] - polys_indices_inicio[poly_sel][i]);
+        //             }
+        //             color_line_program.setFloat("alpha", 1.0f);
+        //             for (std::size_t i = 0; i < ate; ++i) {
+        //                 glDrawArrays(GL_LINE_STRIP, polys_indices_inicio[poly_sel][i], polys_indices_fim[poly_sel][i] - polys_indices_inicio[poly_sel][i]);
+        //                 // if (mano == 80 || mano == 0) {
+        //                 //     std::cout << polys_indices_inicio[poly_sel][i] << ' ' << polys_indices_fim[poly_sel][i] << std::endl;
+        //                 //     mano = 0;
+        //                 // }
+        //             }
+        //             ++mano;
 
-                    point_program.use();
-                    point_program.setFloat("pointRadius", estado.pointSize);
-                    glDrawArrays(GL_POINTS, 0, polys_buffer_pos[poly_sel]);
-                }
-            }
+        //             point_program.use();
+        //             point_program.setFloat("pointRadius", estado.pointSize);
+        //             glDrawArrays(GL_POINTS, 0, polys_buffer_pos[poly_sel]);
+        //         }
+        //     }
 
-            if (estado.recalcular_intersecoes) {
-                inter_indices_inicio.clear();
-                inter_indices_fim.clear();
-                // int meeeeeeee = 0;
-                // int meu = 0;
-                // for (auto poligono : std::array{estado.polys[0], estado.polys[1]}) {
-                //     std::cout << "poligono " << meeeeeeee << std::endl;
-                //     for (auto parte : poligono) {
-                //         std::cout << "    parte " << meu << std::endl;
-                //         for (auto ponto : parte) {
-                //             std::cout << "        " << ponto[0] << ' ' << ponto[1] << std::endl;
-                //         }
-                //         ++meu;
-                //     }
-                //     ++meeeeeeee;
-                // }
-                estado.intersecoes = op_booleana_poligonos(estado.polys[0], estado.polys[1], false);
-                int meeeeeeee = 0;
-                int meu = 0;
-                for (auto poligono : estado.intersecoes) {
-                    std::cout << "poligono " << meeeeeeee << std::endl;
-                    for (auto parte : poligono) {
-                        std::cout << "    parte " << meu << std::endl;
-                        for (auto ponto : parte) {
-                            std::cout << "        " << ponto[0] << ' ' << ponto[1] << std::endl;
-                        }
-                        ++meu;
-                    }
-                    ++meeeeeeee;
-                }
-                // estado.intersecoes.pop_back();
-                std::vector<float> ps {};
-                for (std::size_t k = 0; k < estado.intersecoes.size(); ++k) {
-                    for (std::size_t j = 0; j < estado.intersecoes[k].size(); ++j) {
-                        inter_indices_inicio.push_back(ps.size()/5);
-                        for (std::size_t i = 0; i < estado.intersecoes[k][j].size(); ++i) {
-                            auto ponto = estado.intersecoes[k][j][i];
-                            ps.push_back(ponto[0]);
-                            ps.push_back(ponto[1]);
+        //     if (estado.recalcular_intersecoes) {
+        //         inter_indices_inicio.clear();
+        //         inter_indices_fim.clear();
+        //         // int meeeeeeee = 0;
+        //         // int meu = 0;
+        //         // for (auto poligono : std::array{estado.polys[0], estado.polys[1]}) {
+        //         //     std::cout << "poligono " << meeeeeeee << std::endl;
+        //         //     for (auto parte : poligono) {
+        //         //         std::cout << "    parte " << meu << std::endl;
+        //         //         for (auto ponto : parte) {
+        //         //             std::cout << "        " << ponto[0] << ' ' << ponto[1] << std::endl;
+        //         //         }
+        //         //         ++meu;
+        //         //     }
+        //         //     ++meeeeeeee;
+        //         // }
+        //         estado.intersecoes = op_booleana_poligonos(estado.polys[0], estado.polys[1], false);
+        //         int meeeeeeee = 0;
+        //         int meu = 0;
+        //         for (auto poligono : estado.intersecoes) {
+        //             std::cout << "poligono " << meeeeeeee << std::endl;
+        //             for (auto parte : poligono) {
+        //                 std::cout << "    parte " << meu << std::endl;
+        //                 for (auto ponto : parte) {
+        //                     std::cout << "        " << ponto[0] << ' ' << ponto[1] << std::endl;
+        //                 }
+        //                 ++meu;
+        //             }
+        //             ++meeeeeeee;
+        //         }
+        //         // estado.intersecoes.pop_back();
+        //         std::vector<float> ps {};
+        //         for (std::size_t k = 0; k < estado.intersecoes.size(); ++k) {
+        //             for (std::size_t j = 0; j < estado.intersecoes[k].size(); ++j) {
+        //                 inter_indices_inicio.push_back(ps.size()/5);
+        //                 for (std::size_t i = 0; i < estado.intersecoes[k][j].size(); ++i) {
+        //                     auto ponto = estado.intersecoes[k][j][i];
+        //                     ps.push_back(ponto[0]);
+        //                     ps.push_back(ponto[1]);
                             
-                            if (j == 0) {
-                                ps.push_back(0.788f); // 201
-                                ps.push_back(0.325f); // 83
-                                ps.push_back(0.078f); // 20
-                            } else {
-                                ps.push_back(0.788f); // 201
-                                ps.push_back(0.078f); // 20
-                                ps.push_back(0.325f); // 83
-                            }
-                        }
-                        inter_indices_fim.push_back(ps.size()/5);
+        //                     if (j == 0) {
+        //                         ps.push_back(0.788f); // 201
+        //                         ps.push_back(0.325f); // 83
+        //                         ps.push_back(0.078f); // 20
+        //                     } else {
+        //                         ps.push_back(0.788f); // 201
+        //                         ps.push_back(0.078f); // 20
+        //                         ps.push_back(0.325f); // 83
+        //                     }
+        //                 }
+        //                 inter_indices_fim.push_back(ps.size()/5);
 
-                    }
-                }
-                if (estado.intersecoes.size() == 0) {
-                    inter_resul_pronto = false;
-                } else {
-                    glBindBuffer(GL_ARRAY_BUFFER, inter_resul_vbo);
-                    glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * 5 * sizeof (float)), ps.data());
-                    inter_resul_pronto = true;
-                    estado.mostrando_intersecoes = true;
-                }
-                estado.recalcular_intersecoes = false;
-            }
-            if (inter_resul_pronto && estado.mostrando_intersecoes) {
-                glBindBuffer(GL_ARRAY_BUFFER, inter_resul_vbo);
-                glBindVertexArray(inter_resul_vao);
+        //             }
+        //         }
+        //         if (estado.intersecoes.size() == 0) {
+        //             inter_resul_pronto = false;
+        //         } else {
+        //             glBindBuffer(GL_ARRAY_BUFFER, inter_resul_vbo);
+        //             glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * 5 * sizeof (float)), ps.data());
+        //             inter_resul_pronto = true;
+        //             estado.mostrando_intersecoes = true;
+        //         }
+        //         estado.recalcular_intersecoes = false;
+        //     }
+        //     if (inter_resul_pronto && estado.mostrando_intersecoes) {
+        //         glBindBuffer(GL_ARRAY_BUFFER, inter_resul_vbo);
+        //         glBindVertexArray(inter_resul_vao);
 
-                color_line_program.use();
-                color_line_program.setFloat("alpha", 0.2f);
-                for (std::size_t i = 0; i < inter_indices_fim.size(); ++i) {
-                    glDrawArrays(GL_TRIANGLE_FAN, inter_indices_inicio[i], inter_indices_fim[i] - inter_indices_inicio[i]);
-                }
-                color_line_program.setFloat("alpha", 1.0f);
-                for (std::size_t i = 0; i < inter_indices_fim.size(); ++i) {
-                    glDrawArrays(GL_LINE_STRIP, inter_indices_inicio[i], inter_indices_fim[i] - inter_indices_inicio[i]);
-                    // if (mano == 80 || mano == 0) {
-                    //     std::cout << inter_indices_inicio[i] << ' ' << inter_indices_fim[i] << std::endl;
-                    //     mano = 0;
-                    // }
-                }
-                // ++mano;
+        //         color_line_program.use();
+        //         color_line_program.setFloat("alpha", 0.2f);
+        //         for (std::size_t i = 0; i < inter_indices_fim.size(); ++i) {
+        //             glDrawArrays(GL_TRIANGLE_FAN, inter_indices_inicio[i], inter_indices_fim[i] - inter_indices_inicio[i]);
+        //         }
+        //         color_line_program.setFloat("alpha", 1.0f);
+        //         for (std::size_t i = 0; i < inter_indices_fim.size(); ++i) {
+        //             glDrawArrays(GL_LINE_STRIP, inter_indices_inicio[i], inter_indices_fim[i] - inter_indices_inicio[i]);
+        //             // if (mano == 80 || mano == 0) {
+        //             //     std::cout << inter_indices_inicio[i] << ' ' << inter_indices_fim[i] << std::endl;
+        //             //     mano = 0;
+        //             // }
+        //         }
+        //         // ++mano;
 
-                point_program.use();
-                point_program.setFloat("pointRadius", estado.pointSize);
-                glDrawArrays(GL_POINTS, 0, inter_indices_fim.back());
-            }
+        //         point_program.use();
+        //         point_program.setFloat("pointRadius", estado.pointSize);
+        //         glDrawArrays(GL_POINTS, 0, inter_indices_fim.back());
+        //     }
 
-        } else if (estado.tela == Tela::ATIVIDADE) {
+        // } else if (estado.tela == Tela::ATIVIDADE) {
 
-            glClearColor(0.3f, 0.2f, 0.3f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //     glClearColor(0.3f, 0.2f, 0.3f, 1.0f);
+        //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            if (estado.resetar_pontos) {
-                estado.entrada.clear();
-                estado.cores_entrada.clear();
-                atividade_size = 0;
-                area_visivel = {};
-                estado.visivel_pronto = false;
-                estado.resetar_pontos = false;
-            }
+        //     if (estado.resetar_pontos) {
+        //         estado.entrada.clear();
+        //         estado.cores_entrada.clear();
+        //         atividade_size = 0;
+        //         area_visivel = {};
+        //         estado.visivel_pronto = false;
+        //         estado.resetar_pontos = false;
+        //     }
 
-            if (estado.entrada.size() > atividade_size) {
-                std::size_t diff = estado.entrada.size() - atividade_size;
-                std::vector<float> ps {};
-                ps.reserve(diff * 5 * sizeof (float));
-                for (std::size_t i = atividade_size; i < estado.entrada.size(); ++i) {
-                    auto ponto = estado.entrada[i];
-                    auto cor = estado.cores_entrada[i];
-                    ps.push_back(ponto[0]);
-                    ps.push_back(ponto[1]);
-                    // sempre começa com amarelo
-                    ps.push_back(0.788f);
-                    ps.push_back(0.682f);
-                    ps.push_back(0.078f);
-                }
-                glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(atividade_size * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
-                atividade_size = estado.entrada.size();
-            }
+        //     if (estado.entrada.size() > atividade_size) {
+        //         std::size_t diff = estado.entrada.size() - atividade_size;
+        //         std::vector<float> ps {};
+        //         ps.reserve(diff * 5 * sizeof (float));
+        //         for (std::size_t i = atividade_size; i < estado.entrada.size(); ++i) {
+        //             auto ponto = estado.entrada[i];
+        //             auto cor = estado.cores_entrada[i];
+        //             ps.push_back(ponto[0]);
+        //             ps.push_back(ponto[1]);
+        //             // sempre começa com amarelo
+        //             ps.push_back(0.788f);
+        //             ps.push_back(0.682f);
+        //             ps.push_back(0.078f);
+        //         }
+        //         glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+        //         glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(atividade_size * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
+        //         atividade_size = estado.entrada.size();
+        //     }
 
-            if (estado.recalcular_orientacao) {
-                if (orientado_antihorario(estado.entrada)) {
-                    std::cout << "orientação anti-horária" << std::endl;
-                } else {
-                    std::cout << "orientação horária" << std::endl;
-                }
-                // auto& v = estado.entrada;
-                // int curvas_a_esquerda = 0;
-                // for (std::size_t i = 1; i < v.size() - 1; ++i) {
-                //     auto& p1 = v[i-1];
-                //     auto& p2 = v[i];
-                //     auto& p3 = v[i+1];
-                //     if (left(p1, p2, p3)) {
-                //         ++curvas_a_esquerda;
-                //     } else if (area_orientada(p1, p2, p3) != 0.) {
-                //         --curvas_a_esquerda;
-                //     }
-                // }
-                // auto& p1 = v[0];
-                // auto& p2 = v[1];
-                // auto& pn_2 = v[v.size() - 2];
-                // auto& pn_1 = v[v.size() - 1];
-                // if (left(pn_2, pn_1, p1)) {
-                //     ++curvas_a_esquerda;
-                // } else if (area_orientada(pn_2, pn_1, p1) != 0.) {
-                //     --curvas_a_esquerda;
-                // }
-                // if (left(pn_1, p1, p2)) {
-                //     ++curvas_a_esquerda;
-                // } else if (area_orientada(pn_1, p1, p2) != 0.) {
-                //     --curvas_a_esquerda;
-                // }
-                // if (curvas_a_esquerda > 0) {
-                //     std::cout << "orientação anti-horária" << std::endl;
-                // } else {
-                //     std::cout << "orientação horária" << std::endl;
-                // }
-                estado.recalcular_orientacao = false;
-            }
+        //     if (estado.recalcular_orientacao) {
+        //         if (orientado_antihorario(estado.entrada)) {
+        //             std::cout << "orientação anti-horária" << std::endl;
+        //         } else {
+        //             std::cout << "orientação horária" << std::endl;
+        //         }
+        //         // auto& v = estado.entrada;
+        //         // int curvas_a_esquerda = 0;
+        //         // for (std::size_t i = 1; i < v.size() - 1; ++i) {
+        //         //     auto& p1 = v[i-1];
+        //         //     auto& p2 = v[i];
+        //         //     auto& p3 = v[i+1];
+        //         //     if (left(p1, p2, p3)) {
+        //         //         ++curvas_a_esquerda;
+        //         //     } else if (area_orientada(p1, p2, p3) != 0.) {
+        //         //         --curvas_a_esquerda;
+        //         //     }
+        //         // }
+        //         // auto& p1 = v[0];
+        //         // auto& p2 = v[1];
+        //         // auto& pn_2 = v[v.size() - 2];
+        //         // auto& pn_1 = v[v.size() - 1];
+        //         // if (left(pn_2, pn_1, p1)) {
+        //         //     ++curvas_a_esquerda;
+        //         // } else if (area_orientada(pn_2, pn_1, p1) != 0.) {
+        //         //     --curvas_a_esquerda;
+        //         // }
+        //         // if (left(pn_1, p1, p2)) {
+        //         //     ++curvas_a_esquerda;
+        //         // } else if (area_orientada(pn_1, p1, p2) != 0.) {
+        //         //     --curvas_a_esquerda;
+        //         // }
+        //         // if (curvas_a_esquerda > 0) {
+        //         //     std::cout << "orientação anti-horária" << std::endl;
+        //         // } else {
+        //         //     std::cout << "orientação horária" << std::endl;
+        //         // }
+        //         estado.recalcular_orientacao = false;
+        //     }
 
-            if (estado.recalcular_convexidade_dos_vertices) {
-                estado.recalcular_convexidade_dos_vertices = false;
+        //     if (estado.recalcular_convexidade_dos_vertices) {
+        //         estado.recalcular_convexidade_dos_vertices = false;
 
-                // auto& v = estado.entrada;
-                // for (std::size_t i = 0; i < v.size(); ++i) {
-                //     std::size_t prev = (i == 0) ? (v.size()-1) : (i-1);
-                //     std::size_t prox = (i+1 >= v.size()) ? (0) : (i+1);
-                //     auto& p1 = v[prev];
-                //     auto& p2 = v[i];
-                //     auto& p3 = v[prox];
-                //     DentroFora nova_cor {};
-                //     if (area_orientada(p1, p2, p3) >= 0.) {
-                //         nova_cor = DentroFora::DENTRO;
-                //     } else {
-                //         nova_cor = DentroFora::FORA;
-                //     }
-                //     estado.cores_entrada[i] = nova_cor;
-                // }
+        //         // auto& v = estado.entrada;
+        //         // for (std::size_t i = 0; i < v.size(); ++i) {
+        //         //     std::size_t prev = (i == 0) ? (v.size()-1) : (i-1);
+        //         //     std::size_t prox = (i+1 >= v.size()) ? (0) : (i+1);
+        //         //     auto& p1 = v[prev];
+        //         //     auto& p2 = v[i];
+        //         //     auto& p3 = v[prox];
+        //         //     DentroFora nova_cor {};
+        //         //     if (area_orientada(p1, p2, p3) >= 0.) {
+        //         //         nova_cor = DentroFora::DENTRO;
+        //         //     } else {
+        //         //         nova_cor = DentroFora::FORA;
+        //         //     }
+        //         //     estado.cores_entrada[i] = nova_cor;
+        //         // }
 
-                // std::vector<float> ps {};
-                // ps.reserve(atividade_size * 5 * sizeof (float));
-                // for (std::size_t i = 0; i < atividade_size; ++i) {
-                //     auto ponto = estado.entrada[i];
-                //     auto cor = estado.cores_entrada[i];
-                //     ps.push_back(ponto[0]);
-                //     ps.push_back(ponto[1]);
-                //     // agora não vai ter nenhum amarelo
-                //     if (cor == DentroFora::DESCONHECIDO) {
-                //         std::cerr << "não era para ter amarelo" << std::endl;
-                //         ps.push_back(0.788f); // 201
-                //         ps.push_back(0.682f); // 174
-                //         ps.push_back(0.078f); // 20
-                //     } else if (cor == DentroFora::DENTRO) {
-                //         ps.push_back(0.325f); // 83
-                //         ps.push_back(0.788f); // 201
-                //         ps.push_back(0.078f); // 20
-                //     } else {
-                //         ps.push_back(0.788f); // 201
-                //         ps.push_back(0.149f); // 38
-                //         ps.push_back(0.078f); // 20
-                //     }
-                // }
-                // glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
-                // glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(atividade_size * 5 * sizeof (float)), ps.data());
+        //         // std::vector<float> ps {};
+        //         // ps.reserve(atividade_size * 5 * sizeof (float));
+        //         // for (std::size_t i = 0; i < atividade_size; ++i) {
+        //         //     auto ponto = estado.entrada[i];
+        //         //     auto cor = estado.cores_entrada[i];
+        //         //     ps.push_back(ponto[0]);
+        //         //     ps.push_back(ponto[1]);
+        //         //     // agora não vai ter nenhum amarelo
+        //         //     if (cor == DentroFora::DESCONHECIDO) {
+        //         //         std::cerr << "não era para ter amarelo" << std::endl;
+        //         //         ps.push_back(0.788f); // 201
+        //         //         ps.push_back(0.682f); // 174
+        //         //         ps.push_back(0.078f); // 20
+        //         //     } else if (cor == DentroFora::DENTRO) {
+        //         //         ps.push_back(0.325f); // 83
+        //         //         ps.push_back(0.788f); // 201
+        //         //         ps.push_back(0.078f); // 20
+        //         //     } else {
+        //         //         ps.push_back(0.788f); // 201
+        //         //         ps.push_back(0.149f); // 38
+        //         //         ps.push_back(0.078f); // 20
+        //         //     }
+        //         // }
+        //         // glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+        //         // glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(atividade_size * 5 * sizeof (float)), ps.data());
                 
-                // estado.recalcular_convexidade_dos_vertices = false;
-            }
+        //         // estado.recalcular_convexidade_dos_vertices = false;
+        //     }
             
-            if (estado.recalcular_orelhas) {
-                auto& v = estado.entrada;
-                for (std::size_t i = 0; i < v.size(); ++i) {
-                    Categoria nova_cat = categoriza_ponto(v, i);
-                    estado.cores_entrada[i] = nova_cat;
-                }
+        //     if (estado.recalcular_orelhas) {
+        //         auto& v = estado.entrada;
+        //         for (std::size_t i = 0; i < v.size(); ++i) {
+        //             Categoria nova_cat = categoriza_ponto(v, i);
+        //             estado.cores_entrada[i] = nova_cat;
+        //         }
 
-                std::vector<float> ps {};
-                ps.reserve(atividade_size * 5 * sizeof (float));
-                for (std::size_t i = 0; i < atividade_size; ++i) {
-                    auto ponto = estado.entrada[i];
-                    auto cor = estado.cores_entrada[i];
-                    ps.push_back(ponto[0]);
-                    ps.push_back(ponto[1]);
-                    switch (cor) {
-                        case Categoria::REGULAR:
-                            ps.push_back(static_cast<float>(201) / 255.f); // 201
-                            ps.push_back(static_cast<float>(174) / 255.f); // 174
-                            ps.push_back(static_cast<float>(20) / 255.f); // 20
-                            break;
-                        case Categoria::START:
-                            ps.push_back(static_cast<float>(174) / 255.f); // 174
-                            ps.push_back(static_cast<float>(201) / 255.f); // 201
-                            ps.push_back(static_cast<float>(20) / 255.f); // 20
-                            break;
-                        case Categoria::END:
-                            ps.push_back(static_cast<float>(201) / 255.f); // 201
-                            ps.push_back(static_cast<float>(56) / 255.f); // 56
-                            ps.push_back(static_cast<float>(20) / 255.f); // 20
-                            break;
-                        case Categoria::SPLIT:
-                            ps.push_back(static_cast<float>(20) / 255.f); // 20
-                            ps.push_back(static_cast<float>(122) / 255.f); // 122
-                            ps.push_back(static_cast<float>(201) / 255.f); // 201
-                            break;
-                        case Categoria::MERGE:
-                            ps.push_back(static_cast<float>(20) / 255.f); // 20
-                            ps.push_back(static_cast<float>(56) / 255.f); // 56
-                            ps.push_back(static_cast<float>(201) / 255.f); // 201
-                            break;
-                        default:
-                            ps.push_back(static_cast<float>(201) / 255.f); // 201
-                            ps.push_back(static_cast<float>(174) / 255.f); // 174
-                            ps.push_back(static_cast<float>(20) / 255.f); // 20
-                    }
-                }
-                glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(atividade_size * 5 * sizeof (float)), ps.data());
+        //         std::vector<float> ps {};
+        //         ps.reserve(atividade_size * 5 * sizeof (float));
+        //         for (std::size_t i = 0; i < atividade_size; ++i) {
+        //             auto ponto = estado.entrada[i];
+        //             auto cor = estado.cores_entrada[i];
+        //             ps.push_back(ponto[0]);
+        //             ps.push_back(ponto[1]);
+        //             switch (cor) {
+        //                 case Categoria::REGULAR:
+        //                     ps.push_back(static_cast<float>(201) / 255.f); // 201
+        //                     ps.push_back(static_cast<float>(174) / 255.f); // 174
+        //                     ps.push_back(static_cast<float>(20) / 255.f); // 20
+        //                     break;
+        //                 case Categoria::START:
+        //                     ps.push_back(static_cast<float>(174) / 255.f); // 174
+        //                     ps.push_back(static_cast<float>(201) / 255.f); // 201
+        //                     ps.push_back(static_cast<float>(20) / 255.f); // 20
+        //                     break;
+        //                 case Categoria::END:
+        //                     ps.push_back(static_cast<float>(201) / 255.f); // 201
+        //                     ps.push_back(static_cast<float>(56) / 255.f); // 56
+        //                     ps.push_back(static_cast<float>(20) / 255.f); // 20
+        //                     break;
+        //                 case Categoria::SPLIT:
+        //                     ps.push_back(static_cast<float>(20) / 255.f); // 20
+        //                     ps.push_back(static_cast<float>(122) / 255.f); // 122
+        //                     ps.push_back(static_cast<float>(201) / 255.f); // 201
+        //                     break;
+        //                 case Categoria::MERGE:
+        //                     ps.push_back(static_cast<float>(20) / 255.f); // 20
+        //                     ps.push_back(static_cast<float>(56) / 255.f); // 56
+        //                     ps.push_back(static_cast<float>(201) / 255.f); // 201
+        //                     break;
+        //                 default:
+        //                     ps.push_back(static_cast<float>(201) / 255.f); // 201
+        //                     ps.push_back(static_cast<float>(174) / 255.f); // 174
+        //                     ps.push_back(static_cast<float>(20) / 255.f); // 20
+        //             }
+        //         }
+        //         glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+        //         glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(atividade_size * 5 * sizeof (float)), ps.data());
                 
-                estado.recalcular_orelhas = false;
-            }
+        //         estado.recalcular_orelhas = false;
+        //     }
 
-            if (estado.recalcular_visivel) {
-                area_visivel = regiao_visivel(estado.entrada, estado.observador);
+        //     if (estado.recalcular_visivel) {
+        //         area_visivel = regiao_visivel(estado.entrada, estado.observador);
 
-                std::vector<float> ps {};
-                ps.reserve(area_visivel.size() * 5 * sizeof (float));
-                for (std::size_t i = 0; i < area_visivel.size(); ++i) {
-                    auto ponto = area_visivel[i];
-                    ps.push_back(ponto[0]);
-                    ps.push_back(ponto[1]);
-                    // sempre tem verde
-                    ps.push_back(static_cast<float>(119) / 255.f); // 119
-                    ps.push_back(static_cast<float>(201) / 255.f); // 201
-                    ps.push_back(static_cast<float>(20) / 255.f); // 20
-                }
-                glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(512 * 5 * sizeof (float)), static_cast<GLintptr>(area_visivel.size() * 5 * sizeof (float)), ps.data());
+        //         std::vector<float> ps {};
+        //         ps.reserve(area_visivel.size() * 5 * sizeof (float));
+        //         for (std::size_t i = 0; i < area_visivel.size(); ++i) {
+        //             auto ponto = area_visivel[i];
+        //             ps.push_back(ponto[0]);
+        //             ps.push_back(ponto[1]);
+        //             // sempre tem verde
+        //             ps.push_back(static_cast<float>(119) / 255.f); // 119
+        //             ps.push_back(static_cast<float>(201) / 255.f); // 201
+        //             ps.push_back(static_cast<float>(20) / 255.f); // 20
+        //         }
+        //         glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+        //         glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(512 * 5 * sizeof (float)), static_cast<GLintptr>(area_visivel.size() * 5 * sizeof (float)), ps.data());
 
-                std::array<float, 5> obs {
-                    static_cast<float>(estado.observador[0]),
-                    static_cast<float>(estado.observador[1]),
-                    static_cast<float>(20) / 255.f,  // 20
-                    static_cast<float>(201) / 255.f, // 201
-                    static_cast<float>(168) / 255.f  // 168
-                };
+        //         std::array<float, 5> obs {
+        //             static_cast<float>(estado.observador[0]),
+        //             static_cast<float>(estado.observador[1]),
+        //             static_cast<float>(20) / 255.f,  // 20
+        //             static_cast<float>(201) / 255.f, // 201
+        //             static_cast<float>(168) / 255.f  // 168
+        //         };
 
-                glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(511 * 5 * sizeof (float)), static_cast<GLintptr>(5 * sizeof (float)), obs.data());
+        //         glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(511 * 5 * sizeof (float)), static_cast<GLintptr>(5 * sizeof (float)), obs.data());
 
-                estado.visivel_pronto = true;
-                estado.recalcular_visivel = false;
-            }
+        //         estado.visivel_pronto = true;
+        //         estado.recalcular_visivel = false;
+        //     }
             
-            glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
-            glBindVertexArray(atividade_vao);
+        //     glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+        //     glBindVertexArray(atividade_vao);
 
-            color_line_program.use();
-            color_line_program.setFloat("alpha", 0.2f);
-            glDrawArrays(GL_TRIANGLE_FAN, 0, atividade_size);
-            color_line_program.setFloat("alpha", 1.0f);
-            glDrawArrays(GL_LINE_LOOP, 0, atividade_size);
+        //     color_line_program.use();
+        //     color_line_program.setFloat("alpha", 0.2f);
+        //     glDrawArrays(GL_TRIANGLE_FAN, 0, atividade_size);
+        //     color_line_program.setFloat("alpha", 1.0f);
+        //     glDrawArrays(GL_LINE_LOOP, 0, atividade_size);
 
-            point_program.use();
-            point_program.setFloat("pointRadius", estado.pointSize);
-            glDrawArrays(GL_POINTS, 0, atividade_size);
+        //     point_program.use();
+        //     point_program.setFloat("pointRadius", estado.pointSize);
+        //     glDrawArrays(GL_POINTS, 0, atividade_size);
 
-            if (estado.visivel_pronto) {
-                glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
-                glBindVertexArray(atividade_vao);
+        //     if (estado.visivel_pronto) {
+        //         glBindBuffer(GL_ARRAY_BUFFER, atividade_vbo);
+        //         glBindVertexArray(atividade_vao);
 
-                color_line_program.use();
-                // color_line_program.setFloat("alpha", 0.2f);
-                // glDrawArrays(GL_TRIANGLE_FAN, 512, area_visivel.size());
-                color_line_program.setFloat("alpha", 1.0f);
-                glDrawArrays(GL_LINE_LOOP, 512, area_visivel.size());
+        //         color_line_program.use();
+        //         // color_line_program.setFloat("alpha", 0.2f);
+        //         // glDrawArrays(GL_TRIANGLE_FAN, 512, area_visivel.size());
+        //         color_line_program.setFloat("alpha", 1.0f);
+        //         glDrawArrays(GL_LINE_LOOP, 512, area_visivel.size());
 
-                point_program.use();
-                glDrawArrays(GL_POINTS, 511, area_visivel.size());
-            }
+        //         point_program.use();
+        //         glDrawArrays(GL_POINTS, 511, area_visivel.size());
+        //     }
 
-        } else if (estado.tela == Tela::DCEL_TESTE) {
+        // } else 
+        if (estado.tela == Tela::DCEL_TESTE) {
 
             glClearColor(0.4f, 0.3f, 0.4f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -6929,7 +6979,7 @@ int main() {
             point_program.setFloat("pointRadius", estado.pointSize);
             glDrawArrays(GL_POINTS, 0, coisas_dcel.last_size);
         } else if (estado.tela == Tela::DELAUNAY) {
-            glClearColor(base_delaunay.r(), base_delaunay.g(), base_delaunay.b(), 1.0f);
+            glClearColor(base_trabalho.r(), base_trabalho.g(), base_trabalho.b(), 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             std::size_t novos_pontos_aleatorios = 0;
@@ -6938,18 +6988,11 @@ int main() {
             while (estado.estado_delaunay.eventos.size() > 0) {
                 auto op = estado.estado_delaunay.eventos.front();
                 estado.estado_delaunay.eventos.pop_front();
-                if (delaunay.estado == EstadoDelaunay::INICIANDO) {
+                if (delaunay.estado == EstadoDelaunay::OK) {
                     switch (op.op) {
-                        case General_Op::CLIQUE:
-                            if (op.button_key == GLFW_MOUSE_BUTTON_LEFT && !op.mods) {
-                                // adiciona ponto
-                                delaunay.pontos.push_back(op.p);
-                            }
-                            break;
                         case General_Op::TECLA:
                             if (op.button_key == GLFW_KEY_T && !op.mods) {
-                                // transforma em triangulação
-                                delaunay.triangulacao_inicial();
+                                // adiciona ponto com critério
                             } else if (op.button_key == GLFW_KEY_R) {
                                 // pontos aleatórios
                                 if (!op.mods) {
@@ -6962,84 +7005,6 @@ int main() {
                                     novos_pontos_aleatorios += 500;
                                 }
                             } else if (op.button_key == GLFW_KEY_E && !op.mods) {
-                                if (delaunay.pontos.size() != 0) continue;
-                                std::fstream arq("entrada");
-                                if (arq.is_open()) {
-                                    std::size_t size = 0;
-                                    arq >> size;
-                                    delaunay.pontos.reserve(size);
-                                    for (std::size_t i = 0; i < size; ++i) {
-                                        double x = 0;
-                                        double y = 0;
-                                        arq >> x >> y;
-                                        // x = (x + 991.040) * 250;
-                                        delaunay.pontos.push_back({x, y});
-                                    }
-                                    arq.close();
-                                }
-                            } else if (op.button_key == GLFW_KEY_T && op.mods == GLFW_MOD_SHIFT) {
-                                passo_delaunay.prepara_triangulacao();
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                } else if (delaunay.estado == EstadoDelaunay::OK) {
-                    switch (op.op) {
-                        case General_Op::CLIQUE:
-                            if (delaunay.estado_entrada == EntradaDelaunay::TROCANDO_ARESTA) {
-                                if (op.button_key == GLFW_MOUSE_BUTTON_LEFT && !op.mods) {
-                                    double menor_d = std::numeric_limits<double>::infinity();
-                                    std::size_t menor_i = 0;
-                                    auto [vs_r, v_iv] = delaunay.dcel->vec_vertices();
-                                    auto& vs = vs_r.get();
-                                    auto [es_r, e_iv] = delaunay.dcel->vec_edges();
-                                    auto& es = es_r.get();
-                                    for (std::size_t i = 0; i < es.size(); i += 2) {
-                                        if (e_iv.count(i)) {
-                                            continue;
-                                        }
-                                        double d = distancia_ponto_segmento(es[i].origin->xy, es[i+1].origin->xy, op.p);
-                                        if (d < menor_d) {
-                                            menor_d = d;
-                                            menor_i = i;
-                                        }
-                                    }
-                                    auto p3 = static_cast<std::size_t>(es[menor_i].origin - vs.data());
-                                    auto p4 = static_cast<std::size_t>(es[menor_i+1].origin - vs.data());
-
-                                    auto p1 = static_cast<std::size_t>(es[menor_i].next->twin->origin - vs.data());
-                                    auto p2 = static_cast<std::size_t>(es[menor_i+1].next->twin->origin - vs.data());
-                                    auto ff = static_cast<std::size_t>(es[menor_i+1].next->twin->origin - vs.data());
-                                    if (menor_d <= 0.05) {
-                                        if (intersecao_com_left(vs[p1].xy, vs[p2].xy, vs[p3].xy, vs[p4].xy) == Intersecao::PROPRIA) {
-                                            delaunay.dcel->deleta_aresta(menor_i, false);
-                                            delaunay.dcel->inclui_aresta(p1, p2);
-                                            delaunay.estado_entrada = EntradaDelaunay::NORMAL;
-                                        }
-                                        // else {
-                                        //     delaunay.dcel->deleta_aresta(menor_i, false);
-                                        //     delaunay.dcel->inclui_aresta(p1, p2);
-                                        //     if (delaunay.last_gen == delaunay.dcel->gen()) {
-                                        //         std::cout << "hmmmmmmmmmmm" << std::endl;
-                                        //         // delaunay.last_gen--;
-                                        //         delaunay.dcel->inclui_aresta(p3, p4);
-                                        //     }
-                                        //     delaunay.estado_entrada = EntradaDelaunay::NORMAL;
-                                        // }
-                                    }
-                                } else if (op.button_key == GLFW_MOUSE_BUTTON_MIDDLE && !op.mods) {
-                                    delaunay.estado_entrada = EntradaDelaunay::NORMAL;
-                                }
-                            }
-                            break;
-                        case General_Op::TECLA:
-                            if (op.button_key == GLFW_KEY_C && !op.mods) {
-                                delaunay.mostrando_circulo = !delaunay.mostrando_circulo;
-                            } else if (op.button_key == GLFW_KEY_S && !op.mods) {
-                                // std::cout << "velho, " << (delaunay.dcel.get() == nullptr) << std::endl;
-                                delaunay.estado_entrada = EntradaDelaunay::TROCANDO_ARESTA;
-                            } else if (op.button_key == GLFW_KEY_T && !op.mods) {
                                 estado.tela = Tela::DCEL_TESTE;
                                 
                                 auto& estad = estado.estado_dcel_teste;
@@ -7065,378 +7030,26 @@ int main() {
                         default:
                             break;
                     }
-                } else if (delaunay.estado == EstadoDelaunay::TRIANGULANDO) {
-                    switch (op.op) {
-                        case General_Op::CLIQUE:
-                            break;
-                        case General_Op::TECLA:
-                            if (op.button_key == GLFW_KEY_T && !op.mods) {
-                                passo_delaunay.proximo_passo();
-                            }
-                            break;
-                        default:
-                            break;
-                    }
                 }
             }
             if (outra_tela) continue;
 
-            if (delaunay.estado != EstadoDelaunay::TRIANGULANDO) {
-
-                if (novos_pontos_aleatorios > 0) {
-                    while (novos_pontos_aleatorios --> 0) {
-                        Ponto p {dis_x(gen), dis_y(gen)};
-                        delaunay.pontos.push_back(p);
-                    }
-                    // for (std::size_t i = 0; i < delaunay.pontos.size(); ++i) {
-                    //     for (std::size_t j = 0; j < delaunay.pontos.size(); ++j) {
-                    //         if (i == j) continue;
-                    //         if (delaunay.pontos[i] == delaunay.pontos[j]) {
-                    //             std::cout << "temos um pontos repetido" << std::endl;
-                    //         } else {
-                    //             if (delaunay.pontos[i][0] == delaunay.pontos[j][0]) {
-                    //                 std::cout << "hmm1" << std::endl;
-                    //             }
-                    //             if (delaunay.pontos[i][1] == delaunay.pontos[j][1]) {
-                    //                 std::cout << "hmm2" << std::endl;
-                    //             }
-                    //         }
-                    //     }
-                    // }
-                }
-
-                if (delaunay.pontos.size() > delaunay.last_size) {
-                    if (delaunay.pontos.size() * 5 > CoisasDelaunay::max_floats) {
-                        delaunay.pontos.erase(std::next(delaunay.pontos.begin(), CoisasDelaunay::max_floats / 5), delaunay.pontos.end());
-                        std::cerr << "mais pontos do que devia; extras removidos" << std::endl;
-                    }
-                    std::size_t diff = delaunay.pontos.size() - delaunay.last_size;
-                    std::vector<float> ps {};
-                    ps.reserve(diff * 5 * sizeof (float));
-                    for (std::size_t i = delaunay.last_size; i < delaunay.pontos.size(); ++i) {
-                        // ps.push_back(delaunay.pontos[i][0]/1000.0f);
-                        ps.push_back((delaunay.pontos[i][0]+991.040)/4.0f);
-                        ps.push_back(delaunay.pontos[i][1]/1000.0f);
-                        ps.push_back(cor_dly.r());
-                        ps.push_back(cor_dly.g());
-                        ps.push_back(cor_dly.b());
-                    }
-                    glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                    glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(delaunay.last_size * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
-                    delaunay.last_size = delaunay.pontos.size();
-                    
-                }
-
-                if (delaunay.estado == EstadoDelaunay::OK && delaunay.last_gen < delaunay.dcel->gen()) {
-                    // recalcula VBO e EBO com coisas da DCEL atualizada
-                    auto [verts_r, v_invs] = delaunay.dcel->vec_vertices();
-                    auto [edges_r, e_invs] = delaunay.dcel->vec_edges();
-                    auto [faces_r, f_invs] = delaunay.dcel->vec_faces();
-
-                    auto& verts = verts_r.get();
-                    auto& edges = edges_r.get();
-                    auto& faces = faces_r.get();
-
-                    std::vector<float> ps {};
-                    ps.reserve(verts.size() * 5 * sizeof (float));
-                    for (std::size_t i = 0; i < verts.size(); ++i) {
-                        auto ponto = verts[i];
-                        if (v_invs.count(i) || !ponto.edge) {
-                            ps.push_back(2.0f);
-                            ps.push_back(2.0f);
-                        } else {
-                            ps.push_back((ponto.xy[0]+991.040)/4.0f);
-                            // ps.push_back(ponto.xy[0]/1000.0f);
-                            ps.push_back(ponto.xy[1]/1000.0f);
-                        }
-                        // if (i != vertice_maluco) {
-                        //     ps.push_back(cor_dly.r());
-                        //     ps.push_back(cor_dly.g());
-                        //     ps.push_back(cor_dly.b());
-                        // } else {
-                        //     ps.push_back(1.0f);
-                        //     ps.push_back(0.0f);
-                        //     ps.push_back(0.0f);
-                        // }
-                        ps.push_back(cor_dly.r());
-                        ps.push_back(cor_dly.g());
-                        ps.push_back(cor_dly.b());
-                    }
-
-                    std::vector<unsigned> is {};
-                    is.reserve((edges.size() / 2) * sizeof (unsigned));
-                    for (std::size_t i = 0; i < (edges.size() / 2); ++i) {
-                        if (e_invs.count(2*i)) {
-                            is.push_back(65535);
-                            is.push_back(65535);
-                        } else {
-                            unsigned p1 = static_cast<unsigned>(edges[2*i].origin - &verts[0]);
-                            unsigned p2 = static_cast<unsigned>(edges[2*i + 1].origin - &verts[0]);
-                            is.push_back(p1);
-                            is.push_back(p2);
-                        }
-                    }
-
-                    glBindVertexArray(delaunay.vao);
-                    glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                    glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * sizeof (float)), ps.data());
-                    
-                    // atualiza arestas a serem desenhadas:
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
-                    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
-                    
-                    std::vector<unsigned> fs {};
-                    fs.reserve(faces.size() * 3 * sizeof (unsigned));
-                    for (std::size_t i = 1; i < faces.size(); ++i) {
-                        if (f_invs.count(i)) {
-                            fs.push_back(65535);
-                            fs.push_back(65535);
-                            fs.push_back(65535);
-                        } else {
-                            auto vs = delaunay.dcel->indices_dos_vertices_de_uma_face(i);
-                            if (vs.size() != 3) {
-                                std::cerr << "aviso: vai dar errado" << std::endl;
-                            }
-                            for (auto v : vs) {
-                                unsigned p = static_cast<unsigned>(v);
-                                fs.push_back(p);
-                            }
-                        }
-                    }
-
-                    // atualiza triângulos a serem desenhadas:
-                    glBindVertexArray(delaunay.faces_vao);
-                    glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
-                    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(fs.size() * sizeof (unsigned)), fs.data());
-
-                    // atualiza contagem de arestas e vértices
-                    delaunay.edge_count = edges.size() / 2;
-                    delaunay.last_size = verts.size();
-                    delaunay.triangle_count = faces.size() - 1;
-                    std::cout << "triangulos: " << delaunay.triangle_count << std::endl;
-
-                    delaunay.last_gen = delaunay.dcel->gen();
-                }
-
-            }
-
-
-            if (delaunay.estado == EstadoDelaunay::INICIANDO) {
-                point_program.use();
-                point_program.setFloat("pointRadius", estado.pointSize);
-                
-                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                glBindVertexArray(delaunay.vao);
-                glDrawArrays(GL_POINTS, 0, delaunay.last_size);
-            } else if (delaunay.estado == EstadoDelaunay::OK) {
-
-                if (delaunay.estado_entrada == EntradaDelaunay::TROCANDO_ARESTA) {
-                    
-                    auto ponto_xy = [window]() -> Ponto {
-                        double xpos {};
-                        double ypos {};
-                        glfwGetCursorPos(window, &xpos, &ypos);
-                        int width {};
-                        int height {};
-                        glfwGetWindowSize(window, &width, &height);
-                        double x {xpos / static_cast<double> (width) * 2. - 1.};
-                        double y {1. - ypos / static_cast<double> (height) * 2.};
-                        return {x, y};
-                    };
-                    Ponto mouse = ponto_xy();
-                    double menor_d = std::numeric_limits<double>::infinity();
-                    std::size_t menor_i = 0;
-                    // std::cout << "velho, como isso " << (delaunay.dcel.get() == nullptr) << std::endl;
-                    auto [es_r, iv] = delaunay.dcel->vec_edges();
-                    auto& es = es_r.get();
-                    for (std::size_t i = 0; i < es.size(); i += 2) {
-                        if (iv.count(i)) {
-                            continue;
-                        }
-                        double d = distancia_ponto_segmento(es[i].origin->xy, es[i+1].origin->xy, mouse);
-                        if (d < menor_d) {
-                            menor_d = d;
-                            menor_i = i;
-                        }
-                    }
-                    auto& p1 = es[menor_i].origin->xy;
-                    auto& p2 = es[menor_i+1].origin->xy;
-                    if (menor_d <= 0.05) {
-                        glBindVertexArray(delaunay.vao);
-                        glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
-
-                        point_program.use();
-                        point_program.setFloat("pointRadius", estado.pointSize + 30.0f);
-                        point_program.setFloat("alpha", 0.5f);
-                        glDrawElements(GL_POINTS, 2, GL_UNSIGNED_INT, reinterpret_cast<void*>(menor_i * sizeof (unsigned)));
-                        point_program.setFloat("alpha", 1.0f);
-                    }
-                }
-                
-                glBindVertexArray(delaunay.faces_vao);
-                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
-                
-                color_line_program.use();
-                color_line_program.setFloat("alpha", 0.2f);
-                glDrawElements(GL_TRIANGLES, delaunay.triangle_count*3, GL_UNSIGNED_INT, nullptr);
-
-                glBindVertexArray(delaunay.vao);
-                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
-
-                color_line_program.use();
-                // color_line_program.setFloat("alpha", 1.0f);
-                // glDrawArrays(GL_LINE_LOOP, 0, delaunay.last_size);
-                color_line_program.setFloat("alpha", 1.0f);
-                glDrawElements(GL_LINES, delaunay.edge_count*2, GL_UNSIGNED_INT, nullptr);
-
-                point_program.use();
-                point_program.setFloat("pointRadius", estado.pointSize);
-                
-                glDrawArrays(GL_POINTS, 0, delaunay.last_size);
-
-                if (delaunay.mostrando_circulo) {
-                    auto ponto_xy = [window]() -> Ponto {
-                        double xpos {};
-                        double ypos {};
-                        glfwGetCursorPos(window, &xpos, &ypos);
-                        int width {};
-                        int height {};
-                        glfwGetWindowSize(window, &width, &height);
-                        double x {xpos / static_cast<double> (width) * 2. - 1.};
-                        double y {1. - ypos / static_cast<double> (height) * 2.};
-                        return {x, y};
-                    };
-                    Ponto mouse = ponto_xy();
-
-                    static std::size_t last_face = 0;
-                    std::size_t face = delaunay.dcel->qual_face(mouse);
-                    if (face != 0) {
-                        last_face = face;
-                    } if (last_face != 0) {
-                        face = last_face;
-
-                        auto [verts_r, v_invs] = delaunay.dcel->vec_vertices();
-                        auto [edges_r, e_invs] = delaunay.dcel->vec_edges();
-                        auto [faces_r, f_invs] = delaunay.dcel->vec_faces();
-                        
-                        auto& verts = verts_r.get();
-                        auto& edges = edges_r.get();
-                        auto& faces = faces_r.get();
-
-                        auto vs = delaunay.dcel->indices_dos_vertices_de_uma_face(face);
-                        Cor circ_verde {"#5fa637"};
-                        Cor circ_verm {"#a63746"};
-                        bool verde = true;
-                        for (std::size_t i = 0; i < 3; ++i) {
-                            auto e = faces[face].edge;
-                            for (std::size_t j = 0; j < i; ++j) {
-                                e = e->next;
-                            }
-                            auto v = e->twin->next->twin->origin;
-                            if (in_circle(verts[vs[0]].xy, verts[vs[1]].xy, verts[vs[2]].xy, v->xy) > 0) {
-                                // se está dentro, o círculo vai ser vermelho
-                                verde = false;
-                                break;
-                            }
-                        }
-                        Cor real = (verde) ? circ_verde : circ_verm;
-                        glBindVertexArray(delaunay.faces_vao);
-                        glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
-                        
-                        circle_program.use();
-                        circle_program.setFloat("alpha", 0.8f);
-                        circle_program.setVec3("color", real.r(), real.g(), real.b());
-                        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, reinterpret_cast<void*>((face - 1)*3*sizeof (unsigned)));
-
-                        // auto [verts_r, v_invs] = delaunay.dcel->vec_vertices();
-                        
-                        // auto& verts = verts_r.get();
-                        // auto vs = delaunay.dcel->indices_dos_vertices_de_uma_face(face);
-                        Cor dentro {"#88be0a"};
-                        Cor fora {"#ecf3ae"};
-                        Cor certa = (in_circle(verts[vs[0]].xy, verts[vs[1]].xy, verts[vs[2]].xy, mouse) > 0) ? dentro : fora;
-
-                        std::vector<float> ps {};
-                        ps.reserve(1 * 5 * sizeof (float));
-                        ps.push_back(mouse[0]);
-                        ps.push_back(mouse[1]);
-                        
-                        ps.push_back(certa.r());
-                        ps.push_back(certa.g());
-                        ps.push_back(certa.b());
-                        glBindVertexArray(delaunay.extra_vao);
-                        glBindBuffer(GL_ARRAY_BUFFER, delaunay.extra_vbo);
-                        glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * sizeof (float)), ps.data());
-                        
-                        point_program.use();
-                        point_program.setFloat("pointRadius", estado.pointSize);
-                        
-                        glDrawArrays(GL_POINTS, 0, 1);
-                    }
-                }
-            } else if (delaunay.estado == EstadoDelaunay::TRIANGULANDO) {
-                passo_delaunay.vai_que_e_tua();
-            }
-            
-        } else if (estado.tela == Tela::TRABALHO) {
-            glClearColor(base_trabalho.r(), base_trabalho.g(), base_trabalho.b(), 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            std::size_t novos_pontos_aleatorios = 0;
-
-            while (estado.estado_trabalho.eventos.size() > 0) {
-                auto op = estado.estado_trabalho.eventos.front();
-                estado.estado_trabalho.eventos.pop_front();
-                if (trabalho.estado == EstadoTrabalho::OK) {
-                    switch (op.op) {
-                        case General_Op::CLIQUE:
-                            break;
-                        case General_Op::TECLA:
-                            if (op.button_key == GLFW_KEY_T && !op.mods) {
-                                // adiciona ponto por critério
-                            } else if (op.button_key == GLFW_KEY_R) {
-                                // adiciona pontos aleatórios
-                                if (!op.mods) {
-                                    ++novos_pontos_aleatorios;
-                                } else if (op.mods == GLFW_MOD_SHIFT) {
-                                    novos_pontos_aleatorios += 10;
-                                } else if (op.mods == GLFW_MOD_CONTROL) {
-                                    novos_pontos_aleatorios += 25;
-                                } else if (op.mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
-                                    novos_pontos_aleatorios += 500;
-                                }
-                            } else if (op.button_key == GLFW_KEY_T && op.mods == GLFW_MOD_SHIFT) {
-                                // reinicia
-                                trabalho.reset("teste0.bmp");
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-            
             if (novos_pontos_aleatorios > 0) {
                 while (novos_pontos_aleatorios --> 0) {
                     Ponto p {ok_x(gen), ok_y(gen)};
-                    bool foi = trabalho.adiciona_ponto(p);
+                    bool foi = delaunay.adiciona_ponto(p);
                     while (!foi) {
                         p = {ok_x(gen), ok_y(gen)};
-                        foi = trabalho.adiciona_ponto(p);
+                        foi = delaunay.adiciona_ponto(p);
                     }
                 }
             }
 
-            if (trabalho.last_gen < trabalho.dcel->gen()) {
+            if (delaunay.last_gen < delaunay.dcel->gen()) {
                 // recalcula VBO e EBO com coisas da DCEL atualizada
-                auto [verts_r, v_invs] = trabalho.dcel->vec_vertices();
-                auto [edges_r, e_invs] = trabalho.dcel->vec_edges();
-                auto [faces_r, f_invs] = trabalho.dcel->vec_faces();
+                auto [verts_r, v_invs] = delaunay.dcel->vec_vertices();
+                auto [edges_r, e_invs] = delaunay.dcel->vec_edges();
+                auto [faces_r, f_invs] = delaunay.dcel->vec_faces();
 
                 auto& verts = verts_r.get();
                 auto& edges = edges_r.get();
@@ -7446,7 +7059,7 @@ int main() {
                 ps.reserve(verts.size() * 5 * sizeof (float));
                 for (std::size_t i = 0; i < verts.size(); ++i) {
                     auto ponto = verts[i];
-                    auto cor_ponto = trabalho.encontra_cor(ponto.xy);
+                    auto cor_ponto = delaunay.encontra_cor(ponto.xy);
                     if (v_invs.count(i)) {
                         ps.push_back(2.0f);
                         ps.push_back(2.0f);
@@ -7473,115 +7086,275 @@ int main() {
                     }
                 }
 
-                glBindVertexArray(trabalho.vao);
-                glBindBuffer(GL_ARRAY_BUFFER, trabalho.vbo);
+                glBindVertexArray(delaunay.vao);
+                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
                 glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * sizeof (float)), ps.data());
                 
                 // atualiza arestas a serem desenhadas:
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, trabalho.ebo);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
                 glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
                 
-                trabalho.triangle_count = 0;
                 std::vector<unsigned> fs {};
-                fs.reserve(verts.size() * 16 * sizeof (unsigned));
+                fs.reserve(faces.size() * 3 * sizeof (unsigned));
                 for (std::size_t i = 1; i < faces.size(); ++i) {
                     if (f_invs.count(i)) {
-                        // acho que não precisa nada
+                        fs.push_back(65535);
+                        fs.push_back(65535);
+                        fs.push_back(65535);
                     } else {
-                        // auto vs = trabalho.dcel->indices_dos_vertices_de_uma_face(i);
-                        auto start = faces[i].edge;
-                        auto e = start;
-                        while (!left(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy)) {
-                            e = e->next;
+                        auto vs = delaunay.dcel->indices_dos_vertices_de_uma_face(i);
+                        if (vs.size() != 3) {
+                            std::cerr << "aviso: vai dar errado" << std::endl;
                         }
-                        auto left = e->prev;
-                        auto right = e->next;
-                        bool primeira_parte = true;
-                        while (area_orientada(left->origin->xy, right->origin->xy, right->twin->origin->xy) != 0.0) {
-                            // emite triângulo
-                            ++trabalho.triangle_count;
-                            unsigned p1 = static_cast<unsigned>(left->origin - verts.data());
-                            unsigned p2 = static_cast<unsigned>(left->twin->origin - verts.data());
-                            unsigned p3 = static_cast<unsigned>(right->origin - verts.data());
-
-                            fs.push_back(p1);
-                            fs.push_back(p2);
-                            fs.push_back(p3);
-
-                            left = left->prev;
-
+                        for (auto v : vs) {
+                            unsigned p = static_cast<unsigned>(v);
+                            fs.push_back(p);
                         }
-                        if (left->prev == right) {
-                            // emite último triângulo
-                            ++trabalho.triangle_count;
-                            unsigned p1 = static_cast<unsigned>(left->origin - verts.data());
-                            unsigned p2 = static_cast<unsigned>(left->twin->origin - verts.data());
-                            unsigned p3 = static_cast<unsigned>(right->origin - verts.data());
-
-                            fs.push_back(p1);
-                            fs.push_back(p2);
-                            fs.push_back(p3);
-                        } else {
-                            left = left->next;
-                            right = right->next;
-                            while (right != left) {
-                                // emite triângulo
-                                ++trabalho.triangle_count;
-                                unsigned p1 = static_cast<unsigned>(right->prev->origin - verts.data());
-                                unsigned p2 = static_cast<unsigned>(right->origin - verts.data());
-                                unsigned p3 = static_cast<unsigned>(left->origin - verts.data());
-
-                                fs.push_back(p1);
-                                fs.push_back(p2);
-                                fs.push_back(p3);
-
-                                right = right->next;
-                            }
-                        }
-                        // while (true) {
-                        //     if (direita_fixa) {
-                        //         if (left == right)
-                        //         if (area_orientada(left->origin->xy, right->origin->xy, right->twin->origin->xy) == 0.0) {
-                        //             direita_fixa = false;
-                        //         } else {
-                        //             // emite triângulo
-                        //             unsigned p1 = static_cast<unsigned>(left->origin - verts.data());
-                        //             unsigned p2 = static_cast<unsigned>(left->twin->origin - verts.data());
-                        //             unsigned p3 = static_cast<unsigned>(right->origin - verts.data());
-
-                        //             fs.push_back(p1);
-                        //             fs.push_back(p2);
-                        //             fs.push_back(p3);
-
-                        //             left = left->prev;
-                        //         }
-                        //     }
-                        // }
                     }
                 }
 
                 // atualiza triângulos a serem desenhadas:
-                glBindVertexArray(trabalho.faces_vao);
-                glBindBuffer(GL_ARRAY_BUFFER, trabalho.vbo);
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, trabalho.faces_ebo);
+                glBindVertexArray(delaunay.faces_vao);
+                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
                 glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(fs.size() * sizeof (unsigned)), fs.data());
 
                 // atualiza contagem de arestas e vértices
-                trabalho.edge_count = edges.size() / 2;
-                trabalho.last_size = verts.size();
+                delaunay.edge_count = edges.size() / 2;
+                delaunay.last_size = verts.size();
+                delaunay.triangle_count = faces.size() - 1;
 
-                trabalho.last_gen = trabalho.dcel->gen();
+                delaunay.last_gen = delaunay.dcel->gen();
             }
 
-            glBindVertexArray(trabalho.faces_vao);
-            glBindBuffer(GL_ARRAY_BUFFER, trabalho.vbo);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, trabalho.faces_ebo);
-            
-            color_line_program.use();
-            color_line_program.setFloat("alpha", 1.0f);
-            glDrawElements(GL_TRIANGLES, trabalho.triangle_count*3, GL_UNSIGNED_INT, nullptr);
 
+            if (delaunay.estado == EstadoDelaunay::OK) {
+                glBindVertexArray(delaunay.faces_vao);
+                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
+                
+                color_line_program.use();
+                color_line_program.setFloat("alpha", 1.0f);
+                glDrawElements(GL_TRIANGLES, delaunay.triangle_count*3, GL_UNSIGNED_INT, nullptr);
+
+                if (false) {
+                    glBindVertexArray(delaunay.vao);
+                    glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
+
+                    color_line_program.use();
+                    // color_line_program.setFloat("alpha", 1.0f);
+                    // glDrawArrays(GL_LINE_LOOP, 0, delaunay.last_size);
+                    color_line_program.setFloat("alpha", 1.0f);
+                    glDrawElements(GL_LINES, delaunay.edge_count*2, GL_UNSIGNED_INT, nullptr);
+
+                    point_program.use();
+                    point_program.setFloat("pointRadius", estado.pointSize);
+                    
+                    glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+                }
+            }
+            
         }
+        //  else if (estado.tela == Tela::TRABALHO) {
+        //     glClearColor(base_trabalho.r(), base_trabalho.g(), base_trabalho.b(), 1.0f);
+        //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        //     std::size_t novos_pontos_aleatorios = 0;
+
+        //     while (estado.estado_trabalho.eventos.size() > 0) {
+        //         auto op = estado.estado_trabalho.eventos.front();
+        //         estado.estado_trabalho.eventos.pop_front();
+        //         if (trabalho.estado == EstadoTrabalho::OK) {
+        //             switch (op.op) {
+        //                 case General_Op::CLIQUE:
+        //                     break;
+        //                 case General_Op::TECLA:
+        //                     if (op.button_key == GLFW_KEY_T && !op.mods) {
+        //                         // adiciona ponto por critério
+        //                     } else if (op.button_key == GLFW_KEY_R) {
+        //                         // adiciona pontos aleatórios
+        //                         if (!op.mods) {
+        //                             ++novos_pontos_aleatorios;
+        //                         } else if (op.mods == GLFW_MOD_SHIFT) {
+        //                             novos_pontos_aleatorios += 10;
+        //                         } else if (op.mods == GLFW_MOD_CONTROL) {
+        //                             novos_pontos_aleatorios += 25;
+        //                         } else if (op.mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
+        //                             novos_pontos_aleatorios += 500;
+        //                         }
+        //                     } else if (op.button_key == GLFW_KEY_T && op.mods == GLFW_MOD_SHIFT) {
+        //                         // reinicia
+        //                         trabalho.reset("teste0.bmp");
+        //                     }
+        //                     break;
+        //                 default:
+        //                     break;
+        //             }
+        //         }
+        //     }
+            
+        //     if (novos_pontos_aleatorios > 0) {
+        //         while (novos_pontos_aleatorios --> 0) {
+        //             Ponto p {ok_x(gen), ok_y(gen)};
+        //             bool foi = trabalho.adiciona_ponto(p);
+        //             while (!foi) {
+        //                 p = {ok_x(gen), ok_y(gen)};
+        //                 foi = trabalho.adiciona_ponto(p);
+        //             }
+        //         }
+        //     }
+
+        //     if (trabalho.last_gen < trabalho.dcel->gen()) {
+        //         // recalcula VBO e EBO com coisas da DCEL atualizada
+        //         auto [verts_r, v_invs] = trabalho.dcel->vec_vertices();
+        //         auto [edges_r, e_invs] = trabalho.dcel->vec_edges();
+        //         auto [faces_r, f_invs] = trabalho.dcel->vec_faces();
+
+        //         auto& verts = verts_r.get();
+        //         auto& edges = edges_r.get();
+        //         auto& faces = faces_r.get();
+
+        //         std::vector<float> ps {};
+        //         ps.reserve(verts.size() * 5 * sizeof (float));
+        //         for (std::size_t i = 0; i < verts.size(); ++i) {
+        //             auto ponto = verts[i];
+        //             auto cor_ponto = trabalho.encontra_cor(ponto.xy);
+        //             if (v_invs.count(i)) {
+        //                 ps.push_back(2.0f);
+        //                 ps.push_back(2.0f);
+        //             } else {
+        //                 ps.push_back(ponto.xy[0]);
+        //                 ps.push_back(ponto.xy[1]);
+        //             }
+        //             ps.push_back(cor_ponto.r());
+        //             ps.push_back(cor_ponto.g());
+        //             ps.push_back(cor_ponto.b());
+        //         }
+
+        //         std::vector<unsigned> is {};
+        //         is.reserve((edges.size() / 2) * sizeof (unsigned));
+        //         for (std::size_t i = 0; i < (edges.size() / 2); ++i) {
+        //             if (e_invs.count(2*i)) {
+        //                 is.push_back(65535);
+        //                 is.push_back(65535);
+        //             } else {
+        //                 unsigned p1 = static_cast<unsigned>(edges[2*i].origin - &verts[0]);
+        //                 unsigned p2 = static_cast<unsigned>(edges[2*i + 1].origin - &verts[0]);
+        //                 is.push_back(p1);
+        //                 is.push_back(p2);
+        //             }
+        //         }
+
+        //         glBindVertexArray(trabalho.vao);
+        //         glBindBuffer(GL_ARRAY_BUFFER, trabalho.vbo);
+        //         glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * sizeof (float)), ps.data());
+                
+        //         // atualiza arestas a serem desenhadas:
+        //         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, trabalho.ebo);
+        //         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
+                
+        //         trabalho.triangle_count = 0;
+        //         std::vector<unsigned> fs {};
+        //         fs.reserve(verts.size() * 16 * sizeof (unsigned));
+        //         for (std::size_t i = 1; i < faces.size(); ++i) {
+        //             if (f_invs.count(i)) {
+        //                 // acho que não precisa nada
+        //             } else {
+        //                 // auto vs = trabalho.dcel->indices_dos_vertices_de_uma_face(i);
+        //                 auto start = faces[i].edge;
+        //                 auto e = start;
+        //                 while (!left(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy)) {
+        //                     e = e->next;
+        //                 }
+        //                 auto left = e->prev;
+        //                 auto right = e->next;
+        //                 bool primeira_parte = true;
+        //                 while (area_orientada(left->origin->xy, right->origin->xy, right->twin->origin->xy) != 0.0) {
+        //                     // emite triângulo
+        //                     ++trabalho.triangle_count;
+        //                     unsigned p1 = static_cast<unsigned>(left->origin - verts.data());
+        //                     unsigned p2 = static_cast<unsigned>(left->twin->origin - verts.data());
+        //                     unsigned p3 = static_cast<unsigned>(right->origin - verts.data());
+
+        //                     fs.push_back(p1);
+        //                     fs.push_back(p2);
+        //                     fs.push_back(p3);
+
+        //                     left = left->prev;
+
+        //                 }
+        //                 if (left->prev == right) {
+        //                     // emite último triângulo
+        //                     ++trabalho.triangle_count;
+        //                     unsigned p1 = static_cast<unsigned>(left->origin - verts.data());
+        //                     unsigned p2 = static_cast<unsigned>(left->twin->origin - verts.data());
+        //                     unsigned p3 = static_cast<unsigned>(right->origin - verts.data());
+
+        //                     fs.push_back(p1);
+        //                     fs.push_back(p2);
+        //                     fs.push_back(p3);
+        //                 } else {
+        //                     left = left->next;
+        //                     right = right->next;
+        //                     while (right != left) {
+        //                         // emite triângulo
+        //                         ++trabalho.triangle_count;
+        //                         unsigned p1 = static_cast<unsigned>(right->prev->origin - verts.data());
+        //                         unsigned p2 = static_cast<unsigned>(right->origin - verts.data());
+        //                         unsigned p3 = static_cast<unsigned>(left->origin - verts.data());
+
+        //                         fs.push_back(p1);
+        //                         fs.push_back(p2);
+        //                         fs.push_back(p3);
+
+        //                         right = right->next;
+        //                     }
+        //                 }
+        //                 // while (true) {
+        //                 //     if (direita_fixa) {
+        //                 //         if (left == right)
+        //                 //         if (area_orientada(left->origin->xy, right->origin->xy, right->twin->origin->xy) == 0.0) {
+        //                 //             direita_fixa = false;
+        //                 //         } else {
+        //                 //             // emite triângulo
+        //                 //             unsigned p1 = static_cast<unsigned>(left->origin - verts.data());
+        //                 //             unsigned p2 = static_cast<unsigned>(left->twin->origin - verts.data());
+        //                 //             unsigned p3 = static_cast<unsigned>(right->origin - verts.data());
+
+        //                 //             fs.push_back(p1);
+        //                 //             fs.push_back(p2);
+        //                 //             fs.push_back(p3);
+
+        //                 //             left = left->prev;
+        //                 //         }
+        //                 //     }
+        //                 // }
+        //             }
+        //         }
+
+        //         // atualiza triângulos a serem desenhadas:
+        //         glBindVertexArray(trabalho.faces_vao);
+        //         glBindBuffer(GL_ARRAY_BUFFER, trabalho.vbo);
+        //         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, trabalho.faces_ebo);
+        //         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(fs.size() * sizeof (unsigned)), fs.data());
+
+        //         // atualiza contagem de arestas e vértices
+        //         trabalho.edge_count = edges.size() / 2;
+        //         trabalho.last_size = verts.size();
+
+        //         trabalho.last_gen = trabalho.dcel->gen();
+        //     }
+
+        //     glBindVertexArray(trabalho.faces_vao);
+        //     glBindBuffer(GL_ARRAY_BUFFER, trabalho.vbo);
+        //     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, trabalho.faces_ebo);
+            
+        //     color_line_program.use();
+        //     color_line_program.setFloat("alpha", 1.0f);
+        //     glDrawElements(GL_TRIANGLES, trabalho.triangle_count*3, GL_UNSIGNED_INT, nullptr);
+
+        // }
         //////////////////////////////////////////
 
         glfwSwapBuffers(window);
