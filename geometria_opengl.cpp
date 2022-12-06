@@ -1638,21 +1638,28 @@ private:
             auto& es = dcel->edges;
             auto& fs = dcel->faces;
 
+            if (es[qual_aresta].face == fs.data()) {
+                std::cout << "isso nao e aconselhavel" << std::endl;
+                qual_aresta = static_cast<std::size_t>(es[qual_aresta].twin - es.data());
+            }
+
             std::size_t proxima = static_cast<std::size_t>(es[qual_aresta].next - es.data());
             std::size_t anterior = static_cast<std::size_t>(es[qual_aresta].prev - es.data());
             dcel->deleta_aresta(qual_aresta, false);
 
             face = static_cast<std::size_t>(es[proxima].face - fs.data());
             if (face == 0) {
-                dcel->reserva_espacos(0, 0, 1);
-                dcel->vertices.push_back(DCEL::Vertex{novo, nullptr});
+                // dcel->reserva_espacos(0, 0, 1);
+                // dcel->vertices.push_back(DCEL::Vertex{novo, nullptr});
+                dcel->inclui_vertice_em_aresta(qual_aresta, 0.5);
+                dcel->vertices.back().xy = novo;
                 
-                std::size_t v_next = static_cast<std::size_t>(es[proxima].origin - vs.data());
-                std::size_t v_prev = static_cast<std::size_t>(es[anterior].twin->origin - vs.data());
+                // std::size_t v_next = static_cast<std::size_t>(es[proxima].origin - vs.data());
+                // std::size_t v_prev = static_cast<std::size_t>(es[anterior].twin->origin - vs.data());
                 std::size_t v_opp = static_cast<std::size_t>(es[anterior].origin - vs.data());
 
-                dcel->novo_inclui_aresta(vs.size() - 1, v_next);
-                dcel->novo_inclui_aresta(vs.size() - 1, v_prev);
+                // dcel->novo_inclui_aresta(vs.size() - 1, v_next);
+                // dcel->novo_inclui_aresta(vs.size() - 1, v_prev);
                 dcel->novo_inclui_aresta(vs.size() - 1, v_opp);
 
                 arestas = {proxima, anterior};
