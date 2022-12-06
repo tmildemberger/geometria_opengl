@@ -1529,7 +1529,7 @@ struct CoisasDelaunay {
 
         glBindVertexArray(0);
 
-        mostrando_circulo = false;
+        mostrando_linhas = false;
         estado = EstadoDelaunay::OK;
         estado_entrada = EntradaDelaunay::NORMAL;
         last_size = 0;
@@ -1554,6 +1554,7 @@ struct CoisasDelaunay {
     void reset(std::string imagem) {
 
         stbi_image_free(image_data);
+        mostrando_linhas = false;
         estado = EstadoDelaunay::OK;
         estado_entrada = EntradaDelaunay::NORMAL;
         last_size = 0;
@@ -1576,8 +1577,8 @@ struct CoisasDelaunay {
 
         double p_y = std::floor(((p.y + 1.0) / 2.0) * y);
         int i_y = std::min(y, static_cast<int>(p_y));
-        std::cout << p.x << ' ' << p.y << " -- " << p_x << ' ' << p_y << std::endl;
-        std::cout << "foi buscada a cor do pixel " << i_x << ' ' << i_y << std::endl;
+        // std::cout << p.x << ' ' << p.y << " -- " << p_x << ' ' << p_y << std::endl;
+        // std::cout << "foi buscada a cor do pixel " << i_x << ' ' << i_y << std::endl;
 
         unsigned char r = image_data[i_y * y * n + i_x * n + 0];
         unsigned char g = image_data[i_y * y * n + i_x * n + 1];
@@ -1592,7 +1593,7 @@ struct CoisasDelaunay {
 
         double p_y = std::floor(((p.y + 1.0) / 2.0) * y);
         int i_y = std::min(y, static_cast<int>(p_y));
-        std::cout << "foi adicionado o pixel " << i_x << ' ' << i_y << std::endl;
+        // std::cout << "foi adicionado o pixel " << i_x << ' ' << i_y << std::endl;
 
         double new_x = (((static_cast<double>(i_x)) / x) * 2.0) - 1.0 + (1.0 / x);
         double new_y = (((static_cast<double>(i_y)) / y) * 2.0) - 1.0 + (1.0 / y);
@@ -1614,8 +1615,17 @@ struct CoisasDelaunay {
 private:
     void triangulacao() {
         std::vector<Ponto> pontos_vec(pontos.begin(), pontos.end());
+        for (auto& p : pontos_vec) {
+            p.x *= 10000000.0;
+            p.y *= 10000000.0;
+        }
         dcel = std::make_unique<DCEL>(DCEL::EnganaCompilador{}, pontos_vec);
         delaunay_div_conq_recursivo(0, pontos_vec.size());
+
+        for (auto& v : dcel->vertices) {
+            v.xy.x /= 10000000.0;
+            v.xy.y /= 10000000.0;
+        }
 
         dcel->geracao_atual = pontos.size();
         estado = EstadoDelaunay::OK;
@@ -1643,7 +1653,7 @@ private:
     }
 
     bool delaunay_div_conq_recursivo(std::size_t i, std::size_t j) {
-        std::cout << "chamada com (i,j): " << i << ' ' << j << std::endl;
+        // std::cout << "chamada com (i,j): " << i << ' ' << j << std::endl;
         if (j - i <= 2) {
 
             if (j - i == 1) {
@@ -1845,7 +1855,7 @@ public:
     unsigned extra_vbo;
     unsigned extra_vao;
 
-    bool mostrando_circulo;
+    bool mostrando_linhas;
     std::size_t last_size;
     std::size_t edge_count;
     std::size_t triangle_count;
@@ -1895,7 +1905,8 @@ int main() {
     glEnable(GL_PRIMITIVE_RESTART);
     glPrimitiveRestartIndex(65535u);
 
-    Shader program {"shaders/vertex.glsl", "shaders/fragment.glsl"};
+    Shader fixed_color_program {"shaders/color_line_vertex.glsl", "shaders/fixed_color_fragment.glsl"};
+    Shader fixed_point_program {"shaders/color_line_vertex.glsl", "shaders/fixed_color_fragment.glsl"};
     Shader point_program {"shaders/point_vertex.glsl", "shaders/point_fragment.glsl"};
     Shader color_line_program {"shaders/color_line_vertex.glsl", "shaders/color_line_fragment.glsl"};
 
@@ -2544,8 +2555,8 @@ int main() {
                     auto& e = edges[c.arestas[c.atual]];
                     std::cout << c.arestas[c.atual] << std::endl;
                 }
-                program.use();
-                program.setFloat("alpha", 0.8f);
+                fixed_color_program.use();
+                fixed_color_program.setFloat("alpha", 0.8f);
                 glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, reinterpret_cast<void*>((c.arestas[c.atual] & (~1llu)) * sizeof (unsigned)));
 
                 ++c.ticks;
@@ -2575,7 +2586,7 @@ int main() {
                     switch (op.op) {
                         case General_Op::TECLA:
                             if (op.button_key == GLFW_KEY_T && !op.mods) {
-
+                                delaunay.mostrando_linhas = !delaunay.mostrando_linhas;
                             } else if (op.button_key == GLFW_KEY_R) {
 
                                 if (!op.mods) {
@@ -2712,17 +2723,19 @@ int main() {
                 color_line_program.setFloat("alpha", 1.0f);
                 glDrawElements(GL_TRIANGLES, delaunay.triangle_count*3, GL_UNSIGNED_INT, nullptr);
 
-                if (false) {
+                if (delaunay.mostrando_linhas) {
                     glBindVertexArray(delaunay.vao);
                     glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
                     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
 
-                    color_line_program.use();
-                    color_line_program.setFloat("alpha", 1.0f);
+                    glLineWidth(4.0f);
+                    fixed_color_program.use();
+                    fixed_color_program.setFloat("alpha", 1.0f);
                     glDrawElements(GL_LINES, delaunay.edge_count*2, GL_UNSIGNED_INT, nullptr);
+                    glLineWidth(std::max(estado.pointSize / 2.0f, 1.0f));
 
-                    point_program.use();
-                    point_program.setFloat("pointRadius", estado.pointSize);
+                    fixed_point_program.use();
+                    fixed_point_program.setFloat("pointRadius", 8.0f);
 
                     glDrawArrays(GL_POINTS, 0, delaunay.last_size);
                 }
