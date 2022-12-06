@@ -50,7 +50,19 @@ extern "C" {
 }
 #endif
 
-using Ponto = std::array<double, 2>;
+struct Ponto {
+    double x;
+    double y;
+    bool operator==(const Ponto& rhs) const {
+        return this->x == rhs.x && this->y == rhs.y;
+    }
+    bool operator<(const Ponto& rhs) const {
+        if (this->x < rhs.x) return true;
+        else if (this->x == rhs.x) return this->y > rhs.y;
+        else return false;
+    }
+};
+
 double area_orientada(Ponto p1, Ponto p2, Ponto p3);
 bool left(Ponto p1, Ponto p2, Ponto p3);
 std::vector<Ponto> fecho_convexo(std::vector<Ponto> pontos);
@@ -60,7 +72,7 @@ double angulo_interno(Ponto p1, Ponto p2, Ponto p3);
 double area_orientada(Ponto p1, Ponto p2, Ponto p3) {
 
     if (p1 == p2 || p1 == p3 || p2 == p3) return 0.0;
-    return (p2[0] - p1[0])*(p3[1] - p1[1]) - (p3[0] - p1[0])*(p2[1] - p1[1]);
+    return (p2.x - p1.x)*(p3.y - p1.y) - (p3.x - p1.x)*(p2.y - p1.y);
 }
 
 bool left(Ponto p1, Ponto p2, Ponto p3) {
@@ -68,7 +80,7 @@ bool left(Ponto p1, Ponto p2, Ponto p3) {
 }
 
 double dist(Ponto p1, Ponto p2) {
-    return std::sqrt((p2[0] - p1[0])*(p2[0] - p1[0]) + (p2[1] - p1[1])*(p2[1] - p1[1]));
+    return std::sqrt((p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y));
 }
 
 using Reta = std::array<Ponto, 2>;
@@ -76,10 +88,10 @@ using Reta = std::array<Ponto, 2>;
 double sombra_reta_ponto(Ponto p, Reta r);
 
 double sombra_reta_ponto(Ponto p, Reta r) {
-    double x3_x1 = p[0] - r[0][0];
-    double x2_x1 = r[1][0] - r[0][0];
-    double y3_y1 = p[1] - r[0][1];
-    double y2_y1 = r[1][1] - r[0][1];
+    double x3_x1 = p.x - r[0].x;
+    double x2_x1 = r[1].x - r[0].x;
+    double y3_y1 = p.y - r[0].y;
+    double y2_y1 = r[1].y - r[0].y;
 
     double c = (x2_x1*x3_x1 + y2_y1*y3_y1) / (x2_x1*x2_x1 + y2_y1*y2_y1);
     return c;
@@ -201,21 +213,21 @@ double in_circle(Ponto a, Ponto b, Ponto c, Ponto d);
 
 double in_circle(Ponto a, Ponto b, Ponto c, Ponto d) {
 
-    double m_11 = a[0];
-    double m_12 = a[1];
-    double m_13 = a[0] * a[0] + a[1] * a[1];
+    double m_11 = a.x;
+    double m_12 = a.y;
+    double m_13 = a.x * a.x + a.y * a.y;
     double m_14 = 1;
-    double m_21 = b[0];
-    double m_22 = b[1];
-    double m_23 = b[0] * b[0] + b[1] * b[1];
+    double m_21 = b.x;
+    double m_22 = b.y;
+    double m_23 = b.x * b.x + b.y * b.y;
     double m_24 = 1;
-    double m_31 = c[0];
-    double m_32 = c[1];
-    double m_33 = c[0] * c[0] + c[1] * c[1];
+    double m_31 = c.x;
+    double m_32 = c.y;
+    double m_33 = c.x * c.x + c.y * c.y;
     double m_34 = 1;
-    double m_41 = d[0];
-    double m_42 = d[1];
-    double m_43 = d[0] * d[0] + d[1] * d[1];
+    double m_41 = d.x;
+    double m_42 = d.y;
+    double m_43 = d.x * d.x + d.y * d.y;
     double m_44 = 1;
 
     double res_1 = m_11 * (m_22 * m_33 * m_44 + m_23 * m_34 * m_42 + m_32 * m_43 * m_24 - m_24 * m_33 * m_42 - m_23 * m_32 * m_44 - m_34 * m_43 * m_22);
@@ -479,7 +491,7 @@ public:
             return;
         }
 
-        std::cout << found->origin->xy[0] << ',' << found->origin->xy[1] << " -> " << found->twin->origin->xy[0] << ',' << found->twin->origin->xy[1] << std::endl;
+        std::cout << found->origin->xy.x << ',' << found->origin->xy.y << " -> " << found->twin->origin->xy.x << ',' << found->twin->origin->xy.y << std::endl;
         ++geracao_atual;
         faces.push_back({nullptr});
 
@@ -537,7 +549,7 @@ public:
         Edge* e = &edges[aresta];
         Vertex* v1 = e->origin;
         Vertex* v2 = e->twin->origin;
-        Ponto p = {(v2->xy[0]-v1->xy[0])*onde+v1->xy[0], (v2->xy[1]-v1->xy[1])*onde+v1->xy[1]};
+        Ponto p = {(v2->xy.x-v1->xy.x)*onde+v1->xy.x, (v2->xy.y-v1->xy.y)*onde+v1->xy.y};
 
         ++geracao_atual;
 
@@ -1474,13 +1486,6 @@ enum class EntradaDelaunay {
     TROCANDO_ARESTA,
 };
 
-bool operator<(const Ponto& lhs, const Ponto& rhs);
-bool operator<(const Ponto& lhs, const Ponto& rhs) {
-    if (lhs[0] < rhs[0]) return true;
-    else if (lhs[0] == rhs[0]) return lhs[1] > rhs[1];
-    else return false;
-}
-
 struct CoisasDelaunay {
     CoisasDelaunay(std::string imagem) : x{0}, y{0}, n{0} {
         glGenBuffers(1, &extra_vbo);
@@ -1566,12 +1571,12 @@ struct CoisasDelaunay {
     }
 
     Cor encontra_cor(Ponto p) {
-        double p_x = std::floor(((p[0] + 1.0) / 2.0) * x);
+        double p_x = std::floor(((p.x + 1.0) / 2.0) * x);
         int i_x = std::min(x, static_cast<int>(p_x));
 
-        double p_y = std::floor(((p[1] + 1.0) / 2.0) * y);
+        double p_y = std::floor(((p.y + 1.0) / 2.0) * y);
         int i_y = std::min(y, static_cast<int>(p_y));
-        std::cout << p[0] << ' ' << p[1] << " -- " << p_x << ' ' << p_y << std::endl;
+        std::cout << p.x << ' ' << p.y << " -- " << p_x << ' ' << p_y << std::endl;
         std::cout << "foi buscada a cor do pixel " << i_x << ' ' << i_y << std::endl;
 
         unsigned char r = image_data[i_y * y * n + i_x * n + 0];
@@ -1582,10 +1587,10 @@ struct CoisasDelaunay {
     }
 
     bool adiciona_ponto(Ponto p) {
-        double p_x = std::floor(((p[0] + 1.0) / 2.0) * x);
+        double p_x = std::floor(((p.x + 1.0) / 2.0) * x);
         int i_x = std::min(x, static_cast<int>(p_x));
 
-        double p_y = std::floor(((p[1] + 1.0) / 2.0) * y);
+        double p_y = std::floor(((p.y + 1.0) / 2.0) * y);
         int i_y = std::min(y, static_cast<int>(p_y));
         std::cout << "foi adicionado o pixel " << i_x << ' ' << i_y << std::endl;
 
@@ -1608,8 +1613,6 @@ struct CoisasDelaunay {
     }
 private:
     void triangulacao() {
-
-        std::sort(pontos.begin(), pontos.end(), [](Ponto p1, Ponto p2) { if (p1[0] < p2[0]) return true; else if (p1[0] == p2[0]) return p1[1] > p2[1]; else return false; });
         std::vector<Ponto> pontos_vec(pontos.begin(), pontos.end());
         dcel = std::make_unique<DCEL>(DCEL::EnganaCompilador{}, pontos_vec);
         delaunay_div_conq_recursivo(0, pontos_vec.size());
@@ -1672,7 +1675,7 @@ private:
             DCEL::Edge* e = v_l->edge;
             DCEL::Edge* start = e;
             do {
-                if (e->face == dcel->faces.data() && e->twin->origin->xy[1] < v_l->xy[1]) {
+                if (e->face == dcel->faces.data() && e->twin->origin->xy.y < v_l->xy.y) {
                     v_prox_l_edge = e;
                     v_prox_l = e->twin->origin;
                     break;
@@ -1696,7 +1699,7 @@ private:
             if (arq.is_open()) {
                 arq << dcel->vertices.size();
                 for (std::size_t k = 0; k < dcel->vertices.size(); ++k) {
-                    arq << dcel->vertices[k].xy[0] << ' ' << dcel->vertices[k].xy[1] << std::endl;
+                    arq << dcel->vertices[k].xy.x << ' ' << dcel->vertices[k].xy.y << std::endl;
                 }
                 arq.close();
             }
@@ -1715,7 +1718,7 @@ private:
             DCEL::Edge* e = v_r->edge;
             DCEL::Edge* start = e;
             do {
-                if (e->face == dcel->faces.data() && e->prev->origin->xy[1] < v_r->xy[1]) {
+                if (e->face == dcel->faces.data() && e->prev->origin->xy.y < v_r->xy.y) {
                     v_prox_r_edge = e;
                     v_prox_r = e->prev->origin;
                     break;
@@ -1985,8 +1988,8 @@ int main() {
                 is.reserve(diff * 2 * sizeof (unsigned));
                 for (std::size_t i = coisas_dcel.last_size; i < estad.poly.size(); ++i) {
                     auto ponto = estad.poly[i];
-                    ps.push_back(ponto[0]);
-                    ps.push_back(ponto[1]);
+                    ps.push_back(ponto.x);
+                    ps.push_back(ponto.y);
 
                     ps.push_back(0.788f);
                     ps.push_back(0.682f);
@@ -2042,8 +2045,8 @@ int main() {
                         ps.push_back(2.0f);
                         ps.push_back(2.0f);
                     } else {
-                        ps.push_back(ponto.xy[0]);
-                        ps.push_back(ponto.xy[1]);
+                        ps.push_back(ponto.xy.x);
+                        ps.push_back(ponto.xy.y);
                     }
 
                     ps.push_back(0.788f);
@@ -2644,8 +2647,8 @@ int main() {
                         ps.push_back(2.0f);
                         ps.push_back(2.0f);
                     } else {
-                        ps.push_back(ponto.xy[0]);
-                        ps.push_back(ponto.xy[1]);
+                        ps.push_back(ponto.xy.x);
+                        ps.push_back(ponto.xy.y);
                     }
                     ps.push_back(cor_ponto.r());
                     ps.push_back(cor_ponto.g());
