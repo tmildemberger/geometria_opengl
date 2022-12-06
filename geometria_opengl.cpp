@@ -166,6 +166,23 @@ struct Ponto {
     }
 };
 
+inline void hash_combine(std::size_t& seed, std::int64_t const& v);
+inline void hash_combine(std::size_t& seed, std::int64_t const& v) {
+    seed ^= std::hash<std::int64_t>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+template<>
+struct std::hash<Ponto> {
+    std::size_t operator()(Ponto const& p) const noexcept {
+        std::size_t seed = 0;
+        hash_combine(seed, p.x.num);
+        hash_combine(seed, p.x.dem);
+        hash_combine(seed, p.y.num);
+        hash_combine(seed, p.y.dem);
+        return seed;
+    }
+};
+
 Racional area_orientada(Ponto p1, Ponto p2, Ponto p3);
 bool left(Ponto p1, Ponto p2, Ponto p3);
 std::vector<Ponto> fecho_convexo(std::vector<Ponto> pontos);
@@ -858,6 +875,7 @@ public:
             if (left(e->origin->xy, e->twin->origin->xy, p) && 
                 left(e->next->origin->xy, e->prev->origin->xy, p) && 
                 left(e->prev->origin->xy, e->origin->xy, p)) {
+                vertice_valido = e->origin;
                 found_face = e->face;
             } else {
                 if (area_orientada(e->origin->xy, e->twin->origin->xy, p) == 0) {
@@ -2018,7 +2036,7 @@ private:
             {0    , 0    }
         });
         dcel->inclui_aresta(0, 2);
-
+        dcel->reserva_espacos(2*5000, 3*5000, 5000);
     }
 
 public:
@@ -2042,7 +2060,7 @@ public:
     std::size_t last_gen;
     EstadoDelaunay estado;
     EntradaDelaunay estado_entrada;
-    std::set<Ponto> pontos;
+    std::unordered_set<Ponto> pontos;
     std::unique_ptr<DCEL> dcel;
 
     static const std::size_t max_floats = 512*1024;
@@ -2790,7 +2808,7 @@ int main() {
             glClearColor(base_trabalho.r(), base_trabalho.g(), base_trabalho.b(), 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            std::size_t novos_pontos_aleatorios = 500;
+            std::size_t novos_pontos_aleatorios = 0;
             bool outra_tela = false;
 
             while (estado.estado_delaunay.eventos.size() > 0) {
@@ -2844,10 +2862,10 @@ int main() {
 
             if (novos_pontos_aleatorios > 0) {
                 while (novos_pontos_aleatorios --> 0 && !aconteceu_aquilo) {
-                    if (delaunay.dcel->gen() > 2800) {
-                        std::cout << "tudo ok" << std::endl;
-                        std::exit(0);
-                    }
+                    // if (delaunay.dcel->gen() > 2800) {
+                    //     std::cout << "tudo ok" << std::endl;
+                    //     std::exit(0);
+                    // }
                     Ponto p {idis_x(gen), idis_y(gen)};
                     bool foi = delaunay.adiciona_ponto(p);
                     if (aconteceu_aquilo) {
