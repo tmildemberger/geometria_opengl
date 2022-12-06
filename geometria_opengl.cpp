@@ -50,9 +50,112 @@ extern "C" {
 }
 #endif
 
+inline unsigned long long gcd_non_zero(unsigned long long u, unsigned long long v) {
+    auto shift = __builtin_ctzll(u | v);
+    u >>= __builtin_ctzll(u);
+    do {
+        v >>= __builtin_ctzll(v);
+        if(u > v)
+            std::swap(u, v);
+    } while((v -= u));
+    return u << shift;
+}
+
+inline long long gcd_non_zero(long long u, long long v) {
+    return static_cast<long long>(gcd_non_zero(static_cast<unsigned long long>(u), static_cast<unsigned long long>(v)));
+}
+
+inline long long gcd(long long u, long long v) {
+    if (u == 0 || v == 0) {
+        return 1;
+    }
+    return gcd_non_zero(u, v);
+}
+
+struct Racional {
+    std::int64_t num;
+    std::int64_t dem;
+    Racional() : num{0}, dem{1} {}
+    Racional(std::int64_t n) : num{n}, dem{1} {}
+    // Racional(double n) = delete;
+    Racional(std::int64_t n, std::int64_t d) : num{n}, dem{d} {}
+    bool operator==(const Racional& rhs) const {
+        return (this->num * rhs.dem) == (this->dem * rhs.num);
+    }
+    bool operator<(const Racional& rhs) const {
+        return (this->num * rhs.dem) < (this->dem * rhs.num);
+    }
+    bool operator<=(const Racional& rhs) const {
+        return (this->num * rhs.dem) <= (this->dem * rhs.num);
+    }
+    bool operator>(const Racional& rhs) const {
+        return (this->num * rhs.dem) > (this->dem * rhs.num);
+    }
+    bool operator>=(const Racional& rhs) const {
+        return (this->num * rhs.dem) >= (this->dem * rhs.num);
+    }
+    bool operator!=(const Racional& rhs) const {
+        return (this->num * rhs.dem) != (this->dem * rhs.num);
+    }
+    Racional operator+(const Racional& rhs) const {
+        Racional resultado = {this->num*rhs.dem + rhs.num*this->dem, this->dem * rhs.dem};
+        auto divisor = gcd(resultado.num, resultado.dem);
+        resultado.num /= divisor;
+        resultado.dem /= divisor;
+        return resultado;
+    }
+    Racional operator-(const Racional& rhs) const {
+        Racional resultado = {this->num*rhs.dem - rhs.num*this->dem, this->dem * rhs.dem};
+        auto divisor = gcd(resultado.num, resultado.dem);
+        resultado.num /= divisor;
+        resultado.dem /= divisor;
+        return resultado;
+    }
+    Racional operator*(const Racional& rhs) const {
+        Racional resultado = {this->num*rhs.num, this->dem*rhs.dem};
+        auto divisor = gcd(resultado.num, resultado.dem);
+        resultado.num /= divisor;
+        resultado.dem /= divisor;
+        return resultado;
+    }
+    Racional operator/(const Racional& rhs) const {
+        Racional resultado = {this->num*rhs.dem, this->dem*rhs.num};
+        if (resultado.dem < 0) {
+            resultado.num *= -1;
+            resultado.dem *= -1;
+        }
+        auto divisor = gcd(resultado.num, resultado.dem);
+        resultado.num /= divisor;
+        resultado.dem /= divisor;
+        return resultado;
+    }
+    friend std::ostream& operator<<(std::ostream& stream, const Racional& r);
+};
+
+std::ostream& operator<<(std::ostream& stream, const Racional& r) {
+    stream << '(' << r.num << '/' << r.dem << ')';
+    return stream;
+}
+
+double sqrt_r(Racional r);
+double sqrt_r(Racional r) {
+    return std::sqrt(static_cast<double>(r.num) / static_cast<double>(r.dem));
+}
+
+Racional abs_r(Racional r);
+Racional abs_r(Racional r) {
+    if (r.num < 0) {
+        r.num *= -1;
+    }
+    return r;
+}
+
 struct Ponto {
-    double x;
-    double y;
+    Racional x;
+    Racional y;
+    Ponto() : x{0}, y{0} {}
+    Ponto(std::int64_t i_x, std::int64_t i_y) : x{i_x}, y{i_y} {}
+    Ponto(Racional r_x, Racional r_y) : x{r_x}, y{r_y} {}
     bool operator==(const Ponto& rhs) const {
         return this->x == rhs.x && this->y == rhs.y;
     }
@@ -63,37 +166,37 @@ struct Ponto {
     }
 };
 
-double area_orientada(Ponto p1, Ponto p2, Ponto p3);
+Racional area_orientada(Ponto p1, Ponto p2, Ponto p3);
 bool left(Ponto p1, Ponto p2, Ponto p3);
 std::vector<Ponto> fecho_convexo(std::vector<Ponto> pontos);
 double dist(Ponto p1, Ponto p2);
-double angulo_interno(Ponto p1, Ponto p2, Ponto p3);
+Racional angulo_interno(Ponto p1, Ponto p2, Ponto p3);
 
-double area_orientada(Ponto p1, Ponto p2, Ponto p3) {
+Racional area_orientada(Ponto p1, Ponto p2, Ponto p3) {
 
-    if (p1 == p2 || p1 == p3 || p2 == p3) return 0.0;
+    if (p1 == p2 || p1 == p3 || p2 == p3) return 0;
     return (p2.x - p1.x)*(p3.y - p1.y) - (p3.x - p1.x)*(p2.y - p1.y);
 }
 
 bool left(Ponto p1, Ponto p2, Ponto p3) {
-    return area_orientada(p1, p2, p3) > 0.;
+    return area_orientada(p1, p2, p3) > 0;
 }
 
 double dist(Ponto p1, Ponto p2) {
-    return std::sqrt((p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y));
+    return sqrt_r((p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y));
 }
 
 using Reta = std::array<Ponto, 2>;
 
-double sombra_reta_ponto(Ponto p, Reta r);
+Racional sombra_reta_ponto(Ponto p, Reta r);
 
-double sombra_reta_ponto(Ponto p, Reta r) {
-    double x3_x1 = p.x - r[0].x;
-    double x2_x1 = r[1].x - r[0].x;
-    double y3_y1 = p.y - r[0].y;
-    double y2_y1 = r[1].y - r[0].y;
+Racional sombra_reta_ponto(Ponto p, Reta r) {
+    Racional x3_x1 = p.x - r[0].x;
+    Racional x2_x1 = r[1].x - r[0].x;
+    Racional y3_y1 = p.y - r[0].y;
+    Racional y2_y1 = r[1].y - r[0].y;
 
-    double c = (x2_x1*x3_x1 + y2_y1*y3_y1) / (x2_x1*x2_x1 + y2_y1*y2_y1);
+    Racional c = (x2_x1*x3_x1 + y2_y1*y3_y1) / (x2_x1*x2_x1 + y2_y1*y2_y1);
     return c;
 }
 
@@ -135,17 +238,17 @@ enum class Intersecao {
 Intersecao intersecao_com_left(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
 
 Intersecao intersecao_com_left(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
-    double p1_p2_p3 = area_orientada(p1, p2, p3);
-    double p1_p2_p4 = area_orientada(p1, p2, p4);
-    double p3_p4_p1 = area_orientada(p3, p4, p1);
-    double p3_p4_p2 = area_orientada(p3, p4, p2);
-    if (p1_p2_p3 == 0. || p1_p2_p4 == 0. || p3_p4_p1 == 0. || p3_p4_p2 == 0.) {
+    Racional p1_p2_p3 = area_orientada(p1, p2, p3);
+    Racional p1_p2_p4 = area_orientada(p1, p2, p4);
+    Racional p3_p4_p1 = area_orientada(p3, p4, p1);
+    Racional p3_p4_p2 = area_orientada(p3, p4, p2);
+    if (p1_p2_p3 == 0 || p1_p2_p4 == 0 || p3_p4_p1 == 0 || p3_p4_p2 == 0) {
         return Intersecao::IMPROPRIA;
     }
-    bool left1 = p1_p2_p3 > 0.;
-    bool left2 = p1_p2_p4 > 0.;
-    bool left3 = p3_p4_p1 > 0.;
-    bool left4 = p3_p4_p2 > 0.;
+    bool left1 = p1_p2_p3 > 0;
+    bool left2 = p1_p2_p4 > 0;
+    bool left3 = p3_p4_p1 > 0;
+    bool left4 = p3_p4_p2 > 0;
     if (left1 != left2 && left3 != left4) {
         return Intersecao::PROPRIA;
     } else {
@@ -156,9 +259,9 @@ Intersecao intersecao_com_left(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
 double distancia_ponto_reta_com_area(Ponto p1, Ponto p2, Ponto p);
 
 double distancia_ponto_reta_com_area(Ponto p1, Ponto p2, Ponto p) {
-    double area = std::abs(area_orientada(p1, p2, p));
+    auto area = abs_r(area_orientada(p1, p2, p));
     double base = dist(p1, p2);
-    return area / base;
+    return area.num / (area.dem*base);
 }
 
 double distancia_ponto_segmento(Ponto p1, Ponto p2, Ponto p);
@@ -168,7 +271,7 @@ double distancia_ponto_segmento(Ponto p1, Ponto p2, Ponto p) {
     double dist_p1 = dist(p1, p);
     double dist_p2 = dist(p2, p);
     double base = dist(p1, p2);
-    double dist_max = std::sqrt(base * base + altura * altura);
+    double dist_max = sqrt(base * base + altura * altura);
     if (dist_p1 > dist_max) {
         return dist_p2;
     } if (dist_p2 > dist_max) {
@@ -188,7 +291,7 @@ bool orientado_antihorario(const std::vector<Ponto>& poligono) {
         auto& p3 = v[i+1];
         if (left(p1, p2, p3)) {
             ++curvas_a_esquerda;
-        } else if (area_orientada(p1, p2, p3) != 0.) {
+        } else if (area_orientada(p1, p2, p3) != 0) {
             --curvas_a_esquerda;
         }
     }
@@ -198,42 +301,42 @@ bool orientado_antihorario(const std::vector<Ponto>& poligono) {
     auto& pn_1 = v[v.size() - 1];
     if (left(pn_2, pn_1, p1)) {
         ++curvas_a_esquerda;
-    } else if (area_orientada(pn_2, pn_1, p1) != 0.) {
+    } else if (area_orientada(pn_2, pn_1, p1) != 0) {
         --curvas_a_esquerda;
     }
     if (left(pn_1, p1, p2)) {
         ++curvas_a_esquerda;
-    } else if (area_orientada(pn_1, p1, p2) != 0.) {
+    } else if (area_orientada(pn_1, p1, p2) != 0) {
         --curvas_a_esquerda;
     }
     return curvas_a_esquerda > 0;
 }
 
-double in_circle(Ponto a, Ponto b, Ponto c, Ponto d);
+Racional in_circle(Ponto a, Ponto b, Ponto c, Ponto d);
 
-double in_circle(Ponto a, Ponto b, Ponto c, Ponto d) {
+Racional in_circle(Ponto a, Ponto b, Ponto c, Ponto d) {
 
-    double m_11 = a.x;
-    double m_12 = a.y;
-    double m_13 = a.x * a.x + a.y * a.y;
-    double m_14 = 1;
-    double m_21 = b.x;
-    double m_22 = b.y;
-    double m_23 = b.x * b.x + b.y * b.y;
-    double m_24 = 1;
-    double m_31 = c.x;
-    double m_32 = c.y;
-    double m_33 = c.x * c.x + c.y * c.y;
-    double m_34 = 1;
-    double m_41 = d.x;
-    double m_42 = d.y;
-    double m_43 = d.x * d.x + d.y * d.y;
-    double m_44 = 1;
+    Racional m_11 = a.x;
+    Racional m_12 = a.y;
+    Racional m_13 = a.x * a.x + a.y * a.y;
+    Racional m_14 = 1;
+    Racional m_21 = b.x;
+    Racional m_22 = b.y;
+    Racional m_23 = b.x * b.x + b.y * b.y;
+    Racional m_24 = 1;
+    Racional m_31 = c.x;
+    Racional m_32 = c.y;
+    Racional m_33 = c.x * c.x + c.y * c.y;
+    Racional m_34 = 1;
+    Racional m_41 = d.x;
+    Racional m_42 = d.y;
+    Racional m_43 = d.x * d.x + d.y * d.y;
+    Racional m_44 = 1;
 
-    double res_1 = m_11 * (m_22 * m_33 * m_44 + m_23 * m_34 * m_42 + m_32 * m_43 * m_24 - m_24 * m_33 * m_42 - m_23 * m_32 * m_44 - m_34 * m_43 * m_22);
-    double res_2 = m_12 * (m_21 * m_33 * m_44 + m_23 * m_34 * m_41 + m_31 * m_43 * m_24 - m_24 * m_33 * m_41 - m_23 * m_31 * m_44 - m_34 * m_43 * m_21);
-    double res_3 = m_13 * (m_21 * m_32 * m_44 + m_22 * m_34 * m_41 + m_31 * m_42 * m_24 - m_24 * m_32 * m_41 - m_22 * m_31 * m_44 - m_34 * m_42 * m_21);
-    double res_4 = m_14 * (m_21 * m_32 * m_43 + m_22 * m_33 * m_41 + m_31 * m_42 * m_23 - m_23 * m_32 * m_41 - m_22 * m_31 * m_43 - m_33 * m_42 * m_21);
+    Racional res_1 = m_11 * (m_22 * m_33 * m_44 + m_23 * m_34 * m_42 + m_32 * m_43 * m_24 - m_24 * m_33 * m_42 - m_23 * m_32 * m_44 - m_34 * m_43 * m_22);
+    Racional res_2 = m_12 * (m_21 * m_33 * m_44 + m_23 * m_34 * m_41 + m_31 * m_43 * m_24 - m_24 * m_33 * m_41 - m_23 * m_31 * m_44 - m_34 * m_43 * m_21);
+    Racional res_3 = m_13 * (m_21 * m_32 * m_44 + m_22 * m_34 * m_41 + m_31 * m_42 * m_24 - m_24 * m_32 * m_41 - m_22 * m_31 * m_44 - m_34 * m_42 * m_21);
+    Racional res_4 = m_14 * (m_21 * m_32 * m_43 + m_22 * m_33 * m_41 + m_31 * m_42 * m_23 - m_23 * m_32 * m_41 - m_22 * m_31 * m_43 - m_33 * m_42 * m_21);
 
     return res_1 - res_2 + res_3 - res_4;
 }
@@ -514,10 +617,10 @@ public:
             long long curvas_a_esquerda = 0;
             e = edges[idx + 1].next;
             while (e != &edges[idx + 1]) {
-                double area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
-                if (area > 0.) {
+                Racional area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
+                if (area > 0) {
                     ++curvas_a_esquerda;
-                } else if (area < 0.) {
+                } else if (area < 0) {
                     --curvas_a_esquerda;
                 }
                 e = e->next;
@@ -539,7 +642,7 @@ public:
         edges[idx + 1].face->edge = &edges[idx + 1];
     }
 
-    void inclui_vertice_em_aresta(std::size_t aresta, double onde) {
+    void inclui_vertice_em_aresta(std::size_t aresta, Racional onde) {
         if (onde <= 0 || onde >= 1 || aresta >= edges.size()) {
             return;
         }
@@ -688,15 +791,114 @@ public:
         return static_cast<std::size_t>(found_face - faces.data());
     }
 
+    std::size_t qual_triangulo(Ponto p) {
+
+        Vertex* v1 = vertice_valido;
+        if (!vertice_valido) {
+            return 0;
+        }
+
+        Face* found_face = nullptr;
+        
+        std::size_t tentativas = 80000;
+        Edge* e = v1->edge;
+        if (e->face == faces.data()) {
+            e = e->twin;
+        }
+        while (!found_face) {
+            if (tentativas == 0) {
+                std::size_t c = 0;
+                for (std::size_t i = 1; i < faces.size(); ++i) {
+                    if (faces_invalidas.count(i)) continue;
+                    auto es = indices_das_arestas_de_uma_face(i);
+                    if (es.size() != 3) {
+                        std::cout << "ta quebrado mesmo" << std::endl;
+                        std::exit(1);
+                    }
+                    if (area_orientada(edges[es[0]].origin->xy, edges[es[0]].twin->origin->xy, p) == 0 &&
+                        left(edges[es[1]].origin->xy, edges[es[1]].twin->origin->xy, p) &&
+                        left(edges[es[2]].origin->xy, edges[es[2]].twin->origin->xy, p)) {
+                        std::cout << "o ponto esta em uma aresta da face " << i << std::endl;
+                    } else
+                    if (area_orientada(edges[es[1]].origin->xy, edges[es[1]].twin->origin->xy, p) == 0 &&
+                        left(edges[es[0]].origin->xy, edges[es[0]].twin->origin->xy, p) &&
+                        left(edges[es[2]].origin->xy, edges[es[2]].twin->origin->xy, p)) {
+                        std::cout << "o ponto esta em uma aresta da face " << i << std::endl;
+                    } else
+                    if (area_orientada(edges[es[2]].origin->xy, edges[es[2]].twin->origin->xy, p) == 0 &&
+                        left(edges[es[0]].origin->xy, edges[es[0]].twin->origin->xy, p) &&
+                        left(edges[es[1]].origin->xy, edges[es[1]].twin->origin->xy, p)) {
+                        std::cout << "o ponto esta em uma aresta da face " << i << std::endl;
+                    }
+                    // if (area_orientada(edges[es[0]].origin->xy, edges[es[0]].twin->origin->xy, p) == 0 ||
+                    //     area_orientada(edges[es[1]].origin->xy, edges[es[1]].twin->origin->xy, p) == 0 ||
+                    //     area_orientada(edges[es[2]].origin->xy, edges[es[2]].twin->origin->xy, p) == 0) {
+                    // }
+                        // std::cout << "o ponto esta em uma aresta cara" << std::endl;
+                    if (left(edges[es[0]].origin->xy, edges[es[0]].twin->origin->xy, p) &&
+                        left(edges[es[1]].origin->xy, edges[es[1]].twin->origin->xy, p) &&
+                        left(edges[es[2]].origin->xy, edges[es[2]].twin->origin->xy, p)) {
+                        found_face = e->face;
+                        ++c;
+                    }
+                }
+                if (c == 1) {
+                    std::cout << "manualmente deu" << std::endl;
+                    return static_cast<std::size_t>(found_face - faces.data());
+                }
+                if (c == 0) {
+                    std::cout << "o ponto nao esta em nenhuma face mesmo" << std::endl;
+                } else if (c > 1) {
+                    std::cout << "o ponto esta em mais de uma face mesmo" << std::endl;
+                }
+                return 123456789;
+            } else {
+                --tentativas;
+            }
+            if (left(e->origin->xy, e->twin->origin->xy, p) && 
+                left(e->next->origin->xy, e->prev->origin->xy, p) && 
+                left(e->prev->origin->xy, e->origin->xy, p)) {
+                found_face = e->face;
+            } else {
+                if (area_orientada(e->origin->xy, e->twin->origin->xy, p) == 0) {
+                    e = e->next;
+                    // if (dist(e->next->origin->xy, p) < dist(e->origin->xy, p)) {
+                    //     e = e->next;
+                    // } else {
+                    //     e = e->twin->next;
+                    // }
+                    // std::cout << "colinear em qual_triangulo" << std::endl;
+                    // return 123456789;
+                }
+                if (!left(e->origin->xy, e->twin->origin->xy, p)) {
+                    e = e->twin;
+                } else {
+                    e = e->next;
+                }
+            }
+        }
+        return static_cast<std::size_t>(found_face - faces.data());
+    }
+
     std::pair<bool, std::size_t> em_alguma_aresta(Ponto p) {
         for (std::size_t i = 0; i < edges.size(); i += 2) {
-            if (edges_invalidas.count(i)) {
+            std::size_t k = i;
+            if (edges_invalidas.count(k)) {
                 continue;
             }
-            auto& p2 = edges[i].origin->xy;
-            auto& p3 = edges[i+1].origin->xy;
-            if (area_orientada(p, p2, p3) == 0.0 && dist(p, p2) + dist(p, p3) <= dist(p2, p3)) {
-                return {true, i};
+            auto e = &(edges[k]);
+            if (e->face == faces.data()) {
+                e = e->twin;
+                k = static_cast<std::size_t>(e - edges.data());
+            }
+
+            auto& v1 = e->origin->xy;
+            auto& v2 = e->twin->origin->xy;
+            auto& v_op = e->prev->origin->xy;
+            if (area_orientada(v1, v2, p) == 0 &&
+                left(v2, v_op, p) &&
+                left(v_op, v1, p)) {
+                return {true, k};
             }
         }
         return {false, 0};
@@ -920,20 +1122,20 @@ private:
                 long long curvas_a_esquerda_e2 = 0;
                 e = &edges[idx + 1];
                 do {
-                    double area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
-                    if (area > 0.) {
+                    Racional area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
+                    if (area > 0) {
                         ++curvas_a_esquerda_e2;
-                    } else if (area < 0.) {
+                    } else if (area < 0) {
                         --curvas_a_esquerda_e2;
                     }
                     e = e->next;
                 }while (e != &edges[idx + 1]);
                 e = &edges[idx];
                 do {
-                    double area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
-                    if (area > 0.) {
+                    Racional area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
+                    if (area > 0) {
                         ++curvas_a_esquerda_e1;
-                    } else if (area < 0.) {
+                    } else if (area < 0) {
                         --curvas_a_esquerda_e1;
                     }
                     e = e->next;
@@ -1221,27 +1423,48 @@ struct State {
     float pointSize;
     Tela tela;
 
+    std::int64_t width;
+    std::int64_t height;
 };
+
+Ponto ponto_xy(GLFWwindow *window);
+Ponto ponto_xy(GLFWwindow *window) {
+    double xpos {};
+    double ypos {};
+    glfwGetCursorPos(window, &xpos, &ypos);
+    int width {};
+    int height {};
+    glfwGetWindowSize(window, &width, &height);
+    if (xpos < 0.0 || ypos < 0.0) {
+        return {width / 2, height / 2};
+    }
+    auto x = static_cast<std::int64_t>(xpos);
+    auto y = static_cast<std::int64_t>(ypos);
+    if (y == height || x == width) {
+        std::cout << "resolver isso aqui" << std::endl;
+    }
+    return {x, static_cast<std::int64_t>(height) - y - 1};
+}
 
 void mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
 
 void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
-    auto ponto_xy = [window]() -> Ponto {
-        double xpos {};
-        double ypos {};
-        glfwGetCursorPos(window, &xpos, &ypos);
-        int width {};
-        int height {};
-        glfwGetWindowSize(window, &width, &height);
-        double x {xpos / static_cast<double> (width) * 2. - 1.};
-        double y {1. - ypos / static_cast<double> (height) * 2.};
-        return {x, y};
-    };
+    // auto ponto_xy = [window]() -> Ponto {
+    //     double xpos {};
+    //     double ypos {};
+    //     glfwGetCursorPos(window, &xpos, &ypos);
+    //     int width {};
+    //     int height {};
+    //     glfwGetWindowSize(window, &width, &height);
+    //     double x {xpos / static_cast<double> (width) * 2. - 1.};
+    //     double y {1. - ypos / static_cast<double> (height) * 2.};
+    //     return {x, y};
+    // };
     State& estado = *(static_cast<State*> (glfwGetWindowUserPointer(window)));
-    auto coloca_ponto_dcel = [ponto_xy, &estado]() {
+    auto coloca_ponto_dcel = [window, &estado]() {
         auto& estad = estado.estado_dcel_teste;
         auto& p = estad.poly;
-        Ponto ponto = ponto_xy();
+        Ponto ponto = ponto_xy(window);
         if (p.size() >= 3) {
             for (std::size_t i = 0; i < p.size() - 2; ++i) {
                 if (intersecao_com_left(p[i], p[i+1], p[p.size()-1], ponto) != Intersecao::NAO) {
@@ -1291,55 +1514,55 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
             if (button == GLFW_MOUSE_BUTTON_RIGHT && !mods) {
                 estad.estado = Dcel_Data::RESETANDO;
             } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
-                Ponto clicado = ponto_xy();
+                Ponto clicado = ponto_xy(window);
                 estad.operacoes.push_back({{clicado}, Dcel_Op::ENCONTRAR_FACE});
             } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_SHIFT) {
-                Ponto clicado = ponto_xy();
+                Ponto clicado = ponto_xy(window);
                 estad.operacoes.push_back({{clicado}, Dcel_Op::PISCAR_FACE});
             } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
-                Ponto clicado = ponto_xy();
+                Ponto clicado = ponto_xy(window);
                 estad.operacoes.push_back({{clicado}, Dcel_Op::CLIQUE_VERTICE});
             }
         } else if (estad.estado == Dcel_Data::ADICIONANDO_ARESTA) {
             if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
                 estad.estado = Dcel_Data::DCEL_PRONTA;
             } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
-                Ponto clicado = ponto_xy();
+                Ponto clicado = ponto_xy(window);
                 estad.operacoes.push_back({{clicado}, Dcel_Op::PONTO_SELECIONADO});
             }
         } else if (estad.estado == Dcel_Data::ADICIONANDO_VERTICE) {
             if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
                 estad.estado = Dcel_Data::DCEL_PRONTA;
             } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
-                Ponto clicado = ponto_xy();
+                Ponto clicado = ponto_xy(window);
                 estad.operacoes.push_back({{clicado}, Dcel_Op::CLIQUE_VERTICE});
             }
         } else if (estad.estado == Dcel_Data::ESPERANDO_ORBITA) {
             if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
                 estad.estado = Dcel_Data::DCEL_PRONTA;
             } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
-                Ponto clicado = ponto_xy();
+                Ponto clicado = ponto_xy(window);
                 estad.operacoes.push_back({{clicado}, Dcel_Op::PISCAR_ORBITA});
             }
         } else if (estad.estado == Dcel_Data::DELETANDO_ARESTA) {
             if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
                 estad.estado = Dcel_Data::DCEL_PRONTA;
             } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
-                Ponto clicado = ponto_xy();
+                Ponto clicado = ponto_xy(window);
                 estad.operacoes.push_back({{clicado}, Dcel_Op::CLIQUE_VERTICE});
             }
         } else if (estad.estado == Dcel_Data::DELETANDO_VERTICE) {
             if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
                 estad.estado = Dcel_Data::DCEL_PRONTA;
             } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
-                Ponto clicado = ponto_xy();
+                Ponto clicado = ponto_xy(window);
                 estad.operacoes.push_back({{clicado}, Dcel_Op::CLIQUE_VERTICE});
             }
         }
     } else if (estado.tela == Tela::DELAUNAY) {
         if (action != GLFW_RELEASE) return;
         auto& estad = estado.estado_delaunay;
-        Ponto clicado = ponto_xy();
+        Ponto clicado = ponto_xy(window);
         estad.eventos.push_back({clicado, button, mods, General_Op::CLIQUE});
     }
 }
@@ -1581,11 +1804,13 @@ struct CoisasDelaunay {
     }
 
     Cor encontra_cor(Ponto p) {
-        double p_x = std::floor(((p.x + 1.0) / 2.0) * x);
-        int i_x = std::min(x, static_cast<int>(p_x));
+        // Racional p_x = std::floor(((p.x + 1.0) / 2.0) * x);
+        // int i_x = std::min(x, static_cast<int>(p_x));
+        int i_x = p.x.num;
 
-        double p_y = std::floor(((p.y + 1.0) / 2.0) * y);
-        int i_y = std::min(y, static_cast<int>(p_y));
+        // Racional p_y = std::floor(((p.y + 1.0) / 2.0) * y);
+        // int i_y = std::min(y, static_cast<int>(p_y));
+        int i_y = p.y.num;
         // std::cout << p.x << ' ' << p.y << " -- " << p_x << ' ' << p_y << std::endl;
         // std::cout << "foi buscada a cor do pixel " << i_x << ' ' << i_y << std::endl;
 
@@ -1597,30 +1822,33 @@ struct CoisasDelaunay {
     }
 
     bool adiciona_ponto(Ponto p) {
-        double p_x = std::floor(((p.x + 1.0) / 2.0) * x);
-        int i_x = std::min(x, static_cast<int>(p_x));
+        // Racional p_x = std::floor(((p.x + 1.0) / 2.0) * x);
+        // int i_x = std::min(x, static_cast<int>(p_x));
+        // int i_x = p.x.num;
 
-        double p_y = std::floor(((p.y + 1.0) / 2.0) * y);
-        int i_y = std::min(y, static_cast<int>(p_y));
+        // Racional p_y = std::floor(((p.y + 1.0) / 2.0) * y);
+        // int i_y = std::min(y, static_cast<int>(p_y));
+        // int i_y = p.y.num;
         // std::cout << "foi adicionado o pixel " << i_x << ' ' << i_y << std::endl;
 
-        double new_x = (((static_cast<double>(i_x)) / x) * 2.0) - 1.0 + (1.0 / x);
-        double new_y = (((static_cast<double>(i_y)) / y) * 2.0) - 1.0 + (1.0 / y);
+        // Racional new_x = (((static_cast<Racional>(i_x)) / x) * 2.0) - 1.0 + (1.0 / x);
+        // Racional new_y = (((static_cast<Racional>(i_y)) / y) * 2.0) - 1.0 + (1.0 / y);
 
-        double lim_inf = (((0) / x) * 2.0) - 1.0 + (1.0 / x);
-        double lim_sup = ((static_cast<double>(x-1) / x) * 2.0) - 1.0 + (1.0 / x);
-        if (new_x < lim_inf || new_x > lim_sup || new_y < lim_inf || new_y > lim_sup) {
-            std::cout << "nao entendi " << new_x << ' ' << new_y << std::endl;
+        // Racional lim_inf = (((0) / x) * 2.0) - 1.0 + (1.0 / x);
+        // Racional lim_sup = ((static_cast<Racional>(x-1) / x) * 2.0) - 1.0 + (1.0 / x);
+        // if (new_x < lim_inf || new_x > lim_sup || new_y < lim_inf || new_y > lim_sup) {
+        //     std::cout << "nao entendi " << new_x << ' ' << new_y << std::endl;
+        //     return false;
+        // }
+        // Ponto new_p = {new_x, new_y};
+        if (pontos.count(p)) {
             return false;
         }
-        Ponto new_p = {new_x, new_y};
-        if (pontos.count(new_p)) {
-            return false;
-        }
-        pontos.insert(new_p);
+        pontos.insert(p);
 
-        triangulacao(new_p);
+        triangulacao(p);
         // std::cout << "supostamente triangulado" << std::endl;
+        dcel->geracao_atual = dcel->vertices.size();
 
         return true;
     }
@@ -1629,8 +1857,11 @@ private:
         // adiciona novo ponto e arruma a triangulação
         // (algoritmo incremental)
         auto [resposta, qual_aresta] = dcel->em_alguma_aresta(novo);
-        std::size_t face = 1234567890;
+        // std::size_t face = 1234567890;
         std::vector<std::size_t> arestas;
+        int caminho = 0;
+        std::deque<std::size_t> lista_de_potencialmente_invalidas;
+        bool quebrou = false;
         if (resposta) {
             // std::cout << "s pra saber" << std::endl;
             // std::exit(1);
@@ -1645,27 +1876,39 @@ private:
 
             std::size_t proxima = static_cast<std::size_t>(es[qual_aresta].next - es.data());
             std::size_t anterior = static_cast<std::size_t>(es[qual_aresta].prev - es.data());
-            dcel->deleta_aresta(qual_aresta, false);
+            // dcel->deleta_aresta(qual_aresta, false);
 
-            face = static_cast<std::size_t>(es[proxima].face - fs.data());
-            if (face == 0) {
-                // dcel->reserva_espacos(0, 0, 1);
-                // dcel->vertices.push_back(DCEL::Vertex{novo, nullptr});
-                dcel->inclui_vertice_em_aresta(qual_aresta, 0.5);
-                dcel->vertices.back().xy = novo;
+            std::size_t outra_face = static_cast<std::size_t>(es[qual_aresta].twin->face - fs.data());
+            if (outra_face == 0) {
+                caminho = 1;
                 
-                // std::size_t v_next = static_cast<std::size_t>(es[proxima].origin - vs.data());
-                // std::size_t v_prev = static_cast<std::size_t>(es[anterior].twin->origin - vs.data());
+                dcel->deleta_aresta(qual_aresta, false);
+                dcel->reserva_espacos(0, 0, 1);
+                dcel->vertices.push_back(DCEL::Vertex{novo, nullptr});
+                // quebrou = true;
+                // std::exit(1);
+                // dcel->inclui_vertice_em_aresta(qual_aresta, Racional{1, 2});
+                // dcel->vertices.back().xy = novo;
+                
+                std::size_t v_next = static_cast<std::size_t>(es[proxima].origin - vs.data());
+                std::size_t v_prev = static_cast<std::size_t>(es[anterior].twin->origin - vs.data());
                 std::size_t v_opp = static_cast<std::size_t>(es[anterior].origin - vs.data());
 
-                // dcel->novo_inclui_aresta(vs.size() - 1, v_next);
-                // dcel->novo_inclui_aresta(vs.size() - 1, v_prev);
+                dcel->novo_inclui_aresta(vs.size() - 1, v_next);
+                dcel->novo_inclui_aresta(vs.size() - 1, v_prev);
                 dcel->novo_inclui_aresta(vs.size() - 1, v_opp);
 
                 arestas = {proxima, anterior};
             } else {
+                caminho = 2;
+                dcel->deleta_aresta(qual_aresta, false);
+                std::size_t face = static_cast<std::size_t>(es[proxima].face - fs.data());
+                // quebrou = true;
                 // std::cout << "face do novo ponto: " << face << std::endl;
                 arestas = dcel->indices_das_arestas_de_uma_face(face);
+                if (arestas.size() != 4) {
+                    std::cout << "estou maluco ou isso esta" << std::endl;
+                }
 
                 dcel->reserva_espacos(0, 0, 1);
                 dcel->vertices.push_back(DCEL::Vertex{novo, nullptr});
@@ -1676,7 +1919,8 @@ private:
                 }
             }
         } else {
-            face = dcel->qual_face(novo);
+            caminho = 3;
+            std::size_t face = dcel->qual_triangulo(novo);
             if (face == 123456789) {
                 // isso significa que houve um erro
                 std::cout << "deu o problema com o ponto " << novo.x << ' ' << novo.y << std::endl;
@@ -1695,7 +1939,7 @@ private:
             }
         }
 
-        std::deque<std::size_t> lista_de_potencialmente_invalidas;
+        // std::deque<std::size_t> lista_de_potencialmente_invalidas;
         for (auto aresta : arestas) {
             lista_de_potencialmente_invalidas.push_back(aresta);
         }
@@ -1715,7 +1959,7 @@ private:
             
             // std::cout << "aresta " << aresta;
             if (intersecao_com_left(vs[p1].xy, vs[p2].xy, vs[p3].xy, vs[p4].xy) == Intersecao::PROPRIA) {
-                if (in_circle(vs[p3].xy, vs[p4].xy, vs[p1].xy, vs[p2].xy) > 0.0) {
+                if (in_circle(vs[p3].xy, vs[p4].xy, vs[p1].xy, vs[p2].xy) > 0) {
                     // std::cout << " precisou ser flipada" << std::endl;
                     auto e1 = static_cast<std::size_t>(es[aresta].twin->next - es.data());
                     auto e2 = static_cast<std::size_t>(es[aresta].twin->prev - es.data());
@@ -1733,6 +1977,7 @@ private:
         }
 
         // if (resposta) {
+        // bool quebrou = false;
         for (std::size_t i = 1; i < dcel->faces.size(); ++i) {
             if (dcel->faces_invalidas.count(i)) {
                 if (i == 0) {
@@ -1742,31 +1987,35 @@ private:
             } else {
                 auto vs = dcel->indices_dos_vertices_de_uma_face(i);
                 if (vs.size() != 3) {
+                    quebrou = true;
                     std::cout << "quebrou" << std::endl;
                     aconteceu_aquilo = true;
                 }
             }
+        }
+// aqui:
+        if (quebrou) {
+            aconteceu_aquilo = true;
+            std::cout << "quebrou caminho " << caminho << std::endl;
+            std::cout << "deu o problema com o ponto " << novo.x << ' ' << novo.y << std::endl;
         }
         // }
 
     }
 
     void inicia() {
-        double lim_inf = (((0) / x) * 2.0) - 1.0 + (1.0 / x);
-        double lim_sup = ((static_cast<double>(x-1) / x) * 2.0) - 1.0 + (1.0 / x);
-
         pontos.insert({
-            {lim_inf, lim_inf},
-            {lim_sup, lim_inf},
-            {lim_sup, lim_sup},
-            {lim_inf, lim_sup}
+            {0    , 0    },
+            {x - 1, 0    },
+            {x - 1, x - 1},
+            {0    , x - 1}
         });
         dcel = std::make_unique<DCEL>(std::vector<Ponto>{
-            {lim_inf, lim_inf},
-            {lim_sup, lim_inf},
-            {lim_sup, lim_sup},
-            {lim_inf, lim_sup},
-            {lim_inf, lim_inf}
+            {0    , 0    },
+            {x - 1, 0    },
+            {x - 1, x - 1},
+            {0    , x - 1},
+            {0    , 0    }
         });
         dcel->inclui_aresta(0, 2);
 
@@ -1805,6 +2054,10 @@ const Cor base_trabalho {"#30272b"};
 const Cor cor_trabalho {"#87914d"};
 
 int main() {
+    if ((sizeof (long long)) != (sizeof(std::int64_t))) {
+        std::cout << "o programa nao roda nessa plataforma" << std::endl;
+        std::exit(257);
+    }
     GLFW::Session session {};
     GLFW::Window::options opts;
     opts.window_width = 600;
@@ -1894,6 +2147,36 @@ int main() {
 
     CoisasDelaunay delaunay {"teste0.bmp"};
 
+    const std::int64_t width = opts.window_width;
+    const std::int64_t height = opts.window_height;
+
+    estado.width = width;
+    estado.height = height;
+
+    std::uniform_int_distribution<std::int64_t> idis_x(0, width - 1);
+    std::uniform_int_distribution<std::int64_t> idis_y(0, height - 1);
+
+    auto transformada_x = [width](Racional x) -> float {
+        if (x.dem != 1) {
+            std::cout << "nao esperava isso de um ponto" << std::endl;
+        }
+        float resp = static_cast<float>(x.num) / static_cast<float>(width);
+        resp += 1.0 / static_cast<float>(2*width);
+        resp -= 0.5;
+        resp *= 2.0;
+        return resp;
+    };
+    auto transformada_y = [height](Racional y) -> float {
+        if (y.dem != 1) {
+            std::cout << "nao esperava isso de um ponto" << std::endl;
+        }
+        float resp = static_cast<float>(y.num) / static_cast<float>(height);
+        resp += 1.0 / static_cast<float>(2*height);
+        resp -= 0.5;
+        resp *= 2.0;
+        return resp;
+    };
+
     while (!glfwWindowShouldClose(window)) {
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -1930,8 +2213,8 @@ int main() {
                 is.reserve(diff * 2 * sizeof (unsigned));
                 for (std::size_t i = coisas_dcel.last_size; i < estad.poly.size(); ++i) {
                     auto ponto = estad.poly[i];
-                    ps.push_back(ponto.x);
-                    ps.push_back(ponto.y);
+                    ps.push_back(transformada_x(ponto.x));
+                    ps.push_back(transformada_y(ponto.y));
 
                     ps.push_back(0.788f);
                     ps.push_back(0.682f);
@@ -1987,8 +2270,8 @@ int main() {
                         ps.push_back(2.0f);
                         ps.push_back(2.0f);
                     } else {
-                        ps.push_back(ponto.xy.x);
-                        ps.push_back(ponto.xy.y);
+                        ps.push_back(transformada_x(ponto.xy.x));
+                        ps.push_back(transformada_y(ponto.xy.y));
                     }
 
                     ps.push_back(0.788f);
@@ -2020,18 +2303,18 @@ int main() {
             }
 
             if (estad.estado == Dcel_Data::DCEL_PRONTA) {
-                auto ponto_xy = [window]() -> Ponto {
-                    double xpos {};
-                    double ypos {};
-                    glfwGetCursorPos(window, &xpos, &ypos);
-                    int width {};
-                    int height {};
-                    glfwGetWindowSize(window, &width, &height);
-                    double x {xpos / static_cast<double> (width) * 2. - 1.};
-                    double y {1. - ypos / static_cast<double> (height) * 2.};
-                    return {x, y};
-                };
-                Ponto mouse = ponto_xy();
+                // auto ponto_xy = [window]() -> Ponto {
+                //     double xpos {};
+                //     double ypos {};
+                //     glfwGetCursorPos(window, &xpos, &ypos);
+                //     int width {};
+                //     int height {};
+                //     glfwGetWindowSize(window, &width, &height);
+                //     double x {xpos / static_cast<double> (width) * 2. - 1.};
+                //     double y {1. - ypos / static_cast<double> (height) * 2.};
+                //     return {x, y};
+                // };
+                Ponto mouse = ponto_xy(window);
                 double menor_d_vertice = std::numeric_limits<double>::infinity();
                 std::size_t menor_i_vertice = 0;
                 auto [vs_r, v_iv] = coisas_dcel.dcel_ptr->vec_vertices();
@@ -2136,18 +2419,18 @@ int main() {
             }
 
             if (estad.estado == Dcel_Data::ADICIONANDO_ARESTA) {
-                auto ponto_xy = [window]() -> Ponto {
-                    double xpos {};
-                    double ypos {};
-                    glfwGetCursorPos(window, &xpos, &ypos);
-                    int width {};
-                    int height {};
-                    glfwGetWindowSize(window, &width, &height);
-                    double x {xpos / static_cast<double> (width) * 2. - 1.};
-                    double y {1. - ypos / static_cast<double> (height) * 2.};
-                    return {x, y};
-                };
-                Ponto mouse = ponto_xy();
+                // auto ponto_xy = [window]() -> Ponto {
+                //     double xpos {};
+                //     double ypos {};
+                //     glfwGetCursorPos(window, &xpos, &ypos);
+                //     int width {};
+                //     int height {};
+                //     glfwGetWindowSize(window, &width, &height);
+                //     double x {xpos / static_cast<double> (width) * 2. - 1.};
+                //     double y {1. - ypos / static_cast<double> (height) * 2.};
+                //     return {x, y};
+                // };
+                Ponto mouse = ponto_xy(window);
                 double menor_d = std::numeric_limits<double>::infinity();
                 std::size_t menor_i = 0;
                 auto [vs_r, iv] = coisas_dcel.dcel_ptr->vec_vertices();
@@ -2211,18 +2494,18 @@ int main() {
             }
 
             if (estad.estado == Dcel_Data::ADICIONANDO_VERTICE) {
-                auto ponto_xy = [window]() -> Ponto {
-                    double xpos {};
-                    double ypos {};
-                    glfwGetCursorPos(window, &xpos, &ypos);
-                    int width {};
-                    int height {};
-                    glfwGetWindowSize(window, &width, &height);
-                    double x {xpos / static_cast<double> (width) * 2. - 1.};
-                    double y {1. - ypos / static_cast<double> (height) * 2.};
-                    return {x, y};
-                };
-                Ponto mouse = ponto_xy();
+                // auto ponto_xy = [window]() -> Ponto {
+                //     double xpos {};
+                //     double ypos {};
+                //     glfwGetCursorPos(window, &xpos, &ypos);
+                //     int width {};
+                //     int height {};
+                //     glfwGetWindowSize(window, &width, &height);
+                //     double x {xpos / static_cast<double> (width) * 2. - 1.};
+                //     double y {1. - ypos / static_cast<double> (height) * 2.};
+                //     return {x, y};
+                // };
+                Ponto mouse = ponto_xy(window);
                 double menor_d = std::numeric_limits<double>::infinity();
                 std::size_t menor_i = 0;
                 auto [es_r, iv] = coisas_dcel.dcel_ptr->vec_edges();
@@ -2269,7 +2552,7 @@ int main() {
                             coisas_dcel.coisas_vertice.aresta_idx = menor_i;
                             continue;
                         } else {
-                            double s = sombra_reta_ponto(mouse, {p1, p2});
+                            Racional s = sombra_reta_ponto(mouse, {p1, p2});
 
                             coisas_dcel.dcel_ptr->inclui_vertice_em_aresta(menor_i, s);
                             estad.estado = Dcel_Data::DCEL_PRONTA;
@@ -2287,18 +2570,18 @@ int main() {
             }
 
             if (estad.estado == Dcel_Data::ESPERANDO_ORBITA) {
-                auto ponto_xy = [window]() -> Ponto {
-                    double xpos {};
-                    double ypos {};
-                    glfwGetCursorPos(window, &xpos, &ypos);
-                    int width {};
-                    int height {};
-                    glfwGetWindowSize(window, &width, &height);
-                    double x {xpos / static_cast<double> (width) * 2. - 1.};
-                    double y {1. - ypos / static_cast<double> (height) * 2.};
-                    return {x, y};
-                };
-                Ponto mouse = ponto_xy();
+                // auto ponto_xy = [window]() -> Ponto {
+                //     double xpos {};
+                //     double ypos {};
+                //     glfwGetCursorPos(window, &xpos, &ypos);
+                //     int width {};
+                //     int height {};
+                //     glfwGetWindowSize(window, &width, &height);
+                //     double x {xpos / static_cast<double> (width) * 2. - 1.};
+                //     double y {1. - ypos / static_cast<double> (height) * 2.};
+                //     return {x, y};
+                // };
+                Ponto mouse = ponto_xy(window);
                 double menor_d = std::numeric_limits<double>::infinity();
                 std::size_t menor_i = 0;
                 auto [vs_r, iv] = coisas_dcel.dcel_ptr->vec_vertices();
@@ -2348,18 +2631,18 @@ int main() {
             }
 
             if (estad.estado == Dcel_Data::DELETANDO_ARESTA) {
-                auto ponto_xy = [window]() -> Ponto {
-                    double xpos {};
-                    double ypos {};
-                    glfwGetCursorPos(window, &xpos, &ypos);
-                    int width {};
-                    int height {};
-                    glfwGetWindowSize(window, &width, &height);
-                    double x {xpos / static_cast<double> (width) * 2. - 1.};
-                    double y {1. - ypos / static_cast<double> (height) * 2.};
-                    return {x, y};
-                };
-                Ponto mouse = ponto_xy();
+                // auto ponto_xy = [window]() -> Ponto {
+                //     double xpos {};
+                //     double ypos {};
+                //     glfwGetCursorPos(window, &xpos, &ypos);
+                //     int width {};
+                //     int height {};
+                //     glfwGetWindowSize(window, &width, &height);
+                //     double x {xpos / static_cast<double> (width) * 2. - 1.};
+                //     double y {1. - ypos / static_cast<double> (height) * 2.};
+                //     return {x, y};
+                // };
+                Ponto mouse = ponto_xy(window);
                 double menor_d = std::numeric_limits<double>::infinity();
                 std::size_t menor_i = 0;
                 auto [es_r, iv] = coisas_dcel.dcel_ptr->vec_edges();
@@ -2410,18 +2693,18 @@ int main() {
             }
 
             if (estad.estado == Dcel_Data::DELETANDO_VERTICE) {
-                auto ponto_xy = [window]() -> Ponto {
-                    double xpos {};
-                    double ypos {};
-                    glfwGetCursorPos(window, &xpos, &ypos);
-                    int width {};
-                    int height {};
-                    glfwGetWindowSize(window, &width, &height);
-                    double x {xpos / static_cast<double> (width) * 2. - 1.};
-                    double y {1. - ypos / static_cast<double> (height) * 2.};
-                    return {x, y};
-                };
-                Ponto mouse = ponto_xy();
+                // auto ponto_xy = [window]() -> Ponto {
+                //     double xpos {};
+                //     double ypos {};
+                //     glfwGetCursorPos(window, &xpos, &ypos);
+                //     int width {};
+                //     int height {};
+                //     glfwGetWindowSize(window, &width, &height);
+                //     double x {xpos / static_cast<double> (width) * 2. - 1.};
+                //     double y {1. - ypos / static_cast<double> (height) * 2.};
+                //     return {x, y};
+                // };
+                Ponto mouse = ponto_xy(window);
                 double menor_d = std::numeric_limits<double>::infinity();
                 std::size_t menor_i = 0;
                 auto [vs_r, iv] = coisas_dcel.dcel_ptr->vec_vertices();
@@ -2507,7 +2790,7 @@ int main() {
             glClearColor(base_trabalho.r(), base_trabalho.g(), base_trabalho.b(), 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            std::size_t novos_pontos_aleatorios = 0;
+            std::size_t novos_pontos_aleatorios = 500;
             bool outra_tela = false;
 
             while (estado.estado_delaunay.eventos.size() > 0) {
@@ -2533,7 +2816,7 @@ int main() {
                                 estado.tela = Tela::DCEL_TESTE;
 
                                 auto& estad = estado.estado_dcel_teste;
-                                estad.poly = {Ponto{0.0, 0.0}};
+                                estad.poly = {Ponto{0, 0}};
                                 estad.operacoes.clear();
                                 estad.ponto_adicionado = false;
                                 estad.poligono_fechado = false;
@@ -2561,7 +2844,11 @@ int main() {
 
             if (novos_pontos_aleatorios > 0) {
                 while (novos_pontos_aleatorios --> 0 && !aconteceu_aquilo) {
-                    Ponto p {ok_x(gen), ok_y(gen)};
+                    if (delaunay.dcel->gen() > 2800) {
+                        std::cout << "tudo ok" << std::endl;
+                        std::exit(0);
+                    }
+                    Ponto p {idis_x(gen), idis_y(gen)};
                     bool foi = delaunay.adiciona_ponto(p);
                     if (aconteceu_aquilo) {
                         std::cout << "alerta" << std::endl;
@@ -2570,10 +2857,11 @@ int main() {
                         std::cout << "alerta" << std::endl;
                         std::cout << "alerta" << std::endl;
                         std::cout << "investigar problema que aconteceu" << std::endl;
+                        std::exit(2);
                         break;
                     }
                     while (!foi) {
-                        p = {ok_x(gen), ok_y(gen)};
+                        p = {idis_x(gen), idis_y(gen)};
                         foi = delaunay.adiciona_ponto(p);
                         if (aconteceu_aquilo) {
                             std::cout << "alerta" << std::endl;
@@ -2582,6 +2870,7 @@ int main() {
                             std::cout << "alerta" << std::endl;
                             std::cout << "alerta" << std::endl;
                             std::cout << "investigar problema que aconteceu" << std::endl;
+                            std::exit(2);
                             break;
                         }
                     }
@@ -2607,8 +2896,8 @@ int main() {
                         ps.push_back(2.0f);
                         ps.push_back(2.0f);
                     } else {
-                        ps.push_back(ponto.xy.x);
-                        ps.push_back(ponto.xy.y);
+                        ps.push_back(transformada_x(ponto.xy.x));
+                        ps.push_back(transformada_y(ponto.xy.y));
                     }
                     ps.push_back(cor_ponto.r());
                     ps.push_back(cor_ponto.g());
