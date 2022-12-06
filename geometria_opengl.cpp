@@ -491,7 +491,7 @@ public:
             return;
         }
 
-        std::cout << found->origin->xy.x << ',' << found->origin->xy.y << " -> " << found->twin->origin->xy.x << ',' << found->twin->origin->xy.y << std::endl;
+        // std::cout << found->origin->xy.x << ',' << found->origin->xy.y << " -> " << found->twin->origin->xy.x << ',' << found->twin->origin->xy.y << std::endl;
         ++geracao_atual;
         faces.push_back({nullptr});
 
@@ -1097,7 +1097,7 @@ private:
             Face* base = faces.data();
             faces.reserve(faces.size() + n_faces);
             if (faces.capacity() != faces_cap) {
-                std::cout << "faaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" << std::endl;
+                // std::cout << "faaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" << std::endl;
 
                 for (auto& edge : edges) {
                     if (edge.face) { edge.face = (faces.data()) + (edge.face - base); }
@@ -1109,7 +1109,7 @@ private:
             Vertex* base = vertices.data();
             vertices.reserve(vertices.size() + n_vertices);
             if (vertices.capacity() != vertices_cap) {
-                std::cout << "vaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" << std::endl;
+                // std::cout << "vaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" << std::endl;
 
                 for (auto& edge : edges) {
                     if (edge.origin) { edge.origin = (vertices.data()) + (edge.origin - base); }
@@ -1123,7 +1123,7 @@ private:
             edges.reserve(edges.size() + n_edges);
 
             if (edges.capacity() != edges_cap) {
-                std::cout << "eaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" << std::endl;
+                // std::cout << "eaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" << std::endl;
 
                 for (auto& face : faces) {
                     if (face.edge) { face.edge = (edges.data()) + (face.edge - base); }
@@ -1602,7 +1602,7 @@ struct CoisasDelaunay {
 
         double p_y = std::floor(((p.y + 1.0) / 2.0) * y);
         int i_y = std::min(y, static_cast<int>(p_y));
-        std::cout << "foi adicionado o pixel " << i_x << ' ' << i_y << std::endl;
+        // std::cout << "foi adicionado o pixel " << i_x << ' ' << i_y << std::endl;
 
         double new_x = (((static_cast<double>(i_x)) / x) * 2.0) - 1.0 + (1.0 / x);
         double new_y = (((static_cast<double>(i_y)) / y) * 2.0) - 1.0 + (1.0 / y);
@@ -1620,7 +1620,7 @@ struct CoisasDelaunay {
         pontos.insert(new_p);
 
         triangulacao(new_p);
-        std::cout << "supostamente triangulado" << std::endl;
+        // std::cout << "supostamente triangulado" << std::endl;
 
         return true;
     }
@@ -1630,16 +1630,44 @@ private:
         // (algoritmo incremental)
         auto [resposta, qual_aresta] = dcel->em_alguma_aresta(novo);
         std::size_t face = 1234567890;
+        std::vector<std::size_t> arestas;
         if (resposta) {
             // std::cout << "s pra saber" << std::endl;
             // std::exit(1);
+            auto& vs = dcel->vertices;
             auto& es = dcel->edges;
             auto& fs = dcel->faces;
 
             std::size_t proxima = static_cast<std::size_t>(es[qual_aresta].next - es.data());
+            std::size_t anterior = static_cast<std::size_t>(es[qual_aresta].prev - es.data());
             dcel->deleta_aresta(qual_aresta, false);
 
             face = static_cast<std::size_t>(es[proxima].face - fs.data());
+            if (face == 0) {
+                dcel->reserva_espacos(0, 0, 1);
+                dcel->vertices.push_back(DCEL::Vertex{novo, nullptr});
+                
+                std::size_t v_next = static_cast<std::size_t>(es[proxima].origin - vs.data());
+                std::size_t v_prev = static_cast<std::size_t>(es[anterior].twin->origin - vs.data());
+                std::size_t v_opp = static_cast<std::size_t>(es[anterior].origin - vs.data());
+
+                dcel->novo_inclui_aresta(vs.size() - 1, v_next);
+                dcel->novo_inclui_aresta(vs.size() - 1, v_prev);
+                dcel->novo_inclui_aresta(vs.size() - 1, v_opp);
+
+                arestas = {proxima, anterior};
+            } else {
+                // std::cout << "face do novo ponto: " << face << std::endl;
+                arestas = dcel->indices_das_arestas_de_uma_face(face);
+
+                dcel->reserva_espacos(0, 0, 1);
+                dcel->vertices.push_back(DCEL::Vertex{novo, nullptr});
+                auto vertices = dcel->indices_dos_vertices_de_uma_face(face);
+                for (auto v : vertices) {
+                    dcel->novo_inclui_aresta(dcel->vertices.size() - 1, v);
+                    // std::cout << "incluida aresta entre " << dcel->vertices.size() - 1 << " e " << v << std::endl;
+                }
+            }
         } else {
             face = dcel->qual_face(novo);
             if (face == 123456789) {
@@ -1648,16 +1676,16 @@ private:
                 aconteceu_aquilo = true;
                 return;
             }
-        }
-        std::cout << "face do novo ponto: " << face << std::endl;
-        auto arestas = dcel->indices_das_arestas_de_uma_face(face);
+            // std::cout << "face do novo ponto: " << face << std::endl;
+            arestas = dcel->indices_das_arestas_de_uma_face(face);
 
-        dcel->reserva_espacos(0, 0, 1);
-        dcel->vertices.push_back(DCEL::Vertex{novo, nullptr});
-        auto vertices = dcel->indices_dos_vertices_de_uma_face(face);
-        for (auto v : vertices) {
-            dcel->novo_inclui_aresta(dcel->vertices.size() - 1, v);
-            std::cout << "incluida aresta entre " << dcel->vertices.size() - 1 << " e " << v << std::endl;
+            dcel->reserva_espacos(0, 0, 1);
+            dcel->vertices.push_back(DCEL::Vertex{novo, nullptr});
+            auto vertices = dcel->indices_dos_vertices_de_uma_face(face);
+            for (auto v : vertices) {
+                dcel->novo_inclui_aresta(dcel->vertices.size() - 1, v);
+                // std::cout << "incluida aresta entre " << dcel->vertices.size() - 1 << " e " << v << std::endl;
+            }
         }
 
         std::deque<std::size_t> lista_de_potencialmente_invalidas;
@@ -1678,10 +1706,10 @@ private:
             auto p1 = static_cast<std::size_t>(es[aresta].prev->origin - vs.data());
             auto p2 = static_cast<std::size_t>(es[aresta].twin->prev->origin - vs.data());
             
-            std::cout << "aresta " << aresta;
+            // std::cout << "aresta " << aresta;
             if (intersecao_com_left(vs[p1].xy, vs[p2].xy, vs[p3].xy, vs[p4].xy) == Intersecao::PROPRIA) {
                 if (in_circle(vs[p3].xy, vs[p4].xy, vs[p1].xy, vs[p2].xy) > 0.0) {
-                    std::cout << " precisou ser flipada" << std::endl;
+                    // std::cout << " precisou ser flipada" << std::endl;
                     auto e1 = static_cast<std::size_t>(es[aresta].twin->next - es.data());
                     auto e2 = static_cast<std::size_t>(es[aresta].twin->prev - es.data());
                     lista_de_potencialmente_invalidas.push_back(e1);
@@ -1690,12 +1718,29 @@ private:
                     dcel->deleta_aresta(aresta, false);
                     dcel->inclui_aresta(p1, p2);
                 } else {
-                    std::cout << " ok" << std::endl;
+                    // std::cout << " ok" << std::endl;
                 }
             } else {
-                std::cout << " nao pode ser flipada" << std::endl;
+                // std::cout << " nao pode ser flipada" << std::endl;
             }
         }
+
+        // if (resposta) {
+        for (std::size_t i = 1; i < dcel->faces.size(); ++i) {
+            if (dcel->faces_invalidas.count(i)) {
+                if (i == 0) {
+                    std::cout << "a coisa 1" << std::endl;
+                    aconteceu_aquilo = true;
+                }
+            } else {
+                auto vs = dcel->indices_dos_vertices_de_uma_face(i);
+                if (vs.size() != 3) {
+                    std::cout << "quebrou" << std::endl;
+                    aconteceu_aquilo = true;
+                }
+            }
+        }
+        // }
 
     }
 
