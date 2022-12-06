@@ -629,8 +629,14 @@ public:
         }
 
         Face* found_face = nullptr;
+        
+        std::size_t tentativas = 80000;
         while (!found_face) {
-
+            if (tentativas == 0) {
+                return 123456789;
+            } else {
+                --tentativas;
+            }
             Edge* e = v1->edge;
             Edge* start = e;
             Edge* last = nullptr;
@@ -681,6 +687,7 @@ public:
         }
         return static_cast<std::size_t>(found_face - faces.data());
     }
+
     std::pair<bool, std::size_t> em_alguma_aresta(Ponto p) {
         for (std::size_t i = 0; i < edges.size(); i += 2) {
             if (edges_invalidas.count(i)) {
@@ -1486,6 +1493,8 @@ enum class EntradaDelaunay {
     TROCANDO_ARESTA,
 };
 
+bool aconteceu_aquilo = false;
+
 struct CoisasDelaunay {
     CoisasDelaunay(std::string imagem) : x{0}, y{0}, n{0} {
         glGenBuffers(1, &extra_vbo);
@@ -1593,7 +1602,7 @@ struct CoisasDelaunay {
 
         double p_y = std::floor(((p.y + 1.0) / 2.0) * y);
         int i_y = std::min(y, static_cast<int>(p_y));
-        // std::cout << "foi adicionado o pixel " << i_x << ' ' << i_y << std::endl;
+        std::cout << "foi adicionado o pixel " << i_x << ' ' << i_y << std::endl;
 
         double new_x = (((static_cast<double>(i_x)) / x) * 2.0) - 1.0 + (1.0 / x);
         double new_y = (((static_cast<double>(i_y)) / y) * 2.0) - 1.0 + (1.0 / y);
@@ -1605,30 +1614,89 @@ struct CoisasDelaunay {
             return false;
         }
         Ponto new_p = {new_x, new_y};
-
+        if (pontos.count(new_p)) {
+            return false;
+        }
         pontos.insert(new_p);
 
-        triangulacao();
+        triangulacao(new_p);
+        std::cout << "supostamente triangulado" << std::endl;
 
         return true;
     }
 private:
-    void triangulacao() {
-        std::vector<Ponto> pontos_vec(pontos.begin(), pontos.end());
-        for (auto& p : pontos_vec) {
-            p.x *= 10000000.0;
-            p.y *= 10000000.0;
-        }
-        dcel = std::make_unique<DCEL>(DCEL::EnganaCompilador{}, pontos_vec);
-        delaunay_div_conq_recursivo(0, pontos_vec.size());
+    void triangulacao(Ponto novo) {
+        // adiciona novo ponto e arruma a triangulação
+        // (algoritmo incremental)
+        auto [resposta, qual_aresta] = dcel->em_alguma_aresta(novo);
+        std::size_t face = 1234567890;
+        if (resposta) {
+            // std::cout << "s pra saber" << std::endl;
+            // std::exit(1);
+            auto& es = dcel->edges;
+            auto& fs = dcel->faces;
 
-        for (auto& v : dcel->vertices) {
-            v.xy.x /= 10000000.0;
-            v.xy.y /= 10000000.0;
+            std::size_t proxima = static_cast<std::size_t>(es[qual_aresta].next - es.data());
+            dcel->deleta_aresta(qual_aresta, false);
+
+            face = static_cast<std::size_t>(es[proxima].face - fs.data());
+        } else {
+            face = dcel->qual_face(novo);
+            if (face == 123456789) {
+                // isso significa que houve um erro
+                std::cout << "deu o problema com o ponto " << novo.x << ' ' << novo.y << std::endl;
+                aconteceu_aquilo = true;
+                return;
+            }
+        }
+        std::cout << "face do novo ponto: " << face << std::endl;
+        auto arestas = dcel->indices_das_arestas_de_uma_face(face);
+
+        dcel->reserva_espacos(0, 0, 1);
+        dcel->vertices.push_back(DCEL::Vertex{novo, nullptr});
+        auto vertices = dcel->indices_dos_vertices_de_uma_face(face);
+        for (auto v : vertices) {
+            dcel->novo_inclui_aresta(dcel->vertices.size() - 1, v);
+            std::cout << "incluida aresta entre " << dcel->vertices.size() - 1 << " e " << v << std::endl;
         }
 
-        dcel->geracao_atual = pontos.size();
-        estado = EstadoDelaunay::OK;
+        std::deque<std::size_t> lista_de_potencialmente_invalidas;
+        for (auto aresta : arestas) {
+            lista_de_potencialmente_invalidas.push_back(aresta);
+        }
+
+        while (lista_de_potencialmente_invalidas.size() > 0) {
+            std::size_t aresta = lista_de_potencialmente_invalidas.front();
+            lista_de_potencialmente_invalidas.pop_front();
+
+            auto& vs = dcel->vertices;
+            auto& es = dcel->edges;
+
+            auto p3 = static_cast<std::size_t>(es[aresta].origin - vs.data());
+            auto p4 = static_cast<std::size_t>(es[aresta].twin->origin - vs.data());
+
+            auto p1 = static_cast<std::size_t>(es[aresta].prev->origin - vs.data());
+            auto p2 = static_cast<std::size_t>(es[aresta].twin->prev->origin - vs.data());
+            
+            std::cout << "aresta " << aresta;
+            if (intersecao_com_left(vs[p1].xy, vs[p2].xy, vs[p3].xy, vs[p4].xy) == Intersecao::PROPRIA) {
+                if (in_circle(vs[p3].xy, vs[p4].xy, vs[p1].xy, vs[p2].xy) > 0.0) {
+                    std::cout << " precisou ser flipada" << std::endl;
+                    auto e1 = static_cast<std::size_t>(es[aresta].twin->next - es.data());
+                    auto e2 = static_cast<std::size_t>(es[aresta].twin->prev - es.data());
+                    lista_de_potencialmente_invalidas.push_back(e1);
+                    lista_de_potencialmente_invalidas.push_back(e2);
+
+                    dcel->deleta_aresta(aresta, false);
+                    dcel->inclui_aresta(p1, p2);
+                } else {
+                    std::cout << " ok" << std::endl;
+                }
+            } else {
+                std::cout << " nao pode ser flipada" << std::endl;
+            }
+        }
+
     }
 
     void inicia() {
@@ -1649,195 +1717,6 @@ private:
             {lim_inf, lim_inf}
         });
         dcel->inclui_aresta(0, 2);
-
-    }
-
-    bool delaunay_div_conq_recursivo(std::size_t i, std::size_t j) {
-        // std::cout << "chamada com (i,j): " << i << ' ' << j << std::endl;
-        if (j - i <= 2) {
-
-            if (j - i == 1) {
-
-            } else if (j - i == 2) {
-                if (!dcel->novo_inclui_aresta(i, i + 1)) {
-                    std::cout << "mas que 1" << std::endl;
-                    return false;
-                }
-            }
-            return true;
-        }
-        std::size_t m = (i + j + 1) / 2;
-        if (!delaunay_div_conq_recursivo(i, m)) return false;
-        if (!delaunay_div_conq_recursivo(m, j)) return false;
-        std::size_t b_l_i = m - 1;
-        std::size_t b_r_i = m;
-
-        bool descendo_esquerda = true;
-        bool naodeu_esquerda = false;
-        bool naodeu_direita = false;
-        DCEL::Vertex* v_l = &dcel->vertices[b_l_i];
-        DCEL::Vertex* v_r = &dcel->vertices[b_r_i];
-        DCEL::Vertex* v_prox_l = nullptr;
-        DCEL::Edge* v_prox_l_edge = nullptr;
-        DCEL::Vertex* v_prox_r = nullptr;
-        DCEL::Edge* v_prox_r_edge = nullptr;
-        if (v_l->edge) {
-            DCEL::Edge* e = v_l->edge;
-            DCEL::Edge* start = e;
-            do {
-                if (e->face == dcel->faces.data() && e->twin->origin->xy.y < v_l->xy.y) {
-                    v_prox_l_edge = e;
-                    v_prox_l = e->twin->origin;
-                    break;
-                }
-                e = e->prev->twin;
-            } while (e->origin == v_l && e != start);
-            if (!v_prox_l) {
-                do {
-                    if (e->face == dcel->faces.data()) {
-                        v_prox_l_edge = e;
-                        v_prox_l = e->twin->origin;
-                        break;
-                    }
-                    e = e->prev->twin;
-                } while (e->origin == v_l && e != start);
-            }
-
-        } if (!v_prox_l) {
-            std::cout << "mas como pode? " << v_l - dcel->vertices.data() << std::endl;
-            std::fstream arq("caso", std::ios::out);
-            if (arq.is_open()) {
-                arq << dcel->vertices.size();
-                for (std::size_t k = 0; k < dcel->vertices.size(); ++k) {
-                    arq << dcel->vertices[k].xy.x << ' ' << dcel->vertices[k].xy.y << std::endl;
-                }
-                arq.close();
-            }
-
-            DCEL::Edge* e = v_l->edge;
-            DCEL::Edge* start = e;
-            do {
-                std::cout << e->face - dcel->faces.data() << std::endl;
-
-                e = e->prev->twin;
-            } while (e->origin == v_l && e != start);
-            std::cout << "-------" << std::endl;
-            return false;
-        }
-        if (v_r->edge) {
-            DCEL::Edge* e = v_r->edge;
-            DCEL::Edge* start = e;
-            do {
-                if (e->face == dcel->faces.data() && e->prev->origin->xy.y < v_r->xy.y) {
-                    v_prox_r_edge = e;
-                    v_prox_r = e->prev->origin;
-                    break;
-                }
-                e = e->prev->twin;
-            } while (e->origin == v_r && e != start);
-            if (!v_prox_r) {
-                do {
-                    if (e->face == dcel->faces.data()) {
-                        v_prox_r_edge = e;
-                        v_prox_r = e->prev->origin;
-                        break;
-                    }
-                    e = e->prev->twin;
-                } while (e->origin == v_r && e != start);
-            }
-        }
-        if (v_prox_l && v_prox_r) {
-            while (!(naodeu_esquerda && naodeu_direita)) {
-
-                if (descendo_esquerda) {
-                    if (left(v_r->xy, v_l->xy, v_prox_l->xy)) {
-
-                        v_prox_l_edge = v_prox_l_edge->next;
-                        v_l = v_prox_l_edge->origin;
-                        v_prox_l = v_prox_l_edge->twin->origin;
-                        naodeu_esquerda = false;
-                        naodeu_direita = false;
-                        continue;
-                    }
-                    descendo_esquerda = false;
-                    naodeu_esquerda = true;
-                } else {
-                    if (left(v_prox_r->xy, v_r->xy, v_l->xy)) {
-
-                        v_prox_r_edge = v_prox_r_edge->prev;
-                        v_r = v_prox_r_edge->origin;
-                        v_prox_r = v_prox_r_edge->prev->origin;
-                        naodeu_esquerda = false;
-                        naodeu_direita = false;
-                        continue;
-                    }
-                    descendo_esquerda = true;
-                    naodeu_direita = true;
-                }
-            }
-        } else if (!v_prox_r && v_prox_l) {
-            while (left(v_r->xy, v_l->xy, v_prox_l->xy)) {
-
-                v_prox_l_edge = v_prox_l_edge->next;
-                v_l = v_prox_l_edge->origin;
-                v_prox_l = v_prox_l_edge->twin->origin;
-            }
-        } else {
-            std::cerr << "deu errado?" << std::endl;
-        }
-        v_prox_l_edge = v_prox_l_edge->prev;
-        v_prox_l = v_prox_l_edge->origin;
-        if (v_prox_r_edge) {
-
-            v_prox_r = v_prox_r_edge->twin->origin;
-        }
-        if (!dcel->novo_inclui_aresta(static_cast<std::size_t>(v_l - dcel->vertices.data()), static_cast<std::size_t>(v_r - dcel->vertices.data()))) {
-            std::cout << "mas que2" << std::endl;
-            return false;
-        }
-
-        while (left(v_prox_l->xy, v_l->xy, v_r->xy) || (v_prox_r && left(v_l->xy, v_r->xy, v_prox_r->xy))) {
-            while ( left(v_prox_l_edge->twin->prev->origin->xy, v_l->xy, v_r->xy) &&
-                    in_circle(v_l->xy, v_r->xy, v_prox_l->xy, v_prox_l_edge->twin->prev->origin->xy) > 0) {
-                DCEL::Edge* prox = v_prox_l_edge->twin->prev;
-
-                dcel->interno_deleta_aresta(static_cast<std::size_t>(v_prox_l_edge - dcel->edges.data()), false);
-                v_prox_l_edge = prox;
-                v_prox_l = v_prox_l_edge->origin;
-            }
-            if (v_prox_r_edge) {
-                while ( left(v_l->xy, v_r->xy, v_prox_r_edge->twin->next->twin->origin->xy) &&
-                        in_circle(v_l->xy, v_r->xy, v_prox_r->xy, v_prox_r_edge->twin->next->twin->origin->xy) > 0) {
-                    DCEL::Edge* prox = v_prox_r_edge->twin->next;
-
-                    dcel->interno_deleta_aresta(static_cast<std::size_t>(v_prox_r_edge - dcel->edges.data()), false);
-                    v_prox_r_edge = prox;
-                    v_prox_r = v_prox_r_edge->twin->origin;
-                }
-            }
-            if (!v_prox_r_edge || !left(v_l->xy, v_r->xy, v_prox_r->xy) || in_circle(v_l->xy, v_r->xy, v_prox_l->xy, v_prox_r->xy) <= 0) {
-                v_prox_l_edge = v_prox_l_edge->prev;
-
-                if (!dcel->novo_inclui_aresta(static_cast<std::size_t>(v_prox_l - dcel->vertices.data()), static_cast<std::size_t>(v_r - dcel->vertices.data()))) {
-                    std::cout << "mas que3" << std::endl;
-                    return false;
-                }
-                v_l = v_prox_l_edge->twin->origin;
-                v_prox_l = v_prox_l_edge->origin;
-            } else {
-                v_prox_r_edge = v_prox_r_edge->next;
-
-                if (!dcel->novo_inclui_aresta(static_cast<std::size_t>(v_l - dcel->vertices.data()), static_cast<std::size_t>(v_prox_r - dcel->vertices.data()))) {
-                    std::cout << "mas que4" << std::endl;
-                    return false;
-                }
-                v_r = v_prox_r_edge->origin;
-                v_prox_r = v_prox_r_edge->twin->origin;
-            }
-
-        }
-
-        return true;
 
     }
 
@@ -2170,7 +2049,7 @@ int main() {
                     estad.operacoes.pop_front();
                     if (op.op == Dcel_Op::ENCONTRAR_FACE) {
 
-                        std::cout << "ala ó" << std::endl;
+                        std::cout << "clicado no ponto " << mouse.x << ' ' << mouse.y << std::endl;
                         auto a = coisas_dcel.dcel_ptr->qual_face(op.args.ponto);
                         std::cout << "Indice da face: " << a << std::endl;
                     } else if (op.op == Dcel_Op::PISCAR_FACE) {
@@ -2629,12 +2508,30 @@ int main() {
             if (outra_tela) continue;
 
             if (novos_pontos_aleatorios > 0) {
-                while (novos_pontos_aleatorios --> 0) {
+                while (novos_pontos_aleatorios --> 0 && !aconteceu_aquilo) {
                     Ponto p {ok_x(gen), ok_y(gen)};
                     bool foi = delaunay.adiciona_ponto(p);
+                    if (aconteceu_aquilo) {
+                        std::cout << "alerta" << std::endl;
+                        std::cout << "alerta" << std::endl;
+                        std::cout << "alerta" << std::endl;
+                        std::cout << "alerta" << std::endl;
+                        std::cout << "alerta" << std::endl;
+                        std::cout << "investigar problema que aconteceu" << std::endl;
+                        break;
+                    }
                     while (!foi) {
                         p = {ok_x(gen), ok_y(gen)};
                         foi = delaunay.adiciona_ponto(p);
+                        if (aconteceu_aquilo) {
+                            std::cout << "alerta" << std::endl;
+                            std::cout << "alerta" << std::endl;
+                            std::cout << "alerta" << std::endl;
+                            std::cout << "alerta" << std::endl;
+                            std::cout << "alerta" << std::endl;
+                            std::cout << "investigar problema que aconteceu" << std::endl;
+                            break;
+                        }
                     }
                 }
             }
