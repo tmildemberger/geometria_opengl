@@ -880,15 +880,7 @@ public:
             } else {
                 if (area_orientada(e->origin->xy, e->twin->origin->xy, p) == 0) {
                     e = e->next;
-                    // if (dist(e->next->origin->xy, p) < dist(e->origin->xy, p)) {
-                    //     e = e->next;
-                    // } else {
-                    //     e = e->twin->next;
-                    // }
-                    // std::cout << "colinear em qual_triangulo" << std::endl;
-                    // return 123456789;
-                }
-                if (!left(e->origin->xy, e->twin->origin->xy, p)) {
+                } else if (!left(e->origin->xy, e->twin->origin->xy, p)) {
                     e = e->twin;
                 } else {
                     e = e->next;
@@ -920,6 +912,50 @@ public:
             }
         }
         return {false, 0};
+    }
+    
+    std::pair<bool, std::size_t> em_alguma_aresta_eficiente(Ponto p) {
+        if (!vertice_valido) {
+            return {false, 0};
+        }
+
+        Face* found_face = nullptr;
+        
+        std::size_t tentativas = 80000;
+        Edge* e = vertice_valido->edge;
+        if (e->face == faces.data()) {
+            e = e->twin;
+        }
+        while (true) {
+            if (tentativas == 0) {
+                std::cout << "em_alguma_aresta_eficiente desistiu" << std::endl;
+                return {false, 0};
+            } else {
+                --tentativas;
+            }
+            auto& v1 = e->origin->xy;
+            auto& v2 = e->twin->origin->xy;
+            auto& v_op = e->prev->origin->xy;
+            auto k = static_cast<std::size_t>(e - edges.data());
+            if (area_orientada(v1, v2, p) == 0 &&
+                left(v2, v_op, p) &&
+                left(v_op, v1, p)) {
+                return {true, k};
+            } else if (left(v1, v2, p) &&
+                left(v2, v_op, p) &&
+                left(v_op, v1, p)) {
+                vertice_valido = e->origin;
+                return {false, k};
+            } else {
+                if (area_orientada(v1, v2, p) == 0) {
+                    e = e->next;
+                } else if (!left(e->origin->xy, e->twin->origin->xy, p)) {
+                    e = e->twin;
+                } else {
+                    e = e->next;
+                }
+            }
+        }
     }
 
     std::pair<std::reference_wrapper<const std::vector<Vertex>>, const std::unordered_set<std::size_t>> vec_vertices() {
@@ -1734,10 +1770,27 @@ enum class EntradaDelaunay {
     TROCANDO_ARESTA,
 };
 
+struct Img {
+    Img(std::string imagem) {
+        image_data = stbi_load(imagem.c_str(), &x, &y, &n, 0);
+        if (!image_data) {
+            std::cerr << "nao carregou imagem \"" << imagem << "\"" << std::endl;
+            std::exit(1);
+        }
+    }
+    ~Img() {
+        stbi_image_free(image_data);
+    }
+    int x;
+    int y;
+    int n;
+    unsigned char* image_data;
+};
+
 bool aconteceu_aquilo = false;
 
 struct CoisasDelaunay {
-    CoisasDelaunay(std::string imagem) : x{0}, y{0}, n{0} {
+    CoisasDelaunay(Img& imagem) : img{imagem} {
         glGenBuffers(1, &extra_vbo);
         glBindBuffer(GL_ARRAY_BUFFER, extra_vbo);
         glBufferData(GL_ARRAY_BUFFER, 128*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
@@ -1787,23 +1840,21 @@ struct CoisasDelaunay {
         triangle_count = 0;
         last_gen = 0;
 
-        image_data = stbi_load(imagem.c_str(), &x, &y, &n, 0);
-        if (!image_data) {
-            std::cerr << "nao carregou imagem \"" << imagem << "\"" << std::endl;
-            std::exit(1);
-        }
-        if (n != 3 || x != y) {
-            std::cout << "que estranho " << x << ' ' << y << ' ' << n << std::endl;
-        }
+        // image_data = stbi_load(imagem.c_str(), &x, &y, &n, 0);
+        // if (!image_data) {
+        //     std::cerr << "nao carregou imagem \"" << imagem << "\"" << std::endl;
+        //     std::exit(1);
+        // }
+        // if (n != 3 || x != y) {
+        //     std::cout << "que estranho " << x << ' ' << y << ' ' << n << std::endl;
+        // }
         inicia();
     }
     ~CoisasDelaunay() {
-        stbi_image_free(image_data);
+        // stbi_image_free(image_data);
     }
 
-    void reset(std::string imagem) {
-
-        stbi_image_free(image_data);
+    void reset() {
         mostrando_linhas = false;
         estado = EstadoDelaunay::OK;
         estado_entrada = EntradaDelaunay::NORMAL;
@@ -1813,11 +1864,6 @@ struct CoisasDelaunay {
         last_gen = 0;
         dcel.reset();
 
-        image_data = stbi_load(imagem.c_str(), &x, &y, &n, 0);
-        if (!image_data) {
-            std::cerr << "nao carregou imagem \"" << imagem << "\"" << std::endl;
-            std::exit(1);
-        }
         inicia();
     }
 
@@ -1832,11 +1878,66 @@ struct CoisasDelaunay {
         // std::cout << p.x << ' ' << p.y << " -- " << p_x << ' ' << p_y << std::endl;
         // std::cout << "foi buscada a cor do pixel " << i_x << ' ' << i_y << std::endl;
 
-        unsigned char r = image_data[i_y * y * n + i_x * n + 0];
-        unsigned char g = image_data[i_y * y * n + i_x * n + 1];
-        unsigned char b = image_data[i_y * y * n + i_x * n + 2];
+        unsigned char r = img.image_data[(img.y - 1 - i_y) * img.x * img.n + i_x * img.n + 0];
+        unsigned char g = img.image_data[(img.y - 1 - i_y) * img.x * img.n + i_x * img.n + 1];
+        unsigned char b = img.image_data[(img.y - 1 - i_y) * img.x * img.n + i_x * img.n + 2];
 
         return Cor(r, g, b);
+    }
+    
+    Ponto ponto_com_maior_erro(const std::vector<float>& conteudo_da_tela) {
+        auto width = static_cast<std::size_t>(img.x);
+        auto height = static_cast<std::size_t>(img.y);
+        auto cs = static_cast<std::size_t>(img.n);
+        Ponto maior = {};
+        float maior_erro = -std::numeric_limits<float>::infinity();
+        for (std::size_t linha = 1; linha < height - 1; ++linha) {
+            for (std::size_t coluna = 1; coluna < width - 1; ++coluna) {
+                Ponto candidato = Ponto{static_cast<std::int64_t>(coluna), static_cast<std::int64_t>(linha)};
+                if (pontos.count(candidato)) {
+                    continue;
+                }
+                // long val = 4 * img.image_data[cs*((height - 1 - linha) * width + coluna)];
+                // val += img.image_data[cs*((height - 1 - linha - 1) * width + coluna + 1)];
+                // val += 2 * img.image_data[cs*((height - 1 - linha) * width + coluna + 1)];
+                // val += img.image_data[cs*((height - 1 - linha + 1) * width + coluna + 1)];
+                // val += 2 * img.image_data[cs*((height - 1 - linha - 1) * width + coluna)];
+                // val += 2 * img.image_data[cs*((height - 1 - linha + 1) * width + coluna)];
+                // val += img.image_data[cs*((height - 1 - linha - 1) * width + coluna - 1)];
+                // val += 2 * img.image_data[cs*((height - 1 - linha) * width + coluna - 1)];
+                // val += img.image_data[cs*((height - 1 - linha + 1) * width + coluna - 1)];
+                // long val = -8 * img.image_data[cs*((height - 1 - linha) * width + coluna)];
+                // val += img.image_data[cs*((height - 1 - linha - 1) * width + coluna + 1)];
+                // val += img.image_data[cs*((height - 1 - linha) * width + coluna + 1)];
+                // val += img.image_data[cs*((height - 1 - linha + 1) * width + coluna + 1)];
+                // val += img.image_data[cs*((height - 1 - linha - 1) * width + coluna)];
+                // val += img.image_data[cs*((height - 1 - linha + 1) * width + coluna)];
+                // val += img.image_data[cs*((height - 1 - linha - 1) * width + coluna - 1)];
+                // val += img.image_data[cs*((height - 1 - linha) * width + coluna - 1)];
+                // val += img.image_data[cs*((height - 1 - linha + 1) * width + coluna - 1)];
+
+                float diff = static_cast<float>(img.image_data[cs*((height - 1 - linha) * width + coluna)]) / 255.;
+                diff -= conteudo_da_tela[4*(linha * width + coluna)];
+                float diff_ok = std::abs(diff);
+                // float diff_ok = static_cast<float>(val) / (255.0 * 16.0);
+                // diff_ok -= conteudo_da_tela[4*(linha * width + coluna)];
+                // diff_ok = diff_ok*diff_ok;
+                // diff_ok = diff_ok*diff_ok;
+                if (diff_ok > maior_erro) {
+                    maior_erro = diff_ok;
+                    maior = candidato;
+                }
+            }
+        }
+        auto linha = static_cast<std::size_t>(maior.x.num);
+        auto coluna = static_cast<std::size_t>(maior.y.num);
+        if (conteudo_da_tela[4*(linha * width + coluna)] != conteudo_da_tela[4*(linha * width + coluna)+1] || conteudo_da_tela[4*(linha * width + coluna)] != conteudo_da_tela[4*(linha * width + coluna)+2] || conteudo_da_tela[4*(linha * width + coluna)+1] != conteudo_da_tela[4*(linha * width + coluna)+2]) {
+            std::cout << "ue " << conteudo_da_tela[4*(linha * width + coluna)] << ' ' << conteudo_da_tela[4*(linha * width + coluna)+1] << ' ' << conteudo_da_tela[4*(linha * width + coluna)+2] << std::endl;
+        }
+        if (pontos.count(maior)) {
+            std::cout << "isso com certeza esta errado" << std::endl;
+        }
+        return maior;
     }
 
     bool adiciona_ponto(Ponto p) {
@@ -1874,12 +1975,16 @@ private:
     void triangulacao(Ponto novo) {
         // adiciona novo ponto e arruma a triangulação
         // (algoritmo incremental)
-        auto [resposta, qual_aresta] = dcel->em_alguma_aresta(novo);
+        // auto [resposta, qual_aresta] = dcel->em_alguma_aresta(novo);
+        auto [resposta, qual_aresta] = dcel->em_alguma_aresta_eficiente(novo);
+        // if (resposta != resposta_ef) {
+        //     std::cout << "problema na eficiencia" << std::endl;
+        // }
         // std::size_t face = 1234567890;
         std::vector<std::size_t> arestas;
-        int caminho = 0;
-        std::deque<std::size_t> lista_de_potencialmente_invalidas;
-        bool quebrou = false;
+        // int caminho = 0;
+        // std::deque<std::size_t> lista_de_potencialmente_invalidas;
+        // bool quebrou = false;
         if (resposta) {
             // std::cout << "s pra saber" << std::endl;
             // std::exit(1);
@@ -1898,7 +2003,7 @@ private:
 
             std::size_t outra_face = static_cast<std::size_t>(es[qual_aresta].twin->face - fs.data());
             if (outra_face == 0) {
-                caminho = 1;
+                // caminho = 1;
                 
                 dcel->deleta_aresta(qual_aresta, false);
                 dcel->reserva_espacos(0, 0, 1);
@@ -1918,7 +2023,7 @@ private:
 
                 arestas = {proxima, anterior};
             } else {
-                caminho = 2;
+                // caminho = 2;
                 dcel->deleta_aresta(qual_aresta, false);
                 std::size_t face = static_cast<std::size_t>(es[proxima].face - fs.data());
                 // quebrou = true;
@@ -1937,7 +2042,7 @@ private:
                 }
             }
         } else {
-            caminho = 3;
+            // caminho = 3;
             std::size_t face = dcel->qual_triangulo(novo);
             if (face == 123456789) {
                 // isso significa que houve um erro
@@ -1957,7 +2062,7 @@ private:
             }
         }
 
-        // std::deque<std::size_t> lista_de_potencialmente_invalidas;
+        std::deque<std::size_t> lista_de_potencialmente_invalidas;
         for (auto aresta : arestas) {
             lista_de_potencialmente_invalidas.push_back(aresta);
         }
@@ -1996,54 +2101,51 @@ private:
 
         // if (resposta) {
         // bool quebrou = false;
-        for (std::size_t i = 1; i < dcel->faces.size(); ++i) {
-            if (dcel->faces_invalidas.count(i)) {
-                if (i == 0) {
-                    std::cout << "a coisa 1" << std::endl;
-                    aconteceu_aquilo = true;
-                }
-            } else {
-                auto vs = dcel->indices_dos_vertices_de_uma_face(i);
-                if (vs.size() != 3) {
-                    quebrou = true;
-                    std::cout << "quebrou" << std::endl;
-                    aconteceu_aquilo = true;
-                }
-            }
-        }
+        // for (std::size_t i = 1; i < dcel->faces.size(); ++i) {
+        //     if (dcel->faces_invalidas.count(i)) {
+        //         if (i == 0) {
+        //             std::cout << "a coisa 1" << std::endl;
+        //             aconteceu_aquilo = true;
+        //         }
+        //     } else {
+        //         auto vs = dcel->indices_dos_vertices_de_uma_face(i);
+        //         if (vs.size() != 3) {
+        //             quebrou = true;
+        //             std::cout << "quebrou" << std::endl;
+        //             aconteceu_aquilo = true;
+        //         }
+        //     }
+        // }
 // aqui:
-        if (quebrou) {
-            aconteceu_aquilo = true;
-            std::cout << "quebrou caminho " << caminho << std::endl;
-            std::cout << "deu o problema com o ponto " << novo.x << ' ' << novo.y << std::endl;
-        }
+        // if (quebrou) {
+        //     aconteceu_aquilo = true;
+        //     std::cout << "quebrou caminho " << caminho << std::endl;
+        //     std::cout << "deu o problema com o ponto " << novo.x << ' ' << novo.y << std::endl;
+        // }
         // }
 
     }
 
     void inicia() {
         pontos.insert({
-            {0    , 0    },
-            {x - 1, 0    },
-            {x - 1, x - 1},
-            {0    , x - 1}
+            {0        , 0        },
+            {img.x - 1, 0        },
+            {img.x - 1, img.y - 1},
+            {0        , img.y - 1}
         });
         dcel = std::make_unique<DCEL>(std::vector<Ponto>{
-            {0    , 0    },
-            {x - 1, 0    },
-            {x - 1, x - 1},
-            {0    , x - 1},
-            {0    , 0    }
+            {0        , 0        },
+            {img.x - 1, 0        },
+            {img.x - 1, img.y - 1},
+            {0        , img.y - 1},
+            {0        , 0        }
         });
         dcel->inclui_aresta(0, 2);
-        dcel->reserva_espacos(2*5000, 3*5000, 5000);
+        dcel->reserva_espacos(2*7000, 3*7000, 7000);
     }
 
 public:
-    int x;
-    int y;
-    int n;
-    unsigned char* image_data;
+    Img& img;
 
     unsigned vbo;
     unsigned vao;
@@ -2071,14 +2173,27 @@ const Cor cor_dly {"#4d9184"};
 const Cor base_trabalho {"#30272b"};
 const Cor cor_trabalho {"#87914d"};
 
-int main() {
+int main(int argc, char* argv[]) {
     if ((sizeof (long long)) != (sizeof(std::int64_t))) {
         std::cout << "o programa nao roda nessa plataforma" << std::endl;
         std::exit(257);
     }
+    std::string nome_imagem;
+    if (argc == 1) {
+        nome_imagem = "teste0.bmp";
+    } else {
+        nome_imagem = argv[1];
+    }
+    Img imagem = Img(nome_imagem);
+
+    const std::int64_t width = imagem.x;
+    const std::int64_t height = imagem.y;
+    std::cout << width << ' ' << height << std::endl;
+
     GLFW::Session session {};
     GLFW::Window::options opts;
-    opts.window_width = 600;
+    opts.window_width = width;
+    opts.window_height = height;
     opts.version_major = 3;
     opts.version_minor = 3;
     opts.decorated = 1;
@@ -2153,20 +2268,10 @@ int main() {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 16*1024*sizeof (unsigned), nullptr, GL_DYNAMIC_DRAW);
 
     glBindVertexArray(0);
-    std::size_t mano = 0;
-    std::size_t atividade_size = 0;
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis_x(-1000.0, 1000.0);
-    std::uniform_real_distribution<> dis_y(-1000.0, 1000.0);
 
-    std::uniform_real_distribution<> ok_x(-1.0, 1.0);
-    std::uniform_real_distribution<> ok_y(-1.0, 1.0);
-
-    CoisasDelaunay delaunay {"teste0.bmp"};
-
-    const std::int64_t width = opts.window_width;
-    const std::int64_t height = opts.window_height;
+    CoisasDelaunay delaunay {imagem};
 
     estado.width = width;
     estado.height = height;
@@ -2194,6 +2299,104 @@ int main() {
         resp *= 2.0;
         return resp;
     };
+
+    auto atualiza_dcel = [&]() {
+        auto [verts_r, v_invs] = delaunay.dcel->vec_vertices();
+        auto [edges_r, e_invs] = delaunay.dcel->vec_edges();
+        auto [faces_r, f_invs] = delaunay.dcel->vec_faces();
+
+        auto& verts = verts_r.get();
+        auto& edges = edges_r.get();
+        auto& faces = faces_r.get();
+
+        std::vector<float> ps {};
+        ps.reserve(verts.size() * 5 * sizeof (float));
+        for (std::size_t i = 0; i < verts.size(); ++i) {
+            auto ponto = verts[i];
+            auto cor_ponto = delaunay.encontra_cor(ponto.xy);
+            if (v_invs.count(i)) {
+                ps.push_back(2.0f);
+                ps.push_back(2.0f);
+            } else {
+                ps.push_back(transformada_x(ponto.xy.x));
+                ps.push_back(transformada_y(ponto.xy.y));
+            }
+            ps.push_back(cor_ponto.r());
+            ps.push_back(cor_ponto.g());
+            ps.push_back(cor_ponto.b());
+        }
+
+        std::vector<unsigned> is {};
+        is.reserve((edges.size() / 2) * sizeof (unsigned));
+        for (std::size_t i = 0; i < (edges.size() / 2); ++i) {
+            if (e_invs.count(2*i)) {
+                is.push_back(65535);
+                is.push_back(65535);
+            } else {
+                unsigned p1 = static_cast<unsigned>(edges[2*i].origin - &verts[0]);
+                unsigned p2 = static_cast<unsigned>(edges[2*i + 1].origin - &verts[0]);
+                is.push_back(p1);
+                is.push_back(p2);
+            }
+        }
+
+        glBindVertexArray(delaunay.vao);
+        glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * sizeof (float)), ps.data());
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
+
+        std::vector<unsigned> fs {};
+        fs.reserve(faces.size() * 3 * sizeof (unsigned));
+        for (std::size_t i = 1; i < faces.size(); ++i) {
+            if (f_invs.count(i)) {
+                fs.push_back(65535);
+                fs.push_back(65535);
+                fs.push_back(65535);
+            } else {
+                auto vs = delaunay.dcel->indices_dos_vertices_de_uma_face(i);
+                if (vs.size() != 3) {
+                    std::cerr << "aviso: vai dar errado" << std::endl;
+                }
+                for (auto v : vs) {
+                    unsigned p = static_cast<unsigned>(v);
+                    fs.push_back(p);
+                }
+            }
+        }
+        glBindVertexArray(delaunay.faces_vao);
+        glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(fs.size() * sizeof (unsigned)), fs.data());
+        delaunay.edge_count = edges.size() / 2;
+        delaunay.last_size = verts.size();
+        delaunay.triangle_count = faces.size() - 1;
+
+        delaunay.last_gen = delaunay.dcel->gen();
+    };
+
+    std::vector<float> conteudo_da_tela(static_cast<std::size_t>(width*height*4));
+    
+    unsigned int fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture);
+    
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 16, GL_RGBA, width, height, GL_TRUE);
+
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, texture, 0);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "algo nao deu certo" << std::endl;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     while (!glfwWindowShouldClose(window)) {
 
@@ -2809,6 +3012,7 @@ int main() {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             std::size_t novos_pontos_aleatorios = 0;
+            std::size_t novos_pontos_com_criterio = 0;
             bool outra_tela = false;
 
             while (estado.estado_delaunay.eventos.size() > 0) {
@@ -2829,6 +3033,17 @@ int main() {
                                     novos_pontos_aleatorios += 25;
                                 } else if (op.mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
                                     novos_pontos_aleatorios += 500;
+                                }
+                            } else if (op.button_key == GLFW_KEY_A) {
+
+                                if (!op.mods) {
+                                    ++novos_pontos_com_criterio;
+                                } else if (op.mods == GLFW_MOD_SHIFT) {
+                                    novos_pontos_com_criterio += 10;
+                                } else if (op.mods == GLFW_MOD_CONTROL) {
+                                    novos_pontos_com_criterio += 25;
+                                } else if (op.mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
+                                    novos_pontos_com_criterio += 500;
                                 }
                             } else if (op.button_key == GLFW_KEY_E && !op.mods) {
                                 estado.tela = Tela::DCEL_TESTE;
@@ -2895,81 +3110,31 @@ int main() {
                 }
             }
 
-            if (delaunay.last_gen < delaunay.dcel->gen()) {
+            if (novos_pontos_com_criterio > 0) {
+                glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+                while (novos_pontos_com_criterio --> 0) {
+                    glBindVertexArray(delaunay.faces_vao);
+                    glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
 
-                auto [verts_r, v_invs] = delaunay.dcel->vec_vertices();
-                auto [edges_r, e_invs] = delaunay.dcel->vec_edges();
-                auto [faces_r, f_invs] = delaunay.dcel->vec_faces();
+                    color_line_program.use();
+                    color_line_program.setFloat("alpha", 1.0f);
+                    glDrawElements(GL_TRIANGLES, delaunay.triangle_count*3, GL_UNSIGNED_INT, nullptr);
 
-                auto& verts = verts_r.get();
-                auto& edges = edges_r.get();
-                auto& faces = faces_r.get();
+                    glReadPixels(0, 0, width, height, GL_RGBA, GL_FLOAT, conteudo_da_tela.data());
 
-                std::vector<float> ps {};
-                ps.reserve(verts.size() * 5 * sizeof (float));
-                for (std::size_t i = 0; i < verts.size(); ++i) {
-                    auto ponto = verts[i];
-                    auto cor_ponto = delaunay.encontra_cor(ponto.xy);
-                    if (v_invs.count(i)) {
-                        ps.push_back(2.0f);
-                        ps.push_back(2.0f);
-                    } else {
-                        ps.push_back(transformada_x(ponto.xy.x));
-                        ps.push_back(transformada_y(ponto.xy.y));
-                    }
-                    ps.push_back(cor_ponto.r());
-                    ps.push_back(cor_ponto.g());
-                    ps.push_back(cor_ponto.b());
+                    Ponto p = delaunay.ponto_com_maior_erro(conteudo_da_tela);
+                    delaunay.adiciona_ponto(p);
+                    atualiza_dcel();
+                    delaunay.last_gen = delaunay.dcel->gen();
                 }
-
-                std::vector<unsigned> is {};
-                is.reserve((edges.size() / 2) * sizeof (unsigned));
-                for (std::size_t i = 0; i < (edges.size() / 2); ++i) {
-                    if (e_invs.count(2*i)) {
-                        is.push_back(65535);
-                        is.push_back(65535);
-                    } else {
-                        unsigned p1 = static_cast<unsigned>(edges[2*i].origin - &verts[0]);
-                        unsigned p2 = static_cast<unsigned>(edges[2*i + 1].origin - &verts[0]);
-                        is.push_back(p1);
-                        is.push_back(p2);
-                    }
-                }
-
-                glBindVertexArray(delaunay.vao);
-                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * sizeof (float)), ps.data());
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
-                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
-
-                std::vector<unsigned> fs {};
-                fs.reserve(faces.size() * 3 * sizeof (unsigned));
-                for (std::size_t i = 1; i < faces.size(); ++i) {
-                    if (f_invs.count(i)) {
-                        fs.push_back(65535);
-                        fs.push_back(65535);
-                        fs.push_back(65535);
-                    } else {
-                        auto vs = delaunay.dcel->indices_dos_vertices_de_uma_face(i);
-                        if (vs.size() != 3) {
-                            std::cerr << "aviso: vai dar errado" << std::endl;
-                        }
-                        for (auto v : vs) {
-                            unsigned p = static_cast<unsigned>(v);
-                            fs.push_back(p);
-                        }
-                    }
-                }
-                glBindVertexArray(delaunay.faces_vao);
-                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
-                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(fs.size() * sizeof (unsigned)), fs.data());
-                delaunay.edge_count = edges.size() / 2;
-                delaunay.last_size = verts.size();
-                delaunay.triangle_count = faces.size() - 1;
-
-                delaunay.last_gen = delaunay.dcel->gen();
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
             }
+
+            if (delaunay.last_gen < delaunay.dcel->gen()) {
+                atualiza_dcel();
+            }
+
             if (delaunay.estado == EstadoDelaunay::OK) {
                 glBindVertexArray(delaunay.faces_vao);
                 glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
@@ -2979,21 +3144,24 @@ int main() {
                 color_line_program.setFloat("alpha", 1.0f);
                 glDrawElements(GL_TRIANGLES, delaunay.triangle_count*3, GL_UNSIGNED_INT, nullptr);
 
+                // glReadPixels(0, 0, width, height, GL_RGBA, GL_FLOAT, conteudo_da_tela.data());
+
                 if (delaunay.mostrando_linhas) {
                     glBindVertexArray(delaunay.vao);
                     glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
                     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
 
-                    glLineWidth(4.0f);
+                    glLineWidth(2.0f);
                     fixed_color_program.use();
                     fixed_color_program.setFloat("alpha", 1.0f);
                     glDrawElements(GL_LINES, delaunay.edge_count*2, GL_UNSIGNED_INT, nullptr);
                     glLineWidth(std::max(estado.pointSize / 2.0f, 1.0f));
 
-                    fixed_point_program.use();
-                    fixed_point_program.setFloat("pointRadius", 8.0f);
+                    // não dá pra ver os pontos, nem vou desenhar tb
+                    // fixed_point_program.use();
+                    // fixed_point_program.setFloat("pointRadius", 8.0f);
 
-                    glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+                    // glDrawArrays(GL_POINTS, 0, delaunay.last_size);
                 }
             }
 
@@ -3002,6 +3170,7 @@ int main() {
         glfwSwapBuffers(window);
         session.pollEvents();
     }
+    glDeleteFramebuffers(1, &fbo);
 
     return 0;
 }

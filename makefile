@@ -30,7 +30,7 @@ else ifeq ($(tool),LLVM)
 endif
 proj = geometria_opengl
 NULLSTR =
-CXXFLAGS += -std=c++17 -pedantic -pedantic-errors -Wall -Wextra -g -ggdb
+CXXFLAGS += -std=c++17 -pedantic -pedantic-errors -Wall -Wextra -O3
 CXXFLAGS += -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization
 CXXFLAGS += -Wformat=2 -Wmissing-declarations
 CXXFLAGS += -Wmissing-include-dirs -Wold-style-cast
