@@ -62,7 +62,7 @@ inline unsigned long long gcd_non_zero(unsigned long long u, unsigned long long 
 }
 
 inline long long gcd_non_zero(long long u, long long v) {
-    return static_cast<long long>(gcd_non_zero(static_cast<unsigned long long>(u), static_cast<unsigned long long>(v)));
+    return static_cast<long long>(gcd_non_zero(static_cast<unsigned long long>(std::abs(u)), static_cast<unsigned long long>(std::abs(v))));
 }
 
 inline long long gcd(long long u, long long v) {
@@ -1717,12 +1717,17 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             default:
                 break;
         }
-    } else if (action == GLFW_REPEAT && key == GLFW_KEY_R) {
-
-        if (estado.tela == Tela::DELAUNAY) {
-            estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
+    } else if (action == GLFW_REPEAT){
+        switch (key) {
+            case GLFW_KEY_R:
+            case GLFW_KEY_A:
+                if (estado.tela == Tela::DELAUNAY) {
+                    estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
+                }
+                break;
+            default:
+                break;
         }
-
     }
 }
 
@@ -1885,12 +1890,12 @@ struct CoisasDelaunay {
         return Cor(r, g, b);
     }
     
-    Ponto ponto_com_maior_erro(const std::vector<float>& conteudo_da_tela) {
+    std::pair<Ponto, long> ponto_com_maior_erro(const std::vector<unsigned char>& conteudo_da_tela) {
         auto width = static_cast<std::size_t>(img.x);
         auto height = static_cast<std::size_t>(img.y);
         auto cs = static_cast<std::size_t>(img.n);
         Ponto maior = {};
-        float maior_erro = -std::numeric_limits<float>::infinity();
+        long maior_erro = std::numeric_limits<long>::min();
         for (std::size_t linha = 1; linha < height - 1; ++linha) {
             for (std::size_t coluna = 1; coluna < width - 1; ++coluna) {
                 Ponto candidato = Ponto{static_cast<std::int64_t>(coluna), static_cast<std::int64_t>(linha)};
@@ -1916,9 +1921,11 @@ struct CoisasDelaunay {
                 // val += img.image_data[cs*((height - 1 - linha) * width + coluna - 1)];
                 // val += img.image_data[cs*((height - 1 - linha + 1) * width + coluna - 1)];
 
-                float diff = static_cast<float>(img.image_data[cs*((height - 1 - linha) * width + coluna)]) / 255.;
+                // float diff = static_cast<float>(img.image_data[cs*((height - 1 - linha) * width + coluna)]) / 255.;
+                long diff = img.image_data[cs*((height - 1 - linha) * width + coluna)];
                 diff -= conteudo_da_tela[4*(linha * width + coluna)];
-                float diff_ok = std::abs(diff);
+                long diff_ok = std::abs(diff);
+                // std::cout << diff_ok << ' ';
                 // float diff_ok = static_cast<float>(val) / (255.0 * 16.0);
                 // diff_ok -= conteudo_da_tela[4*(linha * width + coluna)];
                 // diff_ok = diff_ok*diff_ok;
@@ -1929,15 +1936,17 @@ struct CoisasDelaunay {
                 }
             }
         }
+        // std::cout << std::endl;
         auto linha = static_cast<std::size_t>(maior.x.num);
         auto coluna = static_cast<std::size_t>(maior.y.num);
-        if (conteudo_da_tela[4*(linha * width + coluna)] != conteudo_da_tela[4*(linha * width + coluna)+1] || conteudo_da_tela[4*(linha * width + coluna)] != conteudo_da_tela[4*(linha * width + coluna)+2] || conteudo_da_tela[4*(linha * width + coluna)+1] != conteudo_da_tela[4*(linha * width + coluna)+2]) {
-            std::cout << "ue " << conteudo_da_tela[4*(linha * width + coluna)] << ' ' << conteudo_da_tela[4*(linha * width + coluna)+1] << ' ' << conteudo_da_tela[4*(linha * width + coluna)+2] << std::endl;
-        }
-        if (pontos.count(maior)) {
-            std::cout << "isso com certeza esta errado" << std::endl;
-        }
-        return maior;
+        // if (conteudo_da_tela[4*(linha * width + coluna)] != conteudo_da_tela[4*(linha * width + coluna)+1] || conteudo_da_tela[4*(linha * width + coluna)] != conteudo_da_tela[4*(linha * width + coluna)+2] || conteudo_da_tela[4*(linha * width + coluna)+1] != conteudo_da_tela[4*(linha * width + coluna)+2]) {
+        //     std::cout << "ue " << conteudo_da_tela[4*(linha * width + coluna)] << ' ' << conteudo_da_tela[4*(linha * width + coluna)+1] << ' ' << conteudo_da_tela[4*(linha * width + coluna)+2] << std::endl;
+        // }
+        // std::cout << maior_erro << std::endl;
+        // if (pontos.count(maior)) {
+        //     std::cout << "isso com certeza esta errado" << std::endl;
+        // }
+        return {maior, maior_erro};
     }
 
     bool adiciona_ponto(Ponto p) {
@@ -1970,6 +1979,25 @@ struct CoisasDelaunay {
         dcel->geracao_atual = dcel->vertices.size();
 
         return true;
+    }
+
+    std::tuple<double, std::size_t, std::size_t> estatisticas(const std::vector<unsigned char>& conteudo_da_tela) {
+        auto width = static_cast<std::size_t>(img.x);
+        auto height = static_cast<std::size_t>(img.y);
+        auto cs = static_cast<std::size_t>(img.n);
+        double erro_quadratico_acumulado = 0;
+        for (std::size_t linha = 0; linha < height; ++linha) {
+            for (std::size_t coluna = 0; coluna < width; ++coluna) {
+                long diff = img.image_data[cs*((height - 1 - linha) * width + coluna)];
+                diff -= conteudo_da_tela[4*(linha * width + coluna)];
+                double diff_ok = static_cast<double>(diff*diff);
+                erro_quadratico_acumulado += diff_ok;
+            }
+        }
+        return {std::sqrt(erro_quadratico_acumulado / (width*height)),
+                dcel->vertices.size(),
+                dcel->faces.size() - dcel->faces_invalidas.size()
+        };
     }
 private:
     void triangulacao(Ponto novo) {
@@ -2188,7 +2216,7 @@ int main(int argc, char* argv[]) {
 
     const std::int64_t width = imagem.x;
     const std::int64_t height = imagem.y;
-    std::cout << width << ' ' << height << std::endl;
+    // std::cout << width << ' ' << height << std::endl;
 
     GLFW::Session session {};
     GLFW::Window::options opts;
@@ -2375,7 +2403,7 @@ int main(int argc, char* argv[]) {
         delaunay.last_gen = delaunay.dcel->gen();
     };
 
-    std::vector<float> conteudo_da_tela(static_cast<std::size_t>(width*height*4));
+    std::vector<unsigned char> conteudo_da_tela(static_cast<std::size_t>(width*height*4));
     
     unsigned int fbo;
     glGenFramebuffers(1, &fbo);
@@ -2383,15 +2411,14 @@ int main(int argc, char* argv[]) {
 
     unsigned int texture;
     glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
     
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 16, GL_RGBA, width, height, GL_TRUE);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, texture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
 
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         std::cout << "algo nao deu certo" << std::endl;
@@ -3014,6 +3041,7 @@ int main(int argc, char* argv[]) {
             std::size_t novos_pontos_aleatorios = 0;
             std::size_t novos_pontos_com_criterio = 0;
             bool outra_tela = false;
+            bool mostrar_estatisticas = false;
 
             while (estado.estado_delaunay.eventos.size() > 0) {
                 auto op = estado.estado_delaunay.eventos.front();
@@ -3066,6 +3094,8 @@ int main(int argc, char* argv[]) {
                                 coisas_dcel.coisas_vertice = {};
                                 estad.estado = Dcel_Data::DCEL_PRONTA;
                                 outra_tela = true;
+                            } else if (op.button_key == GLFW_KEY_S && !op.mods) {
+                                mostrar_estatisticas = true;
                             }
                             break;
                         default:
@@ -3121,14 +3151,40 @@ int main(int argc, char* argv[]) {
                     color_line_program.setFloat("alpha", 1.0f);
                     glDrawElements(GL_TRIANGLES, delaunay.triangle_count*3, GL_UNSIGNED_INT, nullptr);
 
-                    glReadPixels(0, 0, width, height, GL_RGBA, GL_FLOAT, conteudo_da_tela.data());
+                    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, conteudo_da_tela.data());
+                    // glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, conteudo_da_tela.data());
 
-                    Ponto p = delaunay.ponto_com_maior_erro(conteudo_da_tela);
+                    auto [p, erro] = delaunay.ponto_com_maior_erro(conteudo_da_tela);
+                    if (erro == 0) {
+                        novos_pontos_com_criterio = 0;
+                        break;
+                    }
                     delaunay.adiciona_ponto(p);
                     atualiza_dcel();
                     delaunay.last_gen = delaunay.dcel->gen();
                 }
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            }
+
+            if (mostrar_estatisticas) {
+                {
+                    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+                    glBindVertexArray(delaunay.faces_vao);
+                    glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
+
+                    color_line_program.use();
+                    color_line_program.setFloat("alpha", 1.0f);
+                    glDrawElements(GL_TRIANGLES, delaunay.triangle_count*3, GL_UNSIGNED_INT, nullptr);
+
+                    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, conteudo_da_tela.data());
+                    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                }
+
+                auto [rmse, verts, tris] = delaunay.estatisticas(conteudo_da_tela);
+                std::cout << "Aproximacao com " << verts << " vertices, ";
+                std::cout << tris << " triangulos" << std::endl;
+                std::cout << "RSME calculado: " << rmse << std::endl;
             }
 
             if (delaunay.last_gen < delaunay.dcel->gen()) {
