@@ -102,6 +102,9 @@ struct Racional {
         auto divisor = gcd(resultado.num, resultado.dem);
         resultado.num /= divisor;
         resultado.dem /= divisor;
+        if (resultado.num == 0) {
+            resultado.dem = 1;
+        }
         return resultado;
     }
     Racional operator-(const Racional& rhs) const {
@@ -109,6 +112,9 @@ struct Racional {
         auto divisor = gcd(resultado.num, resultado.dem);
         resultado.num /= divisor;
         resultado.dem /= divisor;
+        if (resultado.num == 0) {
+            resultado.dem = 1;
+        }
         return resultado;
     }
     Racional operator*(const Racional& rhs) const {
@@ -116,6 +122,9 @@ struct Racional {
         auto divisor = gcd(resultado.num, resultado.dem);
         resultado.num /= divisor;
         resultado.dem /= divisor;
+        if (resultado.num == 0) {
+            resultado.dem = 1;
+        }
         return resultado;
     }
     Racional operator/(const Racional& rhs) const {
@@ -127,6 +136,9 @@ struct Racional {
         auto divisor = gcd(resultado.num, resultado.dem);
         resultado.num /= divisor;
         resultado.dem /= divisor;
+        if (resultado.num == 0) {
+            resultado.dem = 1;
+        }
         return resultado;
     }
     friend std::ostream& operator<<(std::ostream& stream, const Racional& r);
@@ -376,7 +388,6 @@ private:
         Edge* next;
         Edge* prev;
         Face* face;
-        std::size_t componente;
     };
     struct Vertex {
         Ponto xy;
@@ -407,8 +418,8 @@ public:
         Face* inside_face = (faces.data()) + 1;
         for (std::size_t i = 0; i < n; ++i) {
             vertices.push_back({p[i], (edges.data()) + (2*i)});
-            edges.push_back({(edges.data()) + (2*i) + 1, (vertices.data()) + i, nullptr, nullptr, inside_face, 0});
-            edges.push_back({(edges.data()) + (2*i), (vertices.data()) + i + 1, nullptr, nullptr, outside_face, 0});
+            edges.push_back({(edges.data()) + (2*i) + 1, (vertices.data()) + i, nullptr, nullptr, inside_face});
+            edges.push_back({(edges.data()) + (2*i), (vertices.data()) + i + 1, nullptr, nullptr, outside_face});
         }
         edges.back().origin = (vertices.data());
 
@@ -616,8 +627,8 @@ public:
         faces.push_back({nullptr});
 
         std::size_t idx = edges.size();
-        edges.push_back({(edges.data()) + idx + 1, v2, (edges.data()) + idx + 1, (edges.data()) + idx + 1, found->face, 0});
-        edges.push_back({(edges.data()) + idx, v1, (edges.data()) + idx, (edges.data()) + idx, found->face, 0});
+        edges.push_back({(edges.data()) + idx + 1, v2, (edges.data()) + idx + 1, (edges.data()) + idx + 1, found->face});
+        edges.push_back({(edges.data()) + idx, v1, (edges.data()) + idx, (edges.data()) + idx, found->face});
         conecta_arestas(found, &edges[idx]);
         conecta_arestas(start->prev, &edges[idx + 1]);
 
@@ -681,8 +692,8 @@ public:
         e->origin = v3;
 
         std::size_t idx = edges.size();
-        edges.push_back({(edges.data()) + idx + 1, v1, e, (edges.data()) + idx + 1, e->face, 0});
-        edges.push_back({(edges.data()) + idx, v3, (edges.data()) + idx, e->twin, e->twin->face, 0});
+        edges.push_back({(edges.data()) + idx + 1, v1, e, (edges.data()) + idx + 1, e->face});
+        edges.push_back({(edges.data()) + idx, v3, (edges.data()) + idx, e->twin, e->twin->face});
 
         Edge* e2 = &edges[idx];
 
@@ -1015,7 +1026,6 @@ private:
         if (v1_i >= vertices.size() || v2_i >= vertices.size() || v1_i == v2_i) {
             return false;
         }
-        std::size_t menor = std::min(v1_i, v2_i);
         reserva_espacos(1, 2, 0);
 
         Vertex* v1 = &vertices[v1_i];
@@ -1106,33 +1116,16 @@ private:
         }
 
         std::size_t idx = edges.size();
-        edges.push_back({(edges.data()) + idx + 1, v2, (edges.data()) + idx + 1, (edges.data()) + idx + 1, faces.data(), menor});
-        edges.push_back({(edges.data()) + idx, v1, (edges.data()) + idx, (edges.data()) + idx, faces.data(), menor});
+        edges.push_back({(edges.data()) + idx + 1, v2, (edges.data()) + idx + 1, (edges.data()) + idx + 1, faces.data()});
+        edges.push_back({(edges.data()) + idx, v1, (edges.data()) + idx, (edges.data()) + idx, faces.data()});
 
         vertice_valido = v1;
 
-        std::size_t v2_c = 0;
-        std::size_t v1_c = 0;
         if (found_v2) {
 
             conecta_arestas(found_v2, &edges[idx]);
             edges[idx].face = found_v2->face;
             edges[idx + 1].face = found_v2->face;
-            v2_c = found_v2->componente;
-            if (v2_c < menor) {
-                for (auto& ed : edges) {
-                    if (ed.componente == menor) {
-                        ed.componente = v2_c;
-                    }
-                }
-                menor = v2_c;
-            } else if (v2_c > menor) {
-                for (auto& ed : edges) {
-                    if (ed.componente == v2_c) {
-                        ed.componente = menor;
-                    }
-                }
-            }
         }
         v2->edge = &edges[idx];
         if (found_v1) {
@@ -1140,29 +1133,11 @@ private:
             conecta_arestas(found_v1, &edges[idx + 1]);
             edges[idx + 1].face = found_v1->face;
             edges[idx].face = found_v1->face;
-            v1_c = found_v1->componente;
-            if (v1_c < menor) {
-                for (auto& ed : edges) {
-                    if (ed.componente == menor) {
-                        ed.componente = v1_c;
-                    }
-                }
-                menor = v1_c;
-            } else if (v1_c > menor) {
-                for (auto& ed : edges) {
-                    if (ed.componente == v1_c) {
-                        ed.componente = menor;
-                    }
-                }
-            }
         }
         v1->edge = &edges[idx + 1];
 
         if (found_v1 && found_v2) {
             if (found_v1->face != faces.data()) {
-                if (v1_c != v2_c) {
-                    std::cout << "ta errado isso ai" << std::endl;
-                }
                 faces.push_back({nullptr});
                 edges[idx + 1].face = &faces.back();
                 faces.back().edge = &edges[idx + 1];
@@ -1195,9 +1170,6 @@ private:
                     e = e->next;
                 } while (e != &edges[idx]);
                 if (curvas_a_esquerda_e1 > 0 || curvas_a_esquerda_e2 > 0) {
-                    if (v1_c != v2_c) {
-                        std::cout << "ta muito errado isso ai" << std::endl;
-                    }
 
                     faces.push_back({nullptr});
 
@@ -1211,12 +1183,6 @@ private:
                     while (e != start) {
                         e->face = &faces.back();
                         e = e->next;
-                    }
-                } else {
-
-                    if (v1_c == v2_c) {
-
-                        std::cout << "ta extremamente errado isso ai" << std::endl;
                     }
                 }
             }
@@ -1896,8 +1862,8 @@ struct CoisasDelaunay {
         auto cs = static_cast<std::size_t>(img.n);
         Ponto maior = {};
         long maior_erro = std::numeric_limits<long>::min();
-        for (std::size_t linha = 1; linha < height - 1; ++linha) {
-            for (std::size_t coluna = 1; coluna < width - 1; ++coluna) {
+        for (std::size_t linha = 0; linha < height - 0; ++linha) {
+            for (std::size_t coluna = 0; coluna < width - 0; ++coluna) {
                 Ponto candidato = Ponto{static_cast<std::int64_t>(coluna), static_cast<std::int64_t>(linha)};
                 if (pontos.count(candidato)) {
                     continue;
@@ -2033,7 +1999,7 @@ private:
             if (outra_face == 0) {
                 // caminho = 1;
                 
-                dcel->deleta_aresta(qual_aresta, false);
+                dcel->interno_deleta_aresta(qual_aresta, false);
                 dcel->reserva_espacos(0, 0, 1);
                 dcel->vertices.push_back(DCEL::Vertex{novo, nullptr});
                 // quebrou = true;
@@ -2052,7 +2018,7 @@ private:
                 arestas = {proxima, anterior};
             } else {
                 // caminho = 2;
-                dcel->deleta_aresta(qual_aresta, false);
+                dcel->interno_deleta_aresta(qual_aresta, false);
                 std::size_t face = static_cast<std::size_t>(es[proxima].face - fs.data());
                 // quebrou = true;
                 // std::cout << "face do novo ponto: " << face << std::endl;
