@@ -50,124 +50,11 @@ extern "C" {
 }
 #endif
 
-inline unsigned long long gcd_non_zero(unsigned long long u, unsigned long long v) {
-    auto shift = __builtin_ctzll(u | v);
-    u >>= __builtin_ctzll(u);
-    do {
-        v >>= __builtin_ctzll(v);
-        if(u > v)
-            std::swap(u, v);
-    } while((v -= u));
-    return u << shift;
-}
-
-inline long long gcd_non_zero(long long u, long long v) {
-    return static_cast<long long>(gcd_non_zero(static_cast<unsigned long long>(std::abs(u)), static_cast<unsigned long long>(std::abs(v))));
-}
-
-inline long long gcd(long long u, long long v) {
-    if (u == 0 || v == 0) {
-        return 1;
-    }
-    return gcd_non_zero(u, v);
-}
-
-struct Racional {
-    std::int64_t num;
-    std::int64_t dem;
-    Racional() : num{0}, dem{1} {}
-    Racional(std::int64_t n) : num{n}, dem{1} {}
-    // Racional(double n) = delete;
-    Racional(std::int64_t n, std::int64_t d) : num{n}, dem{d} {}
-    bool operator==(const Racional& rhs) const {
-        return (this->num * rhs.dem) == (this->dem * rhs.num);
-    }
-    bool operator<(const Racional& rhs) const {
-        return (this->num * rhs.dem) < (this->dem * rhs.num);
-    }
-    bool operator<=(const Racional& rhs) const {
-        return (this->num * rhs.dem) <= (this->dem * rhs.num);
-    }
-    bool operator>(const Racional& rhs) const {
-        return (this->num * rhs.dem) > (this->dem * rhs.num);
-    }
-    bool operator>=(const Racional& rhs) const {
-        return (this->num * rhs.dem) >= (this->dem * rhs.num);
-    }
-    bool operator!=(const Racional& rhs) const {
-        return (this->num * rhs.dem) != (this->dem * rhs.num);
-    }
-    Racional operator+(const Racional& rhs) const {
-        Racional resultado = {this->num*rhs.dem + rhs.num*this->dem, this->dem * rhs.dem};
-        auto divisor = gcd(resultado.num, resultado.dem);
-        resultado.num /= divisor;
-        resultado.dem /= divisor;
-        if (resultado.num == 0) {
-            resultado.dem = 1;
-        }
-        return resultado;
-    }
-    Racional operator-(const Racional& rhs) const {
-        Racional resultado = {this->num*rhs.dem - rhs.num*this->dem, this->dem * rhs.dem};
-        auto divisor = gcd(resultado.num, resultado.dem);
-        resultado.num /= divisor;
-        resultado.dem /= divisor;
-        if (resultado.num == 0) {
-            resultado.dem = 1;
-        }
-        return resultado;
-    }
-    Racional operator*(const Racional& rhs) const {
-        Racional resultado = {this->num*rhs.num, this->dem*rhs.dem};
-        auto divisor = gcd(resultado.num, resultado.dem);
-        resultado.num /= divisor;
-        resultado.dem /= divisor;
-        if (resultado.num == 0) {
-            resultado.dem = 1;
-        }
-        return resultado;
-    }
-    Racional operator/(const Racional& rhs) const {
-        Racional resultado = {this->num*rhs.dem, this->dem*rhs.num};
-        if (resultado.dem < 0) {
-            resultado.num *= -1;
-            resultado.dem *= -1;
-        }
-        auto divisor = gcd(resultado.num, resultado.dem);
-        resultado.num /= divisor;
-        resultado.dem /= divisor;
-        if (resultado.num == 0) {
-            resultado.dem = 1;
-        }
-        return resultado;
-    }
-    friend std::ostream& operator<<(std::ostream& stream, const Racional& r);
-};
-
-std::ostream& operator<<(std::ostream& stream, const Racional& r) {
-    stream << '(' << r.num << '/' << r.dem << ')';
-    return stream;
-}
-
-double sqrt_r(Racional r);
-double sqrt_r(Racional r) {
-    return std::sqrt(static_cast<double>(r.num) / static_cast<double>(r.dem));
-}
-
-Racional abs_r(Racional r);
-Racional abs_r(Racional r) {
-    if (r.num < 0) {
-        r.num *= -1;
-    }
-    return r;
-}
-
 struct Ponto {
-    Racional x;
-    Racional y;
+    double x;
+    double y;
     Ponto() : x{0}, y{0} {}
-    Ponto(std::int64_t i_x, std::int64_t i_y) : x{i_x}, y{i_y} {}
-    Ponto(Racional r_x, Racional r_y) : x{r_x}, y{r_y} {}
+    Ponto(std::int64_t i_x, std::int64_t i_y) : x{static_cast<double>(i_x)}, y{static_cast<double>(i_y)} {}
     bool operator==(const Ponto& rhs) const {
         return this->x == rhs.x && this->y == rhs.y;
     }
@@ -178,30 +65,26 @@ struct Ponto {
     }
 };
 
-inline void hash_combine(std::size_t& seed, std::int64_t const& v);
-inline void hash_combine(std::size_t& seed, std::int64_t const& v) {
-    seed ^= std::hash<std::int64_t>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+inline void hash_combine(std::size_t& seed, double const& v);
+inline void hash_combine(std::size_t& seed, double const& v) {
+    seed ^= std::hash<double>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
 template<>
 struct std::hash<Ponto> {
     std::size_t operator()(Ponto const& p) const noexcept {
         std::size_t seed = 0;
-        hash_combine(seed, p.x.num);
-        hash_combine(seed, p.x.dem);
-        hash_combine(seed, p.y.num);
-        hash_combine(seed, p.y.dem);
+        hash_combine(seed, p.x);
+        hash_combine(seed, p.y);
         return seed;
     }
 };
 
-Racional area_orientada(Ponto p1, Ponto p2, Ponto p3);
+double area_orientada(Ponto p1, Ponto p2, Ponto p3);
 bool left(Ponto p1, Ponto p2, Ponto p3);
-std::vector<Ponto> fecho_convexo(std::vector<Ponto> pontos);
 double dist(Ponto p1, Ponto p2);
-Racional angulo_interno(Ponto p1, Ponto p2, Ponto p3);
 
-Racional area_orientada(Ponto p1, Ponto p2, Ponto p3) {
+double area_orientada(Ponto p1, Ponto p2, Ponto p3) {
 
     if (p1 == p2 || p1 == p3 || p2 == p3) return 0;
     return (p2.x - p1.x)*(p3.y - p1.y) - (p3.x - p1.x)*(p2.y - p1.y);
@@ -212,20 +95,20 @@ bool left(Ponto p1, Ponto p2, Ponto p3) {
 }
 
 double dist(Ponto p1, Ponto p2) {
-    return sqrt_r((p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y));
+    return std::sqrt((p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y));
 }
 
 using Reta = std::array<Ponto, 2>;
 
-Racional sombra_reta_ponto(Ponto p, Reta r);
+double sombra_reta_ponto(Ponto p, Reta r);
 
-Racional sombra_reta_ponto(Ponto p, Reta r) {
-    Racional x3_x1 = p.x - r[0].x;
-    Racional x2_x1 = r[1].x - r[0].x;
-    Racional y3_y1 = p.y - r[0].y;
-    Racional y2_y1 = r[1].y - r[0].y;
+double sombra_reta_ponto(Ponto p, Reta r) {
+    double x3_x1 = p.x - r[0].x;
+    double x2_x1 = r[1].x - r[0].x;
+    double y3_y1 = p.y - r[0].y;
+    double y2_y1 = r[1].y - r[0].y;
 
-    Racional c = (x2_x1*x3_x1 + y2_y1*y3_y1) / (x2_x1*x2_x1 + y2_y1*y2_y1);
+    double c = (x2_x1*x3_x1 + y2_y1*y3_y1) / (x2_x1*x2_x1 + y2_y1*y2_y1);
     return c;
 }
 
@@ -267,10 +150,10 @@ enum class Intersecao {
 Intersecao intersecao_com_left(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
 
 Intersecao intersecao_com_left(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
-    Racional p1_p2_p3 = area_orientada(p1, p2, p3);
-    Racional p1_p2_p4 = area_orientada(p1, p2, p4);
-    Racional p3_p4_p1 = area_orientada(p3, p4, p1);
-    Racional p3_p4_p2 = area_orientada(p3, p4, p2);
+    double p1_p2_p3 = area_orientada(p1, p2, p3);
+    double p1_p2_p4 = area_orientada(p1, p2, p4);
+    double p3_p4_p1 = area_orientada(p3, p4, p1);
+    double p3_p4_p2 = area_orientada(p3, p4, p2);
     if (p1_p2_p3 == 0 || p1_p2_p4 == 0 || p3_p4_p1 == 0 || p3_p4_p2 == 0) {
         return Intersecao::IMPROPRIA;
     }
@@ -288,9 +171,9 @@ Intersecao intersecao_com_left(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
 double distancia_ponto_reta_com_area(Ponto p1, Ponto p2, Ponto p);
 
 double distancia_ponto_reta_com_area(Ponto p1, Ponto p2, Ponto p) {
-    auto area = abs_r(area_orientada(p1, p2, p));
+    auto area = std::abs(area_orientada(p1, p2, p));
     double base = dist(p1, p2);
-    return area.num / (area.dem*base);
+    return area / base;
 }
 
 double distancia_ponto_segmento(Ponto p1, Ponto p2, Ponto p);
@@ -341,31 +224,31 @@ bool orientado_antihorario(const std::vector<Ponto>& poligono) {
     return curvas_a_esquerda > 0;
 }
 
-Racional in_circle(Ponto a, Ponto b, Ponto c, Ponto d);
+double in_circle(Ponto a, Ponto b, Ponto c, Ponto d);
 
-Racional in_circle(Ponto a, Ponto b, Ponto c, Ponto d) {
+double in_circle(Ponto a, Ponto b, Ponto c, Ponto d) {
 
-    Racional m_11 = a.x;
-    Racional m_12 = a.y;
-    Racional m_13 = a.x * a.x + a.y * a.y;
-    Racional m_14 = 1;
-    Racional m_21 = b.x;
-    Racional m_22 = b.y;
-    Racional m_23 = b.x * b.x + b.y * b.y;
-    Racional m_24 = 1;
-    Racional m_31 = c.x;
-    Racional m_32 = c.y;
-    Racional m_33 = c.x * c.x + c.y * c.y;
-    Racional m_34 = 1;
-    Racional m_41 = d.x;
-    Racional m_42 = d.y;
-    Racional m_43 = d.x * d.x + d.y * d.y;
-    Racional m_44 = 1;
+    double m_11 = a.x;
+    double m_12 = a.y;
+    double m_13 = a.x * a.x + a.y * a.y;
+    double m_14 = 1;
+    double m_21 = b.x;
+    double m_22 = b.y;
+    double m_23 = b.x * b.x + b.y * b.y;
+    double m_24 = 1;
+    double m_31 = c.x;
+    double m_32 = c.y;
+    double m_33 = c.x * c.x + c.y * c.y;
+    double m_34 = 1;
+    double m_41 = d.x;
+    double m_42 = d.y;
+    double m_43 = d.x * d.x + d.y * d.y;
+    double m_44 = 1;
 
-    Racional res_1 = m_11 * (m_22 * m_33 * m_44 + m_23 * m_34 * m_42 + m_32 * m_43 * m_24 - m_24 * m_33 * m_42 - m_23 * m_32 * m_44 - m_34 * m_43 * m_22);
-    Racional res_2 = m_12 * (m_21 * m_33 * m_44 + m_23 * m_34 * m_41 + m_31 * m_43 * m_24 - m_24 * m_33 * m_41 - m_23 * m_31 * m_44 - m_34 * m_43 * m_21);
-    Racional res_3 = m_13 * (m_21 * m_32 * m_44 + m_22 * m_34 * m_41 + m_31 * m_42 * m_24 - m_24 * m_32 * m_41 - m_22 * m_31 * m_44 - m_34 * m_42 * m_21);
-    Racional res_4 = m_14 * (m_21 * m_32 * m_43 + m_22 * m_33 * m_41 + m_31 * m_42 * m_23 - m_23 * m_32 * m_41 - m_22 * m_31 * m_43 - m_33 * m_42 * m_21);
+    double res_1 = m_11 * (m_22 * m_33 * m_44 + m_23 * m_34 * m_42 + m_32 * m_43 * m_24 - m_24 * m_33 * m_42 - m_23 * m_32 * m_44 - m_34 * m_43 * m_22);
+    double res_2 = m_12 * (m_21 * m_33 * m_44 + m_23 * m_34 * m_41 + m_31 * m_43 * m_24 - m_24 * m_33 * m_41 - m_23 * m_31 * m_44 - m_34 * m_43 * m_21);
+    double res_3 = m_13 * (m_21 * m_32 * m_44 + m_22 * m_34 * m_41 + m_31 * m_42 * m_24 - m_24 * m_32 * m_41 - m_22 * m_31 * m_44 - m_34 * m_42 * m_21);
+    double res_4 = m_14 * (m_21 * m_32 * m_43 + m_22 * m_33 * m_41 + m_31 * m_42 * m_23 - m_23 * m_32 * m_41 - m_22 * m_31 * m_43 - m_33 * m_42 * m_21);
 
     return res_1 - res_2 + res_3 - res_4;
 }
@@ -645,7 +528,7 @@ public:
             long long curvas_a_esquerda = 0;
             e = edges[idx + 1].next;
             while (e != &edges[idx + 1]) {
-                Racional area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
+                double area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
                 if (area > 0) {
                     ++curvas_a_esquerda;
                 } else if (area < 0) {
@@ -670,7 +553,7 @@ public:
         edges[idx + 1].face->edge = &edges[idx + 1];
     }
 
-    void inclui_vertice_em_aresta(std::size_t aresta, Racional onde) {
+    void inclui_vertice_em_aresta(std::size_t aresta, double onde) {
         if (onde <= 0 || onde >= 1 || aresta >= edges.size()) {
             return;
         }
@@ -680,7 +563,8 @@ public:
         Edge* e = &edges[aresta];
         Vertex* v1 = e->origin;
         Vertex* v2 = e->twin->origin;
-        Ponto p = {(v2->xy.x-v1->xy.x)*onde+v1->xy.x, (v2->xy.y-v1->xy.y)*onde+v1->xy.y};
+        Ponto p = {static_cast<std::int64_t>(std::floor((v2->xy.x-v1->xy.x)*onde+v1->xy.x)),
+                   static_cast<std::int64_t>(std::floor((v2->xy.y-v1->xy.y)*onde+v1->xy.y))};
 
         ++geracao_atual;
 
@@ -1151,7 +1035,7 @@ private:
                 long long curvas_a_esquerda_e2 = 0;
                 e = &edges[idx + 1];
                 do {
-                    Racional area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
+                    double area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
                     if (area > 0) {
                         ++curvas_a_esquerda_e2;
                     } else if (area < 0) {
@@ -1161,7 +1045,7 @@ private:
                 }while (e != &edges[idx + 1]);
                 e = &edges[idx];
                 do {
-                    Racional area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
+                    double area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
                     if (area > 0) {
                         ++curvas_a_esquerda_e1;
                     } else if (area < 0) {
@@ -1841,11 +1725,11 @@ struct CoisasDelaunay {
     Cor encontra_cor(Ponto p) {
         // Racional p_x = std::floor(((p.x + 1.0) / 2.0) * x);
         // int i_x = std::min(x, static_cast<int>(p_x));
-        int i_x = p.x.num;
+        int i_x = static_cast<int>(p.x);
 
         // Racional p_y = std::floor(((p.y + 1.0) / 2.0) * y);
         // int i_y = std::min(y, static_cast<int>(p_y));
-        int i_y = p.y.num;
+        int i_y = static_cast<int>(p.y);
         // std::cout << p.x << ' ' << p.y << " -- " << p_x << ' ' << p_y << std::endl;
         // std::cout << "foi buscada a cor do pixel " << i_x << ' ' << i_y << std::endl;
 
@@ -1903,8 +1787,8 @@ struct CoisasDelaunay {
             }
         }
         // std::cout << std::endl;
-        auto linha = static_cast<std::size_t>(maior.x.num);
-        auto coluna = static_cast<std::size_t>(maior.y.num);
+        // auto linha = static_cast<std::size_t>(maior.x.num);
+        // auto coluna = static_cast<std::size_t>(maior.y.num);
         // if (conteudo_da_tela[4*(linha * width + coluna)] != conteudo_da_tela[4*(linha * width + coluna)+1] || conteudo_da_tela[4*(linha * width + coluna)] != conteudo_da_tela[4*(linha * width + coluna)+2] || conteudo_da_tela[4*(linha * width + coluna)+1] != conteudo_da_tela[4*(linha * width + coluna)+2]) {
         //     std::cout << "ue " << conteudo_da_tela[4*(linha * width + coluna)] << ' ' << conteudo_da_tela[4*(linha * width + coluna)+1] << ' ' << conteudo_da_tela[4*(linha * width + coluna)+2] << std::endl;
         // }
@@ -2273,21 +2157,15 @@ int main(int argc, char* argv[]) {
     std::uniform_int_distribution<std::int64_t> idis_x(0, width - 1);
     std::uniform_int_distribution<std::int64_t> idis_y(0, height - 1);
 
-    auto transformada_x = [width](Racional x) -> float {
-        if (x.dem != 1) {
-            std::cout << "nao esperava isso de um ponto" << std::endl;
-        }
-        float resp = static_cast<float>(x.num) / static_cast<float>(width);
+    auto transformada_x = [width](double x) -> float {
+        float resp = static_cast<float>(x) / static_cast<float>(width);
         resp += 1.0 / static_cast<float>(2*width);
         resp -= 0.5;
         resp *= 2.0;
         return resp;
     };
-    auto transformada_y = [height](Racional y) -> float {
-        if (y.dem != 1) {
-            std::cout << "nao esperava isso de um ponto" << std::endl;
-        }
-        float resp = static_cast<float>(y.num) / static_cast<float>(height);
+    auto transformada_y = [height](double y) -> float {
+        float resp = static_cast<float>(y) / static_cast<float>(height);
         resp += 1.0 / static_cast<float>(2*height);
         resp -= 0.5;
         resp *= 2.0;
@@ -2766,7 +2644,7 @@ int main(int argc, char* argv[]) {
                             coisas_dcel.coisas_vertice.aresta_idx = menor_i;
                             continue;
                         } else {
-                            Racional s = sombra_reta_ponto(mouse, {p1, p2});
+                            double s = sombra_reta_ponto(mouse, {p1, p2});
 
                             coisas_dcel.dcel_ptr->inclui_vertice_em_aresta(menor_i, s);
                             estad.estado = Dcel_Data::DCEL_PRONTA;
