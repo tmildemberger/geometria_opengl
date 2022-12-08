@@ -5,8 +5,6 @@
 #include <exception>
 #include <glad/glad.h>
 
-#include "thing.hpp"
-
 class Shader
 {
 private:

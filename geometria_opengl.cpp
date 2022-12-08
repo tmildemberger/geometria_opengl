@@ -51,10 +51,10 @@ extern "C" {
 #endif
 
 struct Ponto {
-    double x;
-    double y;
+    std::int64_t x;
+    std::int64_t y;
     Ponto() : x{0}, y{0} {}
-    Ponto(std::int64_t i_x, std::int64_t i_y) : x{static_cast<double>(i_x)}, y{static_cast<double>(i_y)} {}
+    Ponto(std::int64_t i_x, std::int64_t i_y) : x{i_x}, y{i_y} {}
     bool operator==(const Ponto& rhs) const {
         return this->x == rhs.x && this->y == rhs.y;
     }
@@ -65,9 +65,9 @@ struct Ponto {
     }
 };
 
-inline void hash_combine(std::size_t& seed, double const& v);
-inline void hash_combine(std::size_t& seed, double const& v) {
-    seed ^= std::hash<double>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+inline void hash_combine(std::size_t& seed, std::int64_t const& v);
+inline void hash_combine(std::size_t& seed, std::int64_t const& v) {
+    seed ^= std::hash<std::int64_t>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
 template<>
@@ -80,11 +80,10 @@ struct std::hash<Ponto> {
     }
 };
 
-double area_orientada(Ponto p1, Ponto p2, Ponto p3);
+std::int64_t area_orientada(Ponto p1, Ponto p2, Ponto p3);
 bool left(Ponto p1, Ponto p2, Ponto p3);
-double dist(Ponto p1, Ponto p2);
 
-double area_orientada(Ponto p1, Ponto p2, Ponto p3) {
+std::int64_t area_orientada(Ponto p1, Ponto p2, Ponto p3) {
 
     if (p1 == p2 || p1 == p3 || p2 == p3) return 0;
     return (p2.x - p1.x)*(p3.y - p1.y) - (p3.x - p1.x)*(p2.y - p1.y);
@@ -92,24 +91,6 @@ double area_orientada(Ponto p1, Ponto p2, Ponto p3) {
 
 bool left(Ponto p1, Ponto p2, Ponto p3) {
     return area_orientada(p1, p2, p3) > 0;
-}
-
-double dist(Ponto p1, Ponto p2) {
-    return std::sqrt((p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y));
-}
-
-using Reta = std::array<Ponto, 2>;
-
-double sombra_reta_ponto(Ponto p, Reta r);
-
-double sombra_reta_ponto(Ponto p, Reta r) {
-    double x3_x1 = p.x - r[0].x;
-    double x2_x1 = r[1].x - r[0].x;
-    double y3_y1 = p.y - r[0].y;
-    double y2_y1 = r[1].y - r[0].y;
-
-    double c = (x2_x1*x3_x1 + y2_y1*y3_y1) / (x2_x1*x2_x1 + y2_y1*y2_y1);
-    return c;
 }
 
 class Cor {
@@ -150,10 +131,10 @@ enum class Intersecao {
 Intersecao intersecao_com_left(Ponto p1, Ponto p2, Ponto p3, Ponto p4);
 
 Intersecao intersecao_com_left(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
-    double p1_p2_p3 = area_orientada(p1, p2, p3);
-    double p1_p2_p4 = area_orientada(p1, p2, p4);
-    double p3_p4_p1 = area_orientada(p3, p4, p1);
-    double p3_p4_p2 = area_orientada(p3, p4, p2);
+    std::int64_t p1_p2_p3 = area_orientada(p1, p2, p3);
+    std::int64_t p1_p2_p4 = area_orientada(p1, p2, p4);
+    std::int64_t p3_p4_p1 = area_orientada(p3, p4, p1);
+    std::int64_t p3_p4_p2 = area_orientada(p3, p4, p2);
     if (p1_p2_p3 == 0 || p1_p2_p4 == 0 || p3_p4_p1 == 0 || p3_p4_p2 == 0) {
         return Intersecao::IMPROPRIA;
     }
@@ -168,87 +149,31 @@ Intersecao intersecao_com_left(Ponto p1, Ponto p2, Ponto p3, Ponto p4) {
     }
 }
 
-double distancia_ponto_reta_com_area(Ponto p1, Ponto p2, Ponto p);
+std::int64_t in_circle(Ponto a, Ponto b, Ponto c, Ponto d);
 
-double distancia_ponto_reta_com_area(Ponto p1, Ponto p2, Ponto p) {
-    auto area = std::abs(area_orientada(p1, p2, p));
-    double base = dist(p1, p2);
-    return area / base;
-}
+std::int64_t in_circle(Ponto a, Ponto b, Ponto c, Ponto d) {
 
-double distancia_ponto_segmento(Ponto p1, Ponto p2, Ponto p);
+    std::int64_t m_11 = a.x;
+    std::int64_t m_12 = a.y;
+    std::int64_t m_13 = a.x * a.x + a.y * a.y;
+    std::int64_t m_14 = 1;
+    std::int64_t m_21 = b.x;
+    std::int64_t m_22 = b.y;
+    std::int64_t m_23 = b.x * b.x + b.y * b.y;
+    std::int64_t m_24 = 1;
+    std::int64_t m_31 = c.x;
+    std::int64_t m_32 = c.y;
+    std::int64_t m_33 = c.x * c.x + c.y * c.y;
+    std::int64_t m_34 = 1;
+    std::int64_t m_41 = d.x;
+    std::int64_t m_42 = d.y;
+    std::int64_t m_43 = d.x * d.x + d.y * d.y;
+    std::int64_t m_44 = 1;
 
-double distancia_ponto_segmento(Ponto p1, Ponto p2, Ponto p) {
-    double altura = distancia_ponto_reta_com_area(p1, p2, p);
-    double dist_p1 = dist(p1, p);
-    double dist_p2 = dist(p2, p);
-    double base = dist(p1, p2);
-    double dist_max = sqrt(base * base + altura * altura);
-    if (dist_p1 > dist_max) {
-        return dist_p2;
-    } if (dist_p2 > dist_max) {
-        return dist_p1;
-    }
-    return altura;
-}
-
-bool orientado_antihorario(const std::vector<Ponto>& poligono);
-
-bool orientado_antihorario(const std::vector<Ponto>& poligono) {
-    auto& v = poligono;
-    int curvas_a_esquerda = 0;
-    for (std::size_t i = 1; i < v.size() - 1; ++i) {
-        auto& p1 = v[i-1];
-        auto& p2 = v[i];
-        auto& p3 = v[i+1];
-        if (left(p1, p2, p3)) {
-            ++curvas_a_esquerda;
-        } else if (area_orientada(p1, p2, p3) != 0) {
-            --curvas_a_esquerda;
-        }
-    }
-    auto& p1 = v[0];
-    auto& p2 = v[1];
-    auto& pn_2 = v[v.size() - 2];
-    auto& pn_1 = v[v.size() - 1];
-    if (left(pn_2, pn_1, p1)) {
-        ++curvas_a_esquerda;
-    } else if (area_orientada(pn_2, pn_1, p1) != 0) {
-        --curvas_a_esquerda;
-    }
-    if (left(pn_1, p1, p2)) {
-        ++curvas_a_esquerda;
-    } else if (area_orientada(pn_1, p1, p2) != 0) {
-        --curvas_a_esquerda;
-    }
-    return curvas_a_esquerda > 0;
-}
-
-double in_circle(Ponto a, Ponto b, Ponto c, Ponto d);
-
-double in_circle(Ponto a, Ponto b, Ponto c, Ponto d) {
-
-    double m_11 = a.x;
-    double m_12 = a.y;
-    double m_13 = a.x * a.x + a.y * a.y;
-    double m_14 = 1;
-    double m_21 = b.x;
-    double m_22 = b.y;
-    double m_23 = b.x * b.x + b.y * b.y;
-    double m_24 = 1;
-    double m_31 = c.x;
-    double m_32 = c.y;
-    double m_33 = c.x * c.x + c.y * c.y;
-    double m_34 = 1;
-    double m_41 = d.x;
-    double m_42 = d.y;
-    double m_43 = d.x * d.x + d.y * d.y;
-    double m_44 = 1;
-
-    double res_1 = m_11 * (m_22 * m_33 * m_44 + m_23 * m_34 * m_42 + m_32 * m_43 * m_24 - m_24 * m_33 * m_42 - m_23 * m_32 * m_44 - m_34 * m_43 * m_22);
-    double res_2 = m_12 * (m_21 * m_33 * m_44 + m_23 * m_34 * m_41 + m_31 * m_43 * m_24 - m_24 * m_33 * m_41 - m_23 * m_31 * m_44 - m_34 * m_43 * m_21);
-    double res_3 = m_13 * (m_21 * m_32 * m_44 + m_22 * m_34 * m_41 + m_31 * m_42 * m_24 - m_24 * m_32 * m_41 - m_22 * m_31 * m_44 - m_34 * m_42 * m_21);
-    double res_4 = m_14 * (m_21 * m_32 * m_43 + m_22 * m_33 * m_41 + m_31 * m_42 * m_23 - m_23 * m_32 * m_41 - m_22 * m_31 * m_43 - m_33 * m_42 * m_21);
+    std::int64_t res_1 = m_11 * (m_22 * m_33 * m_44 + m_23 * m_34 * m_42 + m_32 * m_43 * m_24 - m_24 * m_33 * m_42 - m_23 * m_32 * m_44 - m_34 * m_43 * m_22);
+    std::int64_t res_2 = m_12 * (m_21 * m_33 * m_44 + m_23 * m_34 * m_41 + m_31 * m_43 * m_24 - m_24 * m_33 * m_41 - m_23 * m_31 * m_44 - m_34 * m_43 * m_21);
+    std::int64_t res_3 = m_13 * (m_21 * m_32 * m_44 + m_22 * m_34 * m_41 + m_31 * m_42 * m_24 - m_24 * m_32 * m_41 - m_22 * m_31 * m_44 - m_34 * m_42 * m_21);
+    std::int64_t res_4 = m_14 * (m_21 * m_32 * m_43 + m_22 * m_33 * m_41 + m_31 * m_42 * m_23 - m_23 * m_32 * m_41 - m_22 * m_31 * m_43 - m_33 * m_42 * m_21);
 
     return res_1 - res_2 + res_3 - res_4;
 }
@@ -528,7 +453,7 @@ public:
             long long curvas_a_esquerda = 0;
             e = edges[idx + 1].next;
             while (e != &edges[idx + 1]) {
-                double area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
+                std::int64_t area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
                 if (area > 0) {
                     ++curvas_a_esquerda;
                 } else if (area < 0) {
@@ -876,36 +801,10 @@ public:
     bool vazia() {
         return vertices.size() == 0 || vertices.size() == vertices_invalidas.size();
     }
-
-    DCEL(EnganaCompilador engana_compilador, std::vector<Ponto> pontos) : geracao_atual{0} {
-
-        if (engana_compilador) {
-            geracao_atual = 0;
-        }
-        std::size_t n = pontos.size();
-
-        vertices.reserve(20*n);
-        edges.reserve(120*n);
-        faces.reserve(120*n);
-        faces.push_back({nullptr});
-        Face* outside_face = (faces.data());
-        for (std::size_t i = 0; i < n; ++i) {
-            vertices.push_back({pontos[i], nullptr});
-        }
-
-        vertice_valido = &vertices[0];
-    }
 private:
 
     friend class CoisasDelaunay;
-    friend class DelaunayPassoAPasso;
 
-    friend class CoisasTrabalho;
-
-    struct EnganaCompilador {
-        explicit EnganaCompilador() = default;
-        explicit operator bool() const { return true; }
-    };
     bool novo_inclui_aresta(std::size_t v1_i, std::size_t v2_i) {
         if (v1_i >= vertices.size() || v2_i >= vertices.size() || v1_i == v2_i) {
             return false;
@@ -1035,7 +934,7 @@ private:
                 long long curvas_a_esquerda_e2 = 0;
                 e = &edges[idx + 1];
                 do {
-                    double area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
+                    std::int64_t area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
                     if (area > 0) {
                         ++curvas_a_esquerda_e2;
                     } else if (area < 0) {
@@ -1045,7 +944,7 @@ private:
                 }while (e != &edges[idx + 1]);
                 e = &edges[idx];
                 do {
-                    double area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
+                    std::int64_t area = area_orientada(e->prev->origin->xy, e->origin->xy, e->twin->origin->xy);
                     if (area > 0) {
                         ++curvas_a_esquerda_e1;
                     } else if (area < 0) {
@@ -1255,51 +1154,6 @@ private:
     }
 };
 
-enum class Tela {
-    DCEL_TESTE,
-    DELAUNAY,
-
-};
-
-enum class Dcel_Data {
-    RESETANDO,
-    RECEBENDO,
-    CRIANDO_DCEL,
-    DCEL_PRONTA,
-    PISCANDO,
-    ADICIONANDO_ARESTA,
-    ADICIONANDO_VERTICE,
-    ESPERANDO_ORBITA,
-    DELETANDO_ARESTA,
-    DELETANDO_VERTICE,
-
-};
-
-enum class Dcel_Op {
-    ENCONTRAR_FACE,
-    PISCAR_FACE,
-    PONTO_SELECIONADO,
-    CLIQUE_VERTICE,
-    PISCAR_ORBITA,
-};
-
-struct Dcel_Args {
-    Ponto ponto;
-};
-
-struct Dcel_Ops {
-    Dcel_Args args;
-    Dcel_Op op;
-};
-
-struct Dcel_Teste_State {
-    Dcel_Data estado;
-    std::vector<Ponto> poly;
-    bool ponto_adicionado;
-    bool poligono_fechado;
-    std::deque<Dcel_Ops> operacoes;
-};
-
 enum class General_Op {
     CLIQUE,
     TECLA,
@@ -1316,16 +1170,9 @@ struct Delaunay_State {
     std::deque<General_Msg> eventos;
 };
 
-struct Trabalho_State {
-    std::deque<General_Msg> eventos;
-};
-
 struct State {
-    Dcel_Teste_State estado_dcel_teste;
     Delaunay_State estado_delaunay;
-    Trabalho_State estado_trabalho;
     float pointSize;
-    Tela tela;
 
     std::int64_t width;
     std::int64_t height;
@@ -1353,122 +1200,11 @@ Ponto ponto_xy(GLFWwindow *window) {
 void mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
 
 void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
-    // auto ponto_xy = [window]() -> Ponto {
-    //     double xpos {};
-    //     double ypos {};
-    //     glfwGetCursorPos(window, &xpos, &ypos);
-    //     int width {};
-    //     int height {};
-    //     glfwGetWindowSize(window, &width, &height);
-    //     double x {xpos / static_cast<double> (width) * 2. - 1.};
-    //     double y {1. - ypos / static_cast<double> (height) * 2.};
-    //     return {x, y};
-    // };
     State& estado = *(static_cast<State*> (glfwGetWindowUserPointer(window)));
-    auto coloca_ponto_dcel = [window, &estado]() {
-        auto& estad = estado.estado_dcel_teste;
-        auto& p = estad.poly;
-        Ponto ponto = ponto_xy(window);
-        if (p.size() >= 3) {
-            for (std::size_t i = 0; i < p.size() - 2; ++i) {
-                if (intersecao_com_left(p[i], p[i+1], p[p.size()-1], ponto) != Intersecao::NAO) {
-                    return;
-                }
-            }
-        }
-        p.push_back(ponto);
-        estad.ponto_adicionado = true;
-    };
-    auto fecha_poligono_dcel = [&estado]() {
-        auto& estad = estado.estado_dcel_teste;
-        auto& p = estad.poly;
-        if (p.size() <= 2) {
-            return;
-        }
-        for (std::size_t i = 1; i < p.size() - 2; ++i) {
-            if (intersecao_com_left(p[i], p[i+1], p[p.size()-1], p[0]) != Intersecao::NAO) {
-                return;
-            }
-        }
-        bool orientado_certo = orientado_antihorario(p);
-        if (!orientado_certo) {
-            estad.estado = Dcel_Data::RESETANDO;
-            return;
-        }
-        estad.poligono_fechado = true;
-        estad.estado = Dcel_Data::CRIANDO_DCEL;
-    };
-
-    if (estado.tela == Tela::DCEL_TESTE) {
-        if (action != GLFW_RELEASE) return;
-        auto& estad = estado.estado_dcel_teste;
-        auto& p = estad.poly;
-        if (p.size() == 0) {
-            estad.estado = Dcel_Data::RECEBENDO;
-        }
-        if (estad.estado == Dcel_Data::RECEBENDO) {
-            if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
-                coloca_ponto_dcel();
-            } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
-                fecha_poligono_dcel();
-            } else if (button == GLFW_MOUSE_BUTTON_RIGHT && !mods) {
-                estad.estado = Dcel_Data::RESETANDO;
-            }
-        } else if (estad.estado == Dcel_Data::DCEL_PRONTA) {
-            if (button == GLFW_MOUSE_BUTTON_RIGHT && !mods) {
-                estad.estado = Dcel_Data::RESETANDO;
-            } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
-                Ponto clicado = ponto_xy(window);
-                estad.operacoes.push_back({{clicado}, Dcel_Op::ENCONTRAR_FACE});
-            } else if (button == GLFW_MOUSE_BUTTON_LEFT && mods == GLFW_MOD_SHIFT) {
-                Ponto clicado = ponto_xy(window);
-                estad.operacoes.push_back({{clicado}, Dcel_Op::PISCAR_FACE});
-            } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
-                Ponto clicado = ponto_xy(window);
-                estad.operacoes.push_back({{clicado}, Dcel_Op::CLIQUE_VERTICE});
-            }
-        } else if (estad.estado == Dcel_Data::ADICIONANDO_ARESTA) {
-            if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
-                estad.estado = Dcel_Data::DCEL_PRONTA;
-            } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
-                Ponto clicado = ponto_xy(window);
-                estad.operacoes.push_back({{clicado}, Dcel_Op::PONTO_SELECIONADO});
-            }
-        } else if (estad.estado == Dcel_Data::ADICIONANDO_VERTICE) {
-            if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
-                estad.estado = Dcel_Data::DCEL_PRONTA;
-            } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
-                Ponto clicado = ponto_xy(window);
-                estad.operacoes.push_back({{clicado}, Dcel_Op::CLIQUE_VERTICE});
-            }
-        } else if (estad.estado == Dcel_Data::ESPERANDO_ORBITA) {
-            if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
-                estad.estado = Dcel_Data::DCEL_PRONTA;
-            } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
-                Ponto clicado = ponto_xy(window);
-                estad.operacoes.push_back({{clicado}, Dcel_Op::PISCAR_ORBITA});
-            }
-        } else if (estad.estado == Dcel_Data::DELETANDO_ARESTA) {
-            if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
-                estad.estado = Dcel_Data::DCEL_PRONTA;
-            } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
-                Ponto clicado = ponto_xy(window);
-                estad.operacoes.push_back({{clicado}, Dcel_Op::CLIQUE_VERTICE});
-            }
-        } else if (estad.estado == Dcel_Data::DELETANDO_VERTICE) {
-            if (button == GLFW_MOUSE_BUTTON_MIDDLE && !mods) {
-                estad.estado = Dcel_Data::DCEL_PRONTA;
-            } else if (button == GLFW_MOUSE_BUTTON_LEFT && !mods) {
-                Ponto clicado = ponto_xy(window);
-                estad.operacoes.push_back({{clicado}, Dcel_Op::CLIQUE_VERTICE});
-            }
-        }
-    } else if (estado.tela == Tela::DELAUNAY) {
-        if (action != GLFW_RELEASE) return;
-        auto& estad = estado.estado_delaunay;
-        Ponto clicado = ponto_xy(window);
-        estad.eventos.push_back({clicado, button, mods, General_Op::CLIQUE});
-    }
+    if (action != GLFW_RELEASE) return;
+    auto& estad = estado.estado_delaunay;
+    Ponto clicado = ponto_xy(window);
+    estad.eventos.push_back({clicado, button, mods, General_Op::CLIQUE});
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -1494,75 +1230,13 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     State& estado = *(static_cast<State*> (glfwGetWindowUserPointer(window)));
     if (action == GLFW_RELEASE) {
         switch (key) {
-            case GLFW_KEY_5:
-                if (!mods) estado.tela = Tela::DCEL_TESTE;
-                break;
-            case GLFW_KEY_6:
-                if (!mods) estado.tela = Tela::DELAUNAY;
-                break;
-
             case GLFW_KEY_R:
-
-                if (estado.tela == Tela::DELAUNAY) {
-                    estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
-                }
-
-                break;
-            case GLFW_KEY_T:
-                if (estado.tela == Tela::DCEL_TESTE && !mods) {
-                    if (estado.estado_dcel_teste.estado == Dcel_Data::DCEL_PRONTA) {
-                        estado.estado_dcel_teste.estado = Dcel_Data::DELETANDO_VERTICE;
-                    }
-                } else if (estado.tela == Tela::DELAUNAY) {
-                    estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
-                }
-
-                break;
             case GLFW_KEY_A:
-                if (estado.tela == Tela::DCEL_TESTE && !mods) {
-                    if (estado.estado_dcel_teste.estado == Dcel_Data::DCEL_PRONTA) {
-                        estado.estado_dcel_teste.estado = Dcel_Data::ADICIONANDO_ARESTA;
-                    }
-                } else if (estado.tela == Tela::DELAUNAY) {
-                    estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
-                }
-                break;
+            case GLFW_KEY_T:
             case GLFW_KEY_C:
-                if (estado.tela == Tela::DCEL_TESTE && !mods) {
-                    if (estado.estado_dcel_teste.estado == Dcel_Data::DCEL_PRONTA) {
-                        estado.estado_dcel_teste.estado = Dcel_Data::DELETANDO_ARESTA;
-                    }
-                } else if (estado.tela == Tela::DELAUNAY) {
-                    estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
-                }
-                break;
             case GLFW_KEY_S:
-                if (estado.tela != Tela::DELAUNAY) {
-                    return;
-                }
-                estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
-                break;
             case GLFW_KEY_E:
-                if (estado.tela != Tela::DELAUNAY) {
-                    return;
-                }
                 estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
-                break;
-            case GLFW_KEY_O:
-                if (estado.tela != Tela::DCEL_TESTE || mods) {
-                    return;
-                }
-                if (estado.estado_dcel_teste.estado == Dcel_Data::DCEL_PRONTA) {
-                    estado.estado_dcel_teste.estado = Dcel_Data::ESPERANDO_ORBITA;
-                }
-                break;
-            case GLFW_KEY_V:
-                if (estado.tela != Tela::DCEL_TESTE || mods) {
-                    return;
-                }
-                if (estado.estado_dcel_teste.estado == Dcel_Data::DCEL_PRONTA) {
-                    estado.estado_dcel_teste.estado = Dcel_Data::ADICIONANDO_VERTICE;
-                }
                 break;
             default:
                 break;
@@ -1571,59 +1245,13 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         switch (key) {
             case GLFW_KEY_R:
             case GLFW_KEY_A:
-                if (estado.tela == Tela::DELAUNAY) {
-                    estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
-                }
+                estado.estado_delaunay.eventos.push_back({{}, key, mods, General_Op::TECLA});
                 break;
             default:
                 break;
         }
     }
 }
-
-struct Coisas_Para_Piscar {
-    std::size_t ticks;
-    std::size_t ticks_por_aresta;
-    std::size_t atual;
-    std::vector<std::size_t> arestas;
-};
-
-struct Coisas_Para_Adicionar_Aresta {
-    std::size_t p1_idx;
-    std::size_t p2_idx;
-    std::size_t indices_obtidos;
-};
-
-struct Coisas_Para_Adicionar_Vertice {
-    std::size_t aresta_idx;
-    bool aresta_selecionada;
-};
-
-struct CoisasDCEL {
-    unsigned vao;
-    unsigned vbo;
-    unsigned ebo;
-    unsigned extra_vao;
-    unsigned extra_ebo;
-    std::size_t last_size;
-    std::size_t edge_count;
-    std::size_t last_gen;
-    std::unique_ptr<DCEL> dcel_ptr;
-    Coisas_Para_Piscar coisas_piscar;
-    Coisas_Para_Adicionar_Aresta coisas_aresta;
-    Coisas_Para_Adicionar_Vertice coisas_vertice;
-};
-
-enum class EstadoDelaunay {
-    INICIANDO,
-    TRIANGULANDO,
-    OK,
-};
-
-enum class EntradaDelaunay {
-    NORMAL,
-    TROCANDO_ARESTA,
-};
 
 struct Img {
     Img(std::string imagem) {
@@ -1688,8 +1316,6 @@ struct CoisasDelaunay {
         glBindVertexArray(0);
 
         mostrando_linhas = false;
-        estado = EstadoDelaunay::OK;
-        estado_entrada = EntradaDelaunay::NORMAL;
         last_size = 0;
         edge_count = 0;
         triangle_count = 0;
@@ -1711,8 +1337,6 @@ struct CoisasDelaunay {
 
     void reset() {
         mostrando_linhas = false;
-        estado = EstadoDelaunay::OK;
-        estado_entrada = EntradaDelaunay::NORMAL;
         last_size = 0;
         edge_count = 0;
         triangle_count = 0;
@@ -2038,8 +1662,6 @@ public:
     std::size_t edge_count;
     std::size_t triangle_count;
     std::size_t last_gen;
-    EstadoDelaunay estado;
-    EntradaDelaunay estado_entrada;
     std::unordered_set<Ponto> pontos;
     std::unique_ptr<DCEL> dcel;
 
@@ -2083,7 +1705,6 @@ int main(int argc, char* argv[]) {
     glfwMakeContextCurrent(window);
 
     State estado {};
-    estado.tela = Tela::DELAUNAY;
 
     glfwSetWindowUserPointer(window, &estado);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
@@ -2115,37 +1736,6 @@ int main(int argc, char* argv[]) {
     estado.pointSize = 4.0f;
     glLineWidth(estado.pointSize / 2.0f);
 
-    CoisasDCEL coisas_dcel {};
-    glGenVertexArrays(1, &coisas_dcel.vao);
-    glBindVertexArray(coisas_dcel.vao);
-
-    glGenBuffers(1, &coisas_dcel.vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
-    glBufferData(GL_ARRAY_BUFFER, 16*1024*sizeof (float), nullptr, GL_DYNAMIC_DRAW);
-
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
-    glEnableVertexAttribArray(1);
-
-    glGenBuffers(1, &coisas_dcel.ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 16*1024*sizeof (unsigned), nullptr, GL_DYNAMIC_DRAW);
-    glGenVertexArrays(1, &coisas_dcel.extra_vao);
-    glBindVertexArray(coisas_dcel.extra_vao);
-
-    glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
-
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), nullptr);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), reinterpret_cast<void*>(2 * sizeof (float)));
-    glEnableVertexAttribArray(1);
-
-    glGenBuffers(1, &coisas_dcel.extra_ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.extra_ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 16*1024*sizeof (unsigned), nullptr, GL_DYNAMIC_DRAW);
-
-    glBindVertexArray(0);
     std::random_device rd;
     std::mt19937 gen(rd());
 
@@ -2157,14 +1747,14 @@ int main(int argc, char* argv[]) {
     std::uniform_int_distribution<std::int64_t> idis_x(0, width - 1);
     std::uniform_int_distribution<std::int64_t> idis_y(0, height - 1);
 
-    auto transformada_x = [width](double x) -> float {
+    auto transformada_x = [width](std::int64_t x) -> float {
         float resp = static_cast<float>(x) / static_cast<float>(width);
         resp += 1.0 / static_cast<float>(2*width);
         resp -= 0.5;
         resp *= 2.0;
         return resp;
     };
-    auto transformada_y = [height](double y) -> float {
+    auto transformada_y = [height](std::int64_t y) -> float {
         float resp = static_cast<float>(y) / static_cast<float>(height);
         resp += 1.0 / static_cast<float>(2*height);
         resp -= 0.5;
@@ -2271,692 +1861,72 @@ int main(int argc, char* argv[]) {
 
     while (!glfwWindowShouldClose(window)) {
 
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(base_trabalho.r(), base_trabalho.g(), base_trabalho.b(), 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        if (estado.tela == Tela::DCEL_TESTE) {
 
-            glClearColor(0.4f, 0.3f, 0.4f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        std::size_t novos_pontos_aleatorios = 0;
+        std::size_t novos_pontos_com_criterio = 0;
+        bool mostrar_estatisticas = false;
 
-            auto& estad = estado.estado_dcel_teste;
-            if (estad.estado == Dcel_Data::RESETANDO) {
-                estad.poly.clear();
-                estad.operacoes.clear();
-                estad.ponto_adicionado = false;
-                estad.poligono_fechado = false;
+        while (estado.estado_delaunay.eventos.size() > 0) {
+            auto op = estado.estado_delaunay.eventos.front();
+            estado.estado_delaunay.eventos.pop_front();
+            switch (op.op) {
+                case General_Op::TECLA:
+                    if (op.button_key == GLFW_KEY_T && !op.mods) {
+                        delaunay.mostrando_linhas = !delaunay.mostrando_linhas;
+                    } else if (op.button_key == GLFW_KEY_R) {
 
-                coisas_dcel.last_size = 0;
-                coisas_dcel.edge_count = 0;
-                coisas_dcel.last_gen = 0;
-                coisas_dcel.dcel_ptr.reset();
-                coisas_dcel.coisas_piscar = {};
-                coisas_dcel.coisas_aresta = {};
-                coisas_dcel.coisas_vertice = {};
-                estad.estado = Dcel_Data::RECEBENDO;
-            }
-
-            if (estad.ponto_adicionado) {
-                std::size_t diff = estad.poly.size() - coisas_dcel.last_size;
-
-                std::vector<float> ps {};
-                ps.reserve(diff * 5 * sizeof (float));
-
-                std::vector<unsigned> is {};
-                is.reserve(diff * 2 * sizeof (unsigned));
-                for (std::size_t i = coisas_dcel.last_size; i < estad.poly.size(); ++i) {
-                    auto ponto = estad.poly[i];
-                    ps.push_back(transformada_x(ponto.x));
-                    ps.push_back(transformada_y(ponto.y));
-
-                    ps.push_back(0.788f);
-                    ps.push_back(0.682f);
-                    ps.push_back(0.078f);
-
-                    if (i >= 1) {
-                        is.push_back(i-1);
-                        is.push_back(i);
-                    }
-                }
-                glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(coisas_dcel.last_size * 5 * sizeof (float)), static_cast<GLintptr>(diff * 5 * sizeof (float)), ps.data());
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
-                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLintptr>(coisas_dcel.edge_count * 2 * sizeof (unsigned)), static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
-                std::size_t edge_diff = diff;
-                if (coisas_dcel.last_size == 0) {
-                    --edge_diff;
-                }
-                coisas_dcel.edge_count += edge_diff;
-
-                coisas_dcel.last_size = estad.poly.size();
-                estad.ponto_adicionado = false;
-            }
-
-            if (estad.poligono_fechado) {
-
-                std::array<unsigned, 2> ultima_aresta {static_cast<unsigned>(estad.poly.size() - 1), 0};
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
-                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLintptr>(coisas_dcel.edge_count * 2 * sizeof (unsigned)), static_cast<GLintptr>(2 * sizeof (unsigned)), ultima_aresta.data());
-                ++coisas_dcel.edge_count;
-
-                estad.poligono_fechado = false;
-            }
-
-            if (estad.estado == Dcel_Data::CRIANDO_DCEL) {
-                coisas_dcel.dcel_ptr = std::make_unique<DCEL>(estad.poly);
-                estad.estado = Dcel_Data::DCEL_PRONTA;
-            }
-
-            if (coisas_dcel.dcel_ptr && coisas_dcel.last_gen < coisas_dcel.dcel_ptr->gen()) {
-
-                auto [verts_r, v_invs] = coisas_dcel.dcel_ptr->vec_vertices();
-                auto [edges_r, e_invs] = coisas_dcel.dcel_ptr->vec_edges();
-
-                auto& verts = verts_r.get();
-                auto& edges = edges_r.get();
-                std::cout << verts.size() << std::endl;
-                std::vector<float> ps {};
-                ps.reserve(verts.size() * 5 * sizeof (float));
-                for (std::size_t i = 0; i < verts.size(); ++i) {
-                    auto ponto = verts[i];
-                    if (v_invs.count(i)) {
-                        ps.push_back(2.0f);
-                        ps.push_back(2.0f);
-                    } else {
-                        ps.push_back(transformada_x(ponto.xy.x));
-                        ps.push_back(transformada_y(ponto.xy.y));
-                    }
-
-                    ps.push_back(0.788f);
-                    ps.push_back(0.682f);
-                    ps.push_back(0.078f);
-                }
-
-                std::vector<unsigned> is {};
-                is.reserve((edges.size() / 2) * sizeof (unsigned));
-                for (std::size_t i = 0; i < (edges.size() / 2); ++i) {
-                    if (e_invs.count(2*i)) {
-                        is.push_back(65535);
-                        is.push_back(65535);
-                    } else {
-                        unsigned p1 = static_cast<unsigned>(edges[2*i].origin - &verts[0]);
-                        unsigned p2 = static_cast<unsigned>(edges[2*i + 1].origin - &verts[0]);
-                        is.push_back(p1);
-                        is.push_back(p2);
-                    }
-                }
-                glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLintptr>(ps.size() * sizeof (float)), ps.data());
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
-                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLintptr>(is.size() * sizeof (unsigned)), is.data());
-                coisas_dcel.edge_count = edges.size() / 2;
-                coisas_dcel.last_size = verts.size();
-
-                coisas_dcel.last_gen = coisas_dcel.dcel_ptr->gen();
-            }
-
-            if (estad.estado == Dcel_Data::DCEL_PRONTA) {
-                // auto ponto_xy = [window]() -> Ponto {
-                //     double xpos {};
-                //     double ypos {};
-                //     glfwGetCursorPos(window, &xpos, &ypos);
-                //     int width {};
-                //     int height {};
-                //     glfwGetWindowSize(window, &width, &height);
-                //     double x {xpos / static_cast<double> (width) * 2. - 1.};
-                //     double y {1. - ypos / static_cast<double> (height) * 2.};
-                //     return {x, y};
-                // };
-                Ponto mouse = ponto_xy(window);
-                double menor_d_vertice = std::numeric_limits<double>::infinity();
-                std::size_t menor_i_vertice = 0;
-                auto [vs_r, v_iv] = coisas_dcel.dcel_ptr->vec_vertices();
-                auto& vs = vs_r.get();
-                for (std::size_t i = 0; i < vs.size(); ++i) {
-                    if (v_iv.count(i)) {
-                        continue;
-                    }
-                    double d = dist(vs[i].xy, mouse);
-                    if (d < menor_d_vertice) {
-                        menor_d_vertice = d;
-                        menor_i_vertice = i;
-                    }
-                }
-
-                double menor_d_aresta = std::numeric_limits<double>::infinity();
-                std::size_t menor_i_aresta = 0;
-                auto [es_r, e_iv] = coisas_dcel.dcel_ptr->vec_edges();
-                auto& es = es_r.get();
-                for (std::size_t i = 0; i < es.size(); i += 2) {
-                    if (e_iv.count(i)) {
-                        continue;
-                    }
-                    double d = distancia_ponto_segmento(es[i].origin->xy, es[i+1].origin->xy, mouse);
-                    if (d < menor_d_aresta) {
-                        menor_d_aresta = d;
-                        menor_i_aresta = i;
-                    }
-                }
-                auto& p1 = es[menor_i_aresta].origin->xy;
-                auto& p2 = es[menor_i_aresta+1].origin->xy;
-
-                double menor_d = menor_d_vertice;
-                std::size_t menor_i = menor_i_vertice;
-                bool vertice = true;
-                if (menor_d_aresta < menor_d_vertice) {
-                    menor_d = menor_d_aresta;
-                    menor_i = menor_i_aresta;
-                    vertice = false;
-                }
-                if (menor_d <= 0.05) {
-                    if (vertice) {
-                        glBindVertexArray(coisas_dcel.vao);
-                        glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
-                        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
-
-                        point_program.use();
-                        point_program.setFloat("pointRadius", estado.pointSize + 30.0f);
-                        point_program.setFloat("alpha", 0.5f);
-                        glDrawArrays(GL_POINTS, menor_i_vertice, 1);
-                        point_program.setFloat("alpha", 1.0f);
-                    } else {
-                        glBindVertexArray(coisas_dcel.vao);
-                        glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
-                        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
-
-                        point_program.use();
-                        point_program.setFloat("pointRadius", estado.pointSize + 30.0f);
-                        point_program.setFloat("alpha", 0.5f);
-                        glDrawElements(GL_POINTS, 2, GL_UNSIGNED_INT, reinterpret_cast<void*>(menor_i_aresta * sizeof (unsigned)));
-                        point_program.setFloat("alpha", 1.0f);
-                    }
-                }
-
-                while (estad.operacoes.size() > 0) {
-                    auto op = estad.operacoes.front();
-                    estad.operacoes.pop_front();
-                    if (op.op == Dcel_Op::ENCONTRAR_FACE) {
-
-                        std::cout << "clicado no ponto " << mouse.x << ' ' << mouse.y << std::endl;
-                        auto a = coisas_dcel.dcel_ptr->qual_face(op.args.ponto);
-                        std::cout << "Indice da face: " << a << std::endl;
-                    } else if (op.op == Dcel_Op::PISCAR_FACE) {
-                        auto a = coisas_dcel.dcel_ptr->qual_face(op.args.ponto);
-                        auto b = coisas_dcel.dcel_ptr->indices_das_arestas_de_uma_face(a);
-                        coisas_dcel.coisas_piscar.arestas = b;
-                        coisas_dcel.coisas_piscar.ticks = 0;
-                        coisas_dcel.coisas_piscar.ticks_por_aresta = 50;
-                        coisas_dcel.coisas_piscar.atual = 0;
-                        estad.estado = Dcel_Data::PISCANDO;
-                        break;
-                    } else if (op.op == Dcel_Op::CLIQUE_VERTICE) {
-                        if (menor_d > 0.05) {
-                            continue;
+                        if (!op.mods) {
+                            ++novos_pontos_aleatorios;
+                        } else if (op.mods == GLFW_MOD_SHIFT) {
+                            novos_pontos_aleatorios += 10;
+                        } else if (op.mods == GLFW_MOD_CONTROL) {
+                            novos_pontos_aleatorios += 25;
+                        } else if (op.mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
+                            novos_pontos_aleatorios += 500;
                         }
-                        if (vertice) {
-                            std::cout << "Indice do vertice: " << menor_i << std::endl;
-                            std::cout << "Indice do vertice valido: " << coisas_dcel.dcel_ptr->indice_vertice_valido() << std::endl;
-                        } else {
-                            std::cout << "Indice da aresta: " << menor_i << std::endl;
-                            std::cout << "Indice da aresta gemea: " << menor_i+1 << std::endl;
-                            std::cout << "Indice da proxima aresta: " << es[menor_i].next - es.data() << std::endl;
-                            std::cout << "Indice da aresta anterior: " << es[menor_i].prev - es.data() << std::endl;
-                            std::cout << "Indice da proxima aresta da gemea: " << es[menor_i+1].next - es.data() << std::endl;
-                            std::cout << "Indice da aresta anterior da gemea: " << es[menor_i+1].prev - es.data() << std::endl;
+                    } else if (op.button_key == GLFW_KEY_A) {
+
+                        if (!op.mods) {
+                            ++novos_pontos_com_criterio;
+                        } else if (op.mods == GLFW_MOD_SHIFT) {
+                            novos_pontos_com_criterio += 10;
+                        } else if (op.mods == GLFW_MOD_CONTROL) {
+                            novos_pontos_com_criterio += 25;
+                        } else if (op.mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
+                            novos_pontos_com_criterio += 500;
                         }
-                    } else {
-                        estad.operacoes.push_front(op);
-                        break;
+                    } else if (op.button_key == GLFW_KEY_S && !op.mods) {
+                        mostrar_estatisticas = true;
                     }
-                }
+                    break;
+                default:
+                    break;
             }
+        }
 
-            if (estad.estado == Dcel_Data::ADICIONANDO_ARESTA) {
-                // auto ponto_xy = [window]() -> Ponto {
-                //     double xpos {};
-                //     double ypos {};
-                //     glfwGetCursorPos(window, &xpos, &ypos);
-                //     int width {};
-                //     int height {};
-                //     glfwGetWindowSize(window, &width, &height);
-                //     double x {xpos / static_cast<double> (width) * 2. - 1.};
-                //     double y {1. - ypos / static_cast<double> (height) * 2.};
-                //     return {x, y};
-                // };
-                Ponto mouse = ponto_xy(window);
-                double menor_d = std::numeric_limits<double>::infinity();
-                std::size_t menor_i = 0;
-                auto [vs_r, iv] = coisas_dcel.dcel_ptr->vec_vertices();
-                auto& vs = vs_r.get();
-                for (std::size_t i = 0; i < vs.size(); ++i) {
-                    if (iv.count(i)) {
-                        continue;
-                    }
-                    double d = dist(vs[i].xy, mouse);
-                    if (d < menor_d) {
-                        menor_d = d;
-                        menor_i = i;
-                    }
+        if (novos_pontos_aleatorios > 0) {
+            while (novos_pontos_aleatorios --> 0 && !aconteceu_aquilo) {
+                // if (delaunay.dcel->gen() > 2800) {
+                //     std::cout << "tudo ok" << std::endl;
+                //     std::exit(0);
+                // }
+                Ponto p {idis_x(gen), idis_y(gen)};
+                bool foi = delaunay.adiciona_ponto(p);
+                if (aconteceu_aquilo) {
+                    std::cout << "alerta" << std::endl;
+                    std::cout << "alerta" << std::endl;
+                    std::cout << "alerta" << std::endl;
+                    std::cout << "alerta" << std::endl;
+                    std::cout << "alerta" << std::endl;
+                    std::cout << "investigar problema que aconteceu" << std::endl;
+                    std::exit(2);
+                    break;
                 }
-                if (menor_d <= 0.05) {
-
-                    glBindVertexArray(coisas_dcel.vao);
-                    glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
-
-                    point_program.use();
-                    point_program.setFloat("pointRadius", estado.pointSize + 30.0f);
-                    point_program.setFloat("alpha", 0.5f);
-                    glDrawArrays(GL_POINTS, menor_i, 1);
-                    point_program.setFloat("alpha", 1.0f);
-                }
-
-                while (estad.operacoes.size() > 0) {
-                    auto op = estad.operacoes.front();
-                    estad.operacoes.pop_front();
-                    if (op.op == Dcel_Op::PONTO_SELECIONADO) {
-                        if (menor_d > 0.05) {
-                            coisas_dcel.coisas_aresta.indices_obtidos = 0;
-                            continue;
-                        }
-                        std::cout << "bla" << std::endl;
-                        if (coisas_dcel.coisas_aresta.indices_obtidos == 0) {
-                            coisas_dcel.coisas_aresta.p1_idx = menor_i;
-                            ++coisas_dcel.coisas_aresta.indices_obtidos;
-                        } else if (coisas_dcel.coisas_aresta.p1_idx == menor_i) {
-
-                            continue;
-                        } else {
-                            coisas_dcel.coisas_aresta.p2_idx = menor_i;
-                            auto& v1_idx = coisas_dcel.coisas_aresta.p1_idx;
-                            auto& v2_idx = coisas_dcel.coisas_aresta.p2_idx;
-
-                            coisas_dcel.dcel_ptr->inclui_aresta(v1_idx, v2_idx);
-                            estad.estado = Dcel_Data::DCEL_PRONTA;
-                            coisas_dcel.coisas_aresta = {};
-                            if (coisas_dcel.dcel_ptr->gen() > coisas_dcel.last_gen) {
-
-                                continue;
-                            }
-                        }
-                    } else {
-                        estad.operacoes.push_front(op);
-                        break;
-                    }
-                }
-            }
-
-            if (estad.estado == Dcel_Data::ADICIONANDO_VERTICE) {
-                // auto ponto_xy = [window]() -> Ponto {
-                //     double xpos {};
-                //     double ypos {};
-                //     glfwGetCursorPos(window, &xpos, &ypos);
-                //     int width {};
-                //     int height {};
-                //     glfwGetWindowSize(window, &width, &height);
-                //     double x {xpos / static_cast<double> (width) * 2. - 1.};
-                //     double y {1. - ypos / static_cast<double> (height) * 2.};
-                //     return {x, y};
-                // };
-                Ponto mouse = ponto_xy(window);
-                double menor_d = std::numeric_limits<double>::infinity();
-                std::size_t menor_i = 0;
-                auto [es_r, iv] = coisas_dcel.dcel_ptr->vec_edges();
-                auto& es = es_r.get();
-                for (std::size_t i = 0; i < es.size(); i += 2) {
-                    if (iv.count(i)) {
-                        continue;
-                    }
-                    double d = distancia_ponto_segmento(es[i].origin->xy, es[i+1].origin->xy, mouse);
-                    if (d < menor_d) {
-                        menor_d = d;
-                        menor_i = i;
-                    }
-                }
-                auto& p1 = es[menor_i].origin->xy;
-                auto& p2 = es[menor_i+1].origin->xy;
-                if (menor_d <= 0.05) {
-
-                    glBindVertexArray(coisas_dcel.vao);
-                    glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
-
-                    point_program.use();
-                    point_program.setFloat("pointRadius", estado.pointSize + 30.0f);
-                    point_program.setFloat("alpha", 0.5f);
-                    glDrawElements(GL_POINTS, 2, GL_UNSIGNED_INT, reinterpret_cast<void*>(menor_i * sizeof (unsigned)));
-                    point_program.setFloat("alpha", 1.0f);
-                }
-
-                while (estad.operacoes.size() > 0) {
-                    auto op = estad.operacoes.front();
-                    estad.operacoes.pop_front();
-                    if (op.op == Dcel_Op::CLIQUE_VERTICE) {
-                        if (menor_d > 0.05) {
-                            coisas_dcel.coisas_vertice.aresta_selecionada = false;
-                            continue;
-                        }
-                        std::cout << "bla2" << std::endl;
-                        if (!coisas_dcel.coisas_vertice.aresta_selecionada) {
-                            coisas_dcel.coisas_vertice.aresta_idx = menor_i;
-                            coisas_dcel.coisas_vertice.aresta_selecionada = true;
-                        } else if (coisas_dcel.coisas_vertice.aresta_idx != menor_i) {
-
-                            coisas_dcel.coisas_vertice.aresta_idx = menor_i;
-                            continue;
-                        } else {
-                            double s = sombra_reta_ponto(mouse, {p1, p2});
-
-                            coisas_dcel.dcel_ptr->inclui_vertice_em_aresta(menor_i, s);
-                            estad.estado = Dcel_Data::DCEL_PRONTA;
-                            coisas_dcel.coisas_vertice = {};
-                            if (coisas_dcel.dcel_ptr->gen() > coisas_dcel.last_gen) {
-
-                                continue;
-                            }
-                        }
-                    } else {
-                        estad.operacoes.push_front(op);
-                        break;
-                    }
-                }
-            }
-
-            if (estad.estado == Dcel_Data::ESPERANDO_ORBITA) {
-                // auto ponto_xy = [window]() -> Ponto {
-                //     double xpos {};
-                //     double ypos {};
-                //     glfwGetCursorPos(window, &xpos, &ypos);
-                //     int width {};
-                //     int height {};
-                //     glfwGetWindowSize(window, &width, &height);
-                //     double x {xpos / static_cast<double> (width) * 2. - 1.};
-                //     double y {1. - ypos / static_cast<double> (height) * 2.};
-                //     return {x, y};
-                // };
-                Ponto mouse = ponto_xy(window);
-                double menor_d = std::numeric_limits<double>::infinity();
-                std::size_t menor_i = 0;
-                auto [vs_r, iv] = coisas_dcel.dcel_ptr->vec_vertices();
-                auto& vs = vs_r.get();
-                for (std::size_t i = 0; i < vs.size(); ++i) {
-                    if (iv.count(i)) {
-                        continue;
-                    }
-                    double d = dist(vs[i].xy, mouse);
-                    if (d < menor_d) {
-                        menor_d = d;
-                        menor_i = i;
-                    }
-                }
-                if (menor_d <= 0.05) {
-
-                    glBindVertexArray(coisas_dcel.vao);
-                    glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
-
-                    point_program.use();
-                    point_program.setFloat("pointRadius", estado.pointSize + 30.0f);
-                    point_program.setFloat("alpha", 0.5f);
-                    glDrawArrays(GL_POINTS, menor_i, 1);
-                    point_program.setFloat("alpha", 1.0f);
-                }
-
-                while (estad.operacoes.size() > 0) {
-                    auto op = estad.operacoes.front();
-                    estad.operacoes.pop_front();
-                    if (op.op == Dcel_Op::PISCAR_ORBITA) {
-                        if (menor_d > 0.05) {
-                            continue;
-                        }
-                        std::cout << "bla3" << std::endl;
-                        auto b = coisas_dcel.dcel_ptr->indices_orbita_de_um_vertice(menor_i);
-                        coisas_dcel.coisas_piscar.arestas = b;
-                        coisas_dcel.coisas_piscar.ticks = 0;
-                        coisas_dcel.coisas_piscar.ticks_por_aresta = 50;
-                        coisas_dcel.coisas_piscar.atual = 0;
-                        estad.estado = Dcel_Data::PISCANDO;
-                    } else {
-                        estad.operacoes.push_front(op);
-                        break;
-                    }
-                }
-            }
-
-            if (estad.estado == Dcel_Data::DELETANDO_ARESTA) {
-                // auto ponto_xy = [window]() -> Ponto {
-                //     double xpos {};
-                //     double ypos {};
-                //     glfwGetCursorPos(window, &xpos, &ypos);
-                //     int width {};
-                //     int height {};
-                //     glfwGetWindowSize(window, &width, &height);
-                //     double x {xpos / static_cast<double> (width) * 2. - 1.};
-                //     double y {1. - ypos / static_cast<double> (height) * 2.};
-                //     return {x, y};
-                // };
-                Ponto mouse = ponto_xy(window);
-                double menor_d = std::numeric_limits<double>::infinity();
-                std::size_t menor_i = 0;
-                auto [es_r, iv] = coisas_dcel.dcel_ptr->vec_edges();
-                auto& es = es_r.get();
-                for (std::size_t i = 0; i < es.size(); i += 2) {
-                    if (iv.count(i)) {
-                        continue;
-                    }
-                    double d = distancia_ponto_segmento(es[i].origin->xy, es[i+1].origin->xy, mouse);
-                    if (d < menor_d) {
-                        menor_d = d;
-                        menor_i = i;
-                    }
-                }
-                auto& p1 = es[menor_i].origin->xy;
-                auto& p2 = es[menor_i+1].origin->xy;
-                if (menor_d <= 0.05) {
-
-                    glBindVertexArray(coisas_dcel.vao);
-                    glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
-
-                    point_program.use();
-                    point_program.setFloat("pointRadius", estado.pointSize + 30.0f);
-                    point_program.setFloat("alpha", 0.5f);
-                    glDrawElements(GL_POINTS, 2, GL_UNSIGNED_INT, reinterpret_cast<void*>(menor_i * sizeof (unsigned)));
-                    point_program.setFloat("alpha", 1.0f);
-                }
-
-                while (estad.operacoes.size() > 0) {
-                    auto op = estad.operacoes.front();
-                    estad.operacoes.pop_front();
-                    if (op.op == Dcel_Op::CLIQUE_VERTICE) {
-                        if (menor_d > 0.05) {
-                            continue;
-                        }
-                        coisas_dcel.dcel_ptr->deleta_aresta(menor_i);
-                        estad.estado = Dcel_Data::DCEL_PRONTA;
-                        if (coisas_dcel.dcel_ptr->vazia()) {
-                            estad.estado = Dcel_Data::RESETANDO;
-                            continue;
-                        }
-                    } else {
-                        estad.operacoes.push_front(op);
-                        break;
-                    }
-                }
-            }
-
-            if (estad.estado == Dcel_Data::DELETANDO_VERTICE) {
-                // auto ponto_xy = [window]() -> Ponto {
-                //     double xpos {};
-                //     double ypos {};
-                //     glfwGetCursorPos(window, &xpos, &ypos);
-                //     int width {};
-                //     int height {};
-                //     glfwGetWindowSize(window, &width, &height);
-                //     double x {xpos / static_cast<double> (width) * 2. - 1.};
-                //     double y {1. - ypos / static_cast<double> (height) * 2.};
-                //     return {x, y};
-                // };
-                Ponto mouse = ponto_xy(window);
-                double menor_d = std::numeric_limits<double>::infinity();
-                std::size_t menor_i = 0;
-                auto [vs_r, iv] = coisas_dcel.dcel_ptr->vec_vertices();
-                auto& vs = vs_r.get();
-                for (std::size_t i = 0; i < vs.size(); ++i) {
-                    if (iv.count(i)) {
-                        continue;
-                    }
-                    double d = dist(vs[i].xy, mouse);
-                    if (d < menor_d) {
-                        menor_d = d;
-                        menor_i = i;
-                    }
-                }
-                if (menor_d <= 0.05) {
-
-                    glBindVertexArray(coisas_dcel.vao);
-                    glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
-
-                    point_program.use();
-                    point_program.setFloat("pointRadius", estado.pointSize + 30.0f);
-                    point_program.setFloat("alpha", 0.5f);
-                    glDrawArrays(GL_POINTS, menor_i, 1);
-                    point_program.setFloat("alpha", 1.0f);
-                }
-
-                while (estad.operacoes.size() > 0) {
-                    auto op = estad.operacoes.front();
-                    estad.operacoes.pop_front();
-                    if (op.op == Dcel_Op::CLIQUE_VERTICE) {
-                        if (menor_d > 0.05) {
-                            continue;
-                        }
-                        coisas_dcel.dcel_ptr->deleta_vertice(menor_i);
-                        estad.estado = Dcel_Data::DCEL_PRONTA;
-                        if (coisas_dcel.dcel_ptr->vazia()) {
-                            estad.estado = Dcel_Data::RESETANDO;
-                            continue;
-                        }
-                    } else {
-                        estad.operacoes.push_front(op);
-                        break;
-                    }
-                }
-            }
-
-            glBindVertexArray(coisas_dcel.vao);
-            glBindBuffer(GL_ARRAY_BUFFER, coisas_dcel.vbo);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coisas_dcel.ebo);
-
-            color_line_program.use();
-            color_line_program.setFloat("alpha", 1.0f);
-            glDrawElements(GL_LINES, coisas_dcel.edge_count*2, GL_UNSIGNED_INT, nullptr);
-
-            if (estad.estado == Dcel_Data::PISCANDO) {
-                auto& c = coisas_dcel.coisas_piscar;
-                if (c.ticks == 0) {
-                    auto [edges_r, e_invs] = coisas_dcel.dcel_ptr->vec_edges();
-                    auto& edges = edges_r.get();
-
-                    auto& e = edges[c.arestas[c.atual]];
-                    std::cout << c.arestas[c.atual] << std::endl;
-                }
-                fixed_color_program.use();
-                fixed_color_program.setFloat("alpha", 0.8f);
-                glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, reinterpret_cast<void*>((c.arestas[c.atual] & (~1llu)) * sizeof (unsigned)));
-
-                ++c.ticks;
-                if (c.ticks >= c.ticks_por_aresta) {
-                    c.ticks = 0;
-                    ++c.atual;
-                    if (c.atual >= c.arestas.size()) {
-                        estad.estado = Dcel_Data::DCEL_PRONTA;
-                    }
-                }
-            }
-
-            point_program.use();
-            point_program.setFloat("pointRadius", estado.pointSize);
-            glDrawArrays(GL_POINTS, 0, coisas_dcel.last_size);
-        } else if (estado.tela == Tela::DELAUNAY) {
-            glClearColor(base_trabalho.r(), base_trabalho.g(), base_trabalho.b(), 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            std::size_t novos_pontos_aleatorios = 0;
-            std::size_t novos_pontos_com_criterio = 0;
-            bool outra_tela = false;
-            bool mostrar_estatisticas = false;
-
-            while (estado.estado_delaunay.eventos.size() > 0) {
-                auto op = estado.estado_delaunay.eventos.front();
-                estado.estado_delaunay.eventos.pop_front();
-                if (delaunay.estado == EstadoDelaunay::OK) {
-                    switch (op.op) {
-                        case General_Op::TECLA:
-                            if (op.button_key == GLFW_KEY_T && !op.mods) {
-                                delaunay.mostrando_linhas = !delaunay.mostrando_linhas;
-                            } else if (op.button_key == GLFW_KEY_R) {
-
-                                if (!op.mods) {
-                                    ++novos_pontos_aleatorios;
-                                } else if (op.mods == GLFW_MOD_SHIFT) {
-                                    novos_pontos_aleatorios += 10;
-                                } else if (op.mods == GLFW_MOD_CONTROL) {
-                                    novos_pontos_aleatorios += 25;
-                                } else if (op.mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
-                                    novos_pontos_aleatorios += 500;
-                                }
-                            } else if (op.button_key == GLFW_KEY_A) {
-
-                                if (!op.mods) {
-                                    ++novos_pontos_com_criterio;
-                                } else if (op.mods == GLFW_MOD_SHIFT) {
-                                    novos_pontos_com_criterio += 10;
-                                } else if (op.mods == GLFW_MOD_CONTROL) {
-                                    novos_pontos_com_criterio += 25;
-                                } else if (op.mods == (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL)) {
-                                    novos_pontos_com_criterio += 500;
-                                }
-                            } else if (op.button_key == GLFW_KEY_E && !op.mods) {
-                                estado.tela = Tela::DCEL_TESTE;
-
-                                auto& estad = estado.estado_dcel_teste;
-                                estad.poly = {Ponto{0, 0}};
-                                estad.operacoes.clear();
-                                estad.ponto_adicionado = false;
-                                estad.poligono_fechado = false;
-
-                                coisas_dcel.vao = delaunay.vao;
-                                coisas_dcel.vbo = delaunay.vbo;
-                                coisas_dcel.ebo = delaunay.ebo;
-                                coisas_dcel.last_size = delaunay.last_size;
-                                coisas_dcel.edge_count = delaunay.edge_count;
-                                coisas_dcel.last_gen = delaunay.last_gen - 1;
-                                coisas_dcel.dcel_ptr = std::move(delaunay.dcel);
-                                coisas_dcel.coisas_piscar = {};
-                                coisas_dcel.coisas_aresta = {};
-                                coisas_dcel.coisas_vertice = {};
-                                estad.estado = Dcel_Data::DCEL_PRONTA;
-                                outra_tela = true;
-                            } else if (op.button_key == GLFW_KEY_S && !op.mods) {
-                                mostrar_estatisticas = true;
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-            if (outra_tela) continue;
-
-            if (novos_pontos_aleatorios > 0) {
-                while (novos_pontos_aleatorios --> 0 && !aconteceu_aquilo) {
-                    // if (delaunay.dcel->gen() > 2800) {
-                    //     std::cout << "tudo ok" << std::endl;
-                    //     std::exit(0);
-                    // }
-                    Ponto p {idis_x(gen), idis_y(gen)};
-                    bool foi = delaunay.adiciona_ponto(p);
+                while (!foi) {
+                    p = {idis_x(gen), idis_y(gen)};
+                    foi = delaunay.adiciona_ponto(p);
                     if (aconteceu_aquilo) {
                         std::cout << "alerta" << std::endl;
                         std::cout << "alerta" << std::endl;
@@ -2967,75 +1937,13 @@ int main(int argc, char* argv[]) {
                         std::exit(2);
                         break;
                     }
-                    while (!foi) {
-                        p = {idis_x(gen), idis_y(gen)};
-                        foi = delaunay.adiciona_ponto(p);
-                        if (aconteceu_aquilo) {
-                            std::cout << "alerta" << std::endl;
-                            std::cout << "alerta" << std::endl;
-                            std::cout << "alerta" << std::endl;
-                            std::cout << "alerta" << std::endl;
-                            std::cout << "alerta" << std::endl;
-                            std::cout << "investigar problema que aconteceu" << std::endl;
-                            std::exit(2);
-                            break;
-                        }
-                    }
                 }
             }
+        }
 
-            if (novos_pontos_com_criterio > 0) {
-                glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-                while (novos_pontos_com_criterio --> 0) {
-                    glBindVertexArray(delaunay.faces_vao);
-                    glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
-
-                    color_line_program.use();
-                    color_line_program.setFloat("alpha", 1.0f);
-                    glDrawElements(GL_TRIANGLES, delaunay.triangle_count*3, GL_UNSIGNED_INT, nullptr);
-
-                    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, conteudo_da_tela.data());
-                    // glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, conteudo_da_tela.data());
-
-                    auto [p, erro] = delaunay.ponto_com_maior_erro(conteudo_da_tela);
-                    if (erro == 0) {
-                        novos_pontos_com_criterio = 0;
-                        break;
-                    }
-                    delaunay.adiciona_ponto(p);
-                    atualiza_dcel();
-                    delaunay.last_gen = delaunay.dcel->gen();
-                }
-                glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            }
-
-            if (mostrar_estatisticas) {
-                {
-                    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-                    glBindVertexArray(delaunay.faces_vao);
-                    glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
-
-                    color_line_program.use();
-                    color_line_program.setFloat("alpha", 1.0f);
-                    glDrawElements(GL_TRIANGLES, delaunay.triangle_count*3, GL_UNSIGNED_INT, nullptr);
-
-                    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, conteudo_da_tela.data());
-                    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-                }
-
-                auto [rmse, verts, tris] = delaunay.estatisticas(conteudo_da_tela);
-                std::cout << "Aproximacao com " << verts << " vertices, ";
-                std::cout << tris << " triangulos" << std::endl;
-                std::cout << "RSME calculado: " << rmse << std::endl;
-            }
-
-            if (delaunay.last_gen < delaunay.dcel->gen()) {
-                atualiza_dcel();
-            }
-
-            if (delaunay.estado == EstadoDelaunay::OK) {
+        if (novos_pontos_com_criterio > 0) {
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+            while (novos_pontos_com_criterio --> 0) {
                 glBindVertexArray(delaunay.faces_vao);
                 glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
@@ -3044,27 +1952,72 @@ int main(int argc, char* argv[]) {
                 color_line_program.setFloat("alpha", 1.0f);
                 glDrawElements(GL_TRIANGLES, delaunay.triangle_count*3, GL_UNSIGNED_INT, nullptr);
 
-                // glReadPixels(0, 0, width, height, GL_RGBA, GL_FLOAT, conteudo_da_tela.data());
+                glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, conteudo_da_tela.data());
+                // glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, conteudo_da_tela.data());
 
-                if (delaunay.mostrando_linhas) {
-                    glBindVertexArray(delaunay.vao);
-                    glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
-
-                    glLineWidth(2.0f);
-                    fixed_color_program.use();
-                    fixed_color_program.setFloat("alpha", 1.0f);
-                    glDrawElements(GL_LINES, delaunay.edge_count*2, GL_UNSIGNED_INT, nullptr);
-                    glLineWidth(std::max(estado.pointSize / 2.0f, 1.0f));
-
-                    // não dá pra ver os pontos, nem vou desenhar tb
-                    // fixed_point_program.use();
-                    // fixed_point_program.setFloat("pointRadius", 8.0f);
-
-                    // glDrawArrays(GL_POINTS, 0, delaunay.last_size);
+                auto [p, erro] = delaunay.ponto_com_maior_erro(conteudo_da_tela);
+                if (erro == 0) {
+                    novos_pontos_com_criterio = 0;
+                    break;
                 }
+                delaunay.adiciona_ponto(p);
+                atualiza_dcel();
+                delaunay.last_gen = delaunay.dcel->gen();
+            }
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
+        if (mostrar_estatisticas) {
+            {
+                glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+                glBindVertexArray(delaunay.faces_vao);
+                glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
+
+                color_line_program.use();
+                color_line_program.setFloat("alpha", 1.0f);
+                glDrawElements(GL_TRIANGLES, delaunay.triangle_count*3, GL_UNSIGNED_INT, nullptr);
+
+                glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, conteudo_da_tela.data());
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
             }
 
+            auto [rmse, verts, tris] = delaunay.estatisticas(conteudo_da_tela);
+            std::cout << "Aproximacao com " << verts << " vertices, ";
+            std::cout << tris << " triangulos" << std::endl;
+            std::cout << "RSME calculado: " << rmse << std::endl;
+        }
+
+        if (delaunay.last_gen < delaunay.dcel->gen()) {
+            atualiza_dcel();
+        }
+
+        glBindVertexArray(delaunay.faces_vao);
+        glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.faces_ebo);
+
+        color_line_program.use();
+        color_line_program.setFloat("alpha", 1.0f);
+        glDrawElements(GL_TRIANGLES, delaunay.triangle_count*3, GL_UNSIGNED_INT, nullptr);
+
+        // glReadPixels(0, 0, width, height, GL_RGBA, GL_FLOAT, conteudo_da_tela.data());
+
+        if (delaunay.mostrando_linhas) {
+            glBindVertexArray(delaunay.vao);
+            glBindBuffer(GL_ARRAY_BUFFER, delaunay.vbo);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, delaunay.ebo);
+
+            glLineWidth(2.0f);
+            fixed_color_program.use();
+            fixed_color_program.setFloat("alpha", 1.0f);
+            glDrawElements(GL_LINES, delaunay.edge_count*2, GL_UNSIGNED_INT, nullptr);
+            glLineWidth(std::max(estado.pointSize / 2.0f, 1.0f));
+
+            // não dá pra ver os pontos, nem vou desenhar tb
+            // fixed_point_program.use();
+            // fixed_point_program.setFloat("pointRadius", 8.0f);
+
+            // glDrawArrays(GL_POINTS, 0, delaunay.last_size);
         }
 
         glfwSwapBuffers(window);
