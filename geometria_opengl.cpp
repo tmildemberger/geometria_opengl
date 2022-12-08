@@ -1,3 +1,50 @@
+/*
+Aluno: Thiago de Mendonça Mildemberger.
+Instruções:
+    Executar o programa com ./geometria_opengl "arquivo_de_teste.bmp"
+    Será aberta uma tela inicialmente toda pintada de preto.
+    Para adicionar um ponto aleatório à aproximação, é necessário pressionar
+    a letra 'R'. Apertar 'R' segurando Shift adicionará 10 pontos, com Control
+    25 pontos, com Control+Shift serão 500 pontos adicionados.
+    O mesmo vale para a letra 'A', que adiciona pontos de acordo com o critério
+    descrito abaixo.
+    Pressionar 'S' fará com que o número de vértices e triângulos seja impressa
+    no terminal, juntamente com o RMSE calculado para a aproximação atual.
+    Pressionar 'T' fará com que sejam desenhadas as arestas dos triângulos da
+    DCEL sobre a aproximação atual.
+    Nota: a biblioteca utilizada para ler as imagens é a stb_image.h, de domínio
+    público.
+
+Escolha de pontos proposta:
+    Dada a aproximação atual da imagem utilizando a DCEL e a imagem base,
+    calcular para cada pixel da imagem a diferença entre a cor correta obtida
+    da imagem e a cor na aproximação atual. O ponto escolhido é o ponto com a
+    maior diferença. Esse critério é melhor que uma escolha aleatória de pontos
+    pois em uma escolha aleatória, pode ser sorteado um ponto que já tem sua cor
+    bem aproximada, e que portanto pode não contribuir para obter uma melhor
+    aproximação, enquanto que com esse critério sabemos que pelo menos o ponto
+    escolhido esperimentará uma melhora.
+
+Comparações:
+    No diretório "execucoes" podem ser encontradas capturas de tela de execuções
+    do programa para duas imagens de teste, também inclusas no projeto. Elas são
+    as imagens "teste0.bmp" e "baboon.bmp". Na execução com a imagem "baboon",
+    é possível observar que o RMSE calculado com 12500 e 16000 vértices para a
+    escolha aleatória ainda é maior que o RMSE com apenas 12000 vértices
+    selecionados com o critério apresentado. Também pode se observar que os
+    olhos e o bigode do babuíno estão mais nítidos na execução com critério,
+    enquanto que o nariz e as partes centrais da face, apesar de levemente
+    borradas, aparecem melhor representadas na execução aleatória. Isso se deve
+    ao fato de que o critério apresentado priorizou selecionar pontos do bigode
+    e dos pelos do babuíno, que apresentam mudanças mais bruscas de cor, em
+    detrimento das áreas mais uniformes do nariz e da cara.
+
+    A diferença entre as escolhas é ainda maior ao se aproximar a imagem "teste0",
+    já que com 1136 vértices escolhidos de acordo com o critério proposto já foi
+    possível obter um RMSE de 0, enquanto que fazendo o uso de uma escolha
+    aleatória, com 8000 vértices ainda se obtia um RMSE de mais de 12.
+*/
+
 #include <iostream>
 #include <fstream>
 #include <array>
